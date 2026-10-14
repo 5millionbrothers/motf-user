@@ -10,7 +10,7 @@
   if (incoming) sessionStorage.setItem(pendingKey, incoming);
   const style = document.createElement("link");
   style.rel = "stylesheet";
-  style.href = "/organization.css?v=20261014-org3";
+  style.href = "/organization.css?v=20261014-final82";
   document.head.append(style);
   const escape = (value) => String(value || "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const message = (value) => window.toast ? window.toast(value) : window.alert(value);
@@ -53,10 +53,14 @@
         (t.recipient_id === user.id && t.status === "requested" ? button("handoff_accept", "본인확인 후 수락", t.id, "transfer_id") : '') +
         (rep && t.status === "accepted" ? button("handoff_confirm", "인계 확정", t.id, "transfer_id") : '') +
         (rep ? button("handoff_cancel", "인계 취소") : '') + '</div>').join("") +
-      (!rep ? '<div class="organization-actions">' + button("leave", "단체 나가기") + '</div>' : '');
+      (!rep ? '<div class="organization-actions">' + button("leave", "단체 나가기") + '</div>' : '') +
+      '<section class="organization-closure"><h3>단체 폐쇄</h3><p>예약, 주문, 결제, 환불, 정산과 미사용 단체 포인트를 모두 정리한 후 폐쇄할 수 있습니다. 폐쇄 후 단체 접근은 종료되며 거래 기록은 보존됩니다.</p>' +
+      '<button type="button" data-org-action="close"' + (!rep ? ' disabled title="대표 담당자만 폐쇄할 수 있습니다."' : '') + '>단체 폐쇄</button></section>';
   }
   async function rpc(action, payload) {
-    const { data, error } = await client.rpc("manage_organization", { action, payload });
+    const { data, error } = action === "close"
+      ? await client.rpc("close_organization", { target_organization_id: payload.organization_id, reason: payload.reason })
+      : await client.rpc("manage_organization", { action, payload });
     if (error) throw error;
     return data;
   }
@@ -122,6 +126,15 @@
     button.disabled = true;
     modal.querySelector("[data-org-error]").textContent = "";
     try {
+      if (action === "close") {
+        if (current()?.member_role !== "representative") throw new Error("대표 담당자만 폐쇄할 수 있습니다.");
+        if (window.motfCheckoutPending || window.motfChatPending) throw new Error("결제 준비 또는 메시지 전송이 끝난 뒤 폐쇄해주세요.");
+        const reason = window.prompt("단체 폐쇄 사유를 입력해주세요. (6~500자)", "");
+        if (reason === null) return;
+        payload.reason = reason.trim();
+        if (payload.reason.length < 6 || payload.reason.length > 500) throw new Error("폐쇄 사유를 6~500자로 입력해주세요.");
+        if (!window.confirm('"' + current().name + '" 단체를 폐쇄할까요? 단체 접근 권한, 초대와 인계 요청이 종료됩니다.')) return;
+      }
       if (action === "rename") {
         payload.name = window.prompt("단체 이름", current().name);
         if (payload.name === null) return;
@@ -134,7 +147,8 @@
         payload.remove_previous = window.confirm("인계 후 내 단체 접근 권한도 해제할까요?");
       }
       const result = await rpc(action, payload);
-      await changeScope(selected);
+      await changeScope(action === "close" ? "" : selected);
+      if (action === "close") message("단체가 폐쇄되었습니다. 거래 기록은 보존됩니다.");
       if (action === "invite") {
         const link = new URL("/my-mt", location.origin);
         link.searchParams.set("organization_invite", result.token);

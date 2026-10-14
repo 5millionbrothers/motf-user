@@ -19,5 +19,9 @@
 .organization-dialog form { border-top: 1px solid #ddd; margin-top: 20px; padding-top: 8px; }
 .organization-dialog [data-org-error] { color: #a32a2a; overflow-wrap: anywhere; }
 .organization-dialog button:disabled { opacity: .5; cursor: wait; }
+.organization-closure { border-top: 1px solid #ddd; margin-top: 20px; padding-top: 8px; }
+.organization-closure p { line-height: 1.6; overflow-wrap: anywhere; }
+.organization-closure button { color: #a32a2a; border-color: #a32a2a; }
+.organization-closure button:disabled { cursor: not-allowed; }
 .bubble .chat-message-meta { display: block; margin-bottom: 5px; font-size: 11px; font-weight: 400; opacity: .7; overflow-wrap: anywhere; }
 #chat > .organization-scope { margin-bottom: 12px; }

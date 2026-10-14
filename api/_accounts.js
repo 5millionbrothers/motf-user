@@ -38,11 +38,31 @@ async function passwordSession(email, password) {
 }
 
 async function claimIdentitySession(identity, userId = null) {
-  const rows = await supabaseRequest(`/rest/v1/identity_verification_sessions?id=eq.${identity.id}&status=eq.verified&select=id`, {
+  const actorFilter = identity.user_id ? `&user_id=eq.${encodeURIComponent(identity.user_id)}` : "";
+  const rows = await supabaseRequest(`/rest/v1/identity_verification_sessions?id=eq.${encodeURIComponent(identity.id)}&status=eq.verified&expires_at=gt.${encodeURIComponent(new Date().toISOString())}${actorFilter}&select=id`, {
     method: "PATCH", headers: { Prefer: "return=representation" },
     body: JSON.stringify({ status: "consumed", consumed_at: new Date().toISOString(), user_id: userId }),
   });
   if (!rows?.length) throw Object.assign(new Error("이미 사용된 본인인증입니다. 다시 인증해주세요."), { statusCode: 409 });
 }
 
-module.exports = { normalizeUsername, validUsername, accountForLogin, limitAccountRequest, passwordSession, claimIdentitySession };
+async function assertIdentityMatchesProfile(identity, userId, requireActive = false) {
+  if (identity.user_id !== userId || !identity.verified_ci_hash) {
+    throw Object.assign(new Error("Identity verification does not belong to this account."), { statusCode: 403 });
+  }
+  const profiles = await supabaseRequest(`/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=identity_ci_hash,status,withdrawal_processed_at&limit=1`);
+  const profile = profiles?.[0];
+  if (requireActive && (!profile || profile.status !== "approved" || profile.withdrawal_processed_at)) {
+    throw Object.assign(new Error("An active account is required."), { statusCode: 403 });
+  }
+  if (profile?.identity_ci_hash && profile.identity_ci_hash !== identity.verified_ci_hash) {
+    throw Object.assign(new Error("Verification does not match the account's registered identity."), { statusCode: 403 });
+  }
+  const duplicates = await supabaseRequest(`/rest/v1/profiles?identity_ci_hash=eq.${encodeURIComponent(identity.verified_ci_hash)}&id=neq.${encodeURIComponent(userId)}&withdrawal_processed_at=is.null&select=id&limit=1`);
+  if (duplicates?.length) {
+    throw Object.assign(new Error("Identity verification is already linked to another account."), { statusCode: 409 });
+  }
+  return profile;
+}
+
+module.exports = { normalizeUsername, validUsername, accountForLogin, limitAccountRequest, passwordSession, claimIdentitySession, assertIdentityMatchesProfile };

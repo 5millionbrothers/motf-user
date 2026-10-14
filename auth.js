@@ -484,7 +484,7 @@
     }
     const { data, error } = await client
       .from("profiles")
-      .select("email, username, full_name, phone, birth_date, identity_verified_at, adult_verified_at, adult_verified_until, adult_verification_source, password_set_at, profile_completed_at, organization, role, status")
+      .select("email, username, full_name, phone, birth_date, identity_verified_at, adult_verified_at, adult_verified_until, adult_verification_source, password_set_at, profile_completed_at, organization, role, status, withdrawal_processed_at")
       .eq("id", session.user.id)
       .maybeSingle();
     if (!error) profile = data;
@@ -603,7 +603,8 @@
   }
 
   async function blockInactiveUserSession() {
-    if (!session?.user || !profile || profile.role !== "user" || profile.status === "approved") return false;
+    if (!session?.user || !profile) return false;
+    if (!profile.withdrawal_processed_at && (profile.role !== "user" || profile.status === "approved")) return false;
     const message = profile.status === "suspended"
       ? "탈퇴 처리되었거나 이용이 중지된 계정입니다."
       : "현재 이용할 수 없는 계정입니다.";
@@ -928,9 +929,10 @@
     const accountWithdrawalButton = event.target.closest("[data-account-withdrawal]");
     if (accountWithdrawalButton) {
       if (!requireLogin()) return;
+      const withdrawingUserId = session.user.id;
 
       const confirmed = window.confirm(
-        "회원 탈퇴를 요청할까요?\n진행 중인 예약, 주문, 입금 대기 건이 있으면 탈퇴가 처리되지 않습니다.",
+        "회원 탈퇴를 요청할까요?\n단체·업장 대표 권한 또는 진행 중인 거래, 환불, 정산이 있으면 탈퇴가 처리되지 않습니다.",
       );
       if (!confirmed) return;
 
@@ -941,37 +943,44 @@
       accountWithdrawalButton.disabled = true;
       accountWithdrawalButton.textContent = "탈퇴 요청 중...";
 
-      const { data: sessionData } = await client.auth.getSession();
-      const activeAccessToken = sessionData?.session?.access_token;
-      const response = await fetch("/api/account-withdrawal", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(activeAccessToken ? { Authorization: `Bearer ${activeAccessToken}` } : {}),
-        },
-        body: JSON.stringify({
-          reason: reasonInput.trim(),
-        }),
-      });
-      const result = await response.json().catch(() => null);
+      try {
+        const { data: sessionData, error: sessionError } = await client.auth.getSession();
+        const activeAccessToken = sessionData?.session?.access_token;
+        if (sessionError || !activeAccessToken || sessionData.session.user.id !== withdrawingUserId) {
+          throw new Error("로그인 계정이 변경되었거나 만료되었습니다. 다시 로그인해주세요.");
+        }
+        const response = await fetch("/api/account-withdrawal", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${activeAccessToken}`,
+          },
+          body: JSON.stringify({
+            reason: reasonInput.trim(),
+          }),
+        });
+        const result = await response.json().catch(() => null);
 
-      accountWithdrawalButton.disabled = false;
-      accountWithdrawalButton.innerHTML = originalHtml;
-      if (typeof window.refreshIcons === "function") window.refreshIcons();
+        if (!response.ok || !result?.ok) {
+          showToast(result?.message || "회원 탈퇴 요청을 처리하지 못했습니다.");
+          return;
+        }
 
-      if (!response.ok || !result?.ok) {
-        showToast(result?.message || "회원 탈퇴 요청을 처리하지 못했습니다.");
-        return;
+        await unlinkOAuthIdentitiesForWithdrawal();
+        await client.auth.signOut();
+        session = null;
+        profile = null;
+        window.motfClearUserScopedState?.();
+        await refreshAuthUi();
+        if (typeof window.navigate === "function") window.navigate("home");
+        showToast("회원 탈퇴 요청이 처리되었습니다. 이용해주셔서 감사합니다.");
+      } catch (error) {
+        showToast(error.message || "회원 탈퇴 요청을 처리하지 못했습니다.");
+      } finally {
+        accountWithdrawalButton.disabled = false;
+        accountWithdrawalButton.innerHTML = originalHtml;
+        if (typeof window.refreshIcons === "function") window.refreshIcons();
       }
-
-      await unlinkOAuthIdentitiesForWithdrawal();
-      await client.auth.signOut();
-      session = null;
-      profile = null;
-      window.motfClearUserScopedState?.();
-      await refreshAuthUi();
-      if (typeof window.navigate === "function") window.navigate("home");
-      showToast("회원 탈퇴 요청이 처리되었습니다. 이용해주셔서 감사합니다.");
       return;
     }
 
@@ -1121,6 +1130,7 @@
     }
     window.setTimeout(async () => {
       await refreshAuthUi();
+      if (await blockInactiveUserSession()) return;
       if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
         maybePromptProfileCompletion();
         requestWelcomeEmail();
@@ -1150,8 +1160,12 @@
   })();
   window.motfVerifyIdentityForTransfer = async function () {
     if (!requireLogin()) return false;
+    const verifyingUserId = session.user.id;
     const identity = await startIdentityVerification("profile_upgrade");
-    const { data } = await client.auth.getSession();
+    const { data, error } = await client.auth.getSession();
+    if (error || !data.session?.access_token || data.session.user.id !== verifyingUserId) {
+      throw new Error("로그인 계정이 변경되었거나 만료되었습니다. 본인확인을 다시 진행해주세요.");
+    }
     await apiJson("/api/identity-attach", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${data.session?.access_token || ""}` },
@@ -1162,7 +1176,7 @@
   };
   window.motfOrganizationReady = new Promise((resolve) => {
     const script = document.createElement("script");
-    script.src = "/organization-data.js?v=20261014-org3";
+    script.src = "/organization-data.js?v=20261014-final82";
     script.onload = () => resolve(window.motfReloadOrganization?.());
     script.onerror = () => resolve();
     document.head.append(script);

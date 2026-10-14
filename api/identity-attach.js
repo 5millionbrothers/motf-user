@@ -1,7 +1,7 @@
 const { json } = require("./_utils");
 const { supabaseRequest } = require("./_server");
 const { allowCors, readBody, verifiedSession, authenticatedUser } = require("./_identity");
-const { claimIdentitySession } = require("./_accounts");
+const { claimIdentitySession, assertIdentityMatchesProfile } = require("./_accounts");
 
 module.exports = async function handler(req, res) {
   if (allowCors(req, res)) return;
@@ -14,10 +14,7 @@ module.exports = async function handler(req, res) {
     const identity = await verifiedSession(String(body.identityToken || ""), purpose);
     if (identity.user_id !== user.id) return json(res, 403, { ok: false, message: "현재 계정의 인증 내역이 아닙니다." });
     if (purpose === "adult_purchase" && !identity.is_adult) return json(res, 403, { ok: false, message: "주류는 성인만 주문할 수 있습니다." });
-    const profiles = await supabaseRequest(`/rest/v1/profiles?id=eq.${user.id}&select=identity_ci_hash&limit=1`);
-    if (profiles?.[0]?.identity_ci_hash && profiles[0].identity_ci_hash !== identity.verified_ci_hash) return json(res, 403, { ok: false, message: "계정에 등록된 본인정보와 일치하지 않습니다." });
-    const duplicates = await supabaseRequest(`/rest/v1/profiles?identity_ci_hash=eq.${encodeURIComponent(identity.verified_ci_hash)}&id=neq.${encodeURIComponent(user.id)}&withdrawal_processed_at=is.null&select=id&limit=1`);
-    if (duplicates?.length) return json(res, 409, { ok: false, message: "이미 다른 계정에 연결된 본인인증 정보입니다." });
+    await assertIdentityMatchesProfile(identity, user.id);
     await claimIdentitySession(identity, user.id);
     await supabaseRequest(`/rest/v1/profiles?id=eq.${encodeURIComponent(user.id)}`, {
       method: "PATCH",
