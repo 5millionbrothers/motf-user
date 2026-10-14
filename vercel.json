@@ -1,6 +1,15 @@
 {
   "cleanUrls": true,
   "functions": {
+    "api/account-login.js": {
+      "maxDuration": 30
+    },
+    "api/account-username.js": {
+      "maxDuration": 30
+    },
+    "api/identity-attach.js": {
+      "maxDuration": 30
+    },
     "api/toss-confirm.js": {
       "maxDuration": 30
     },

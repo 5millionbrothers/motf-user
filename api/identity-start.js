@@ -1,10 +1,10 @@
 const { json } = require("./_utils");
 const { supabaseRequest } = require("./_server");
 const {
-  allowCors, readBody, sha256, randomToken, safeReturnUrl, kcpRegister,
+  allowCors, readBody, sha256, randomToken, safeReturnUrl, kcpRegister, authenticatedUser,
 } = require("./_identity");
 
-const PURPOSES = new Set(["signup", "owner_signup", "password_reset", "profile_upgrade"]);
+const PURPOSES = new Set(["signup", "owner_signup", "password_reset", "profile_upgrade", "adult_purchase"]);
 const OWNER_ORIGINS = new Set([
   "https://motfowner.co.kr",
   "https://www.motfowner.co.kr",
@@ -18,6 +18,9 @@ module.exports = async function handler(req, res) {
     const body = await readBody(req);
     const purpose = String(body.purpose || "");
     if (!PURPOSES.has(purpose)) return json(res, 400, { ok: false, message: "본인인증 목적이 올바르지 않습니다." });
+    const user = ["adult_purchase", "profile_upgrade"].includes(purpose)
+      ? await authenticatedUser(req.headers.authorization || "") : null;
+    if (["adult_purchase", "profile_upgrade"].includes(purpose) && !user?.id) return json(res, 401, { ok: false, message: "로그인이 필요합니다." });
 
     const identityToken = randomToken();
     const stateHash = sha256(identityToken);
@@ -31,6 +34,7 @@ module.exports = async function handler(req, res) {
       headers: { Prefer: "return=representation" },
       body: JSON.stringify({
         purpose,
+        user_id: user?.id || null,
         state_hash: stateHash,
         requested_email: String(body.email || "").trim().toLowerCase() || null,
         request_context: { return_url: returnUrl, account_type: body.accountType || "user" },

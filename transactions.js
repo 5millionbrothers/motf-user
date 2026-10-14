@@ -136,7 +136,7 @@
 
   async function previewBenefits(kind, button = null) {
     const verified = await window.motfEnsureIdentityVerified?.();
-    if (verified === false) throw new Error("휴대폰 본인인증을 완료해주세요.");
+    if (verified === false) throw new Error("로그인과 예약·주문에 필요한 기본정보를 확인해주세요.");
     const context = window.motfGetCheckoutPreviewContext?.(kind);
     if (!context?.originalAmount || !isUuid(context.businessId)) throw new Error("결제할 상품 정보를 먼저 확인해주세요.");
     const input = benefitInput(kind);
@@ -322,7 +322,7 @@
       if (submitButton) { submitButton.disabled = true; submitButton.textContent = "결제 금액 확인 중..."; }
       try {
         const verified = await window.motfEnsureIdentityVerified?.();
-        if (verified === false) throw new Error("휴대폰 본인인증을 완료해주세요.");
+        if (verified === false) throw new Error("로그인과 예약·주문에 필요한 기본정보를 확인해주세요.");
         const checkoutAmount = Number(window.motfGetCheckoutPreviewContext?.("stay")?.originalAmount || 0);
         if (checkoutAmount > MAX_SINGLE_PAYMENT_AMOUNT) throw new Error(PAYMENT_LIMIT_MESSAGE);
         await ensureCheckoutBenefits("stay");
@@ -369,7 +369,8 @@
       if (submitButton) { submitButton.disabled = true; submitButton.textContent = "결제 금액 확인 중..."; }
       try {
         const verified = await window.motfEnsureIdentityVerified?.();
-        if (verified === false) throw new Error("휴대폰 본인인증을 완료해주세요.");
+        if (verified === false) throw new Error("로그인과 예약·주문에 필요한 기본정보를 확인해주세요.");
+        if (draft.contains_alcohol && !(await window.motfEnsureAdultVerified?.())) throw new Error("주류 주문을 위한 성인확인을 완료해주세요.");
         const checkoutAmount = Number(window.motfGetCheckoutPreviewContext?.("market")?.originalAmount || 0);
         if (checkoutAmount > MAX_SINGLE_PAYMENT_AMOUNT) throw new Error(PAYMENT_LIMIT_MESSAGE);
         await ensureCheckoutBenefits("market");

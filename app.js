@@ -570,6 +570,7 @@ window.motfGetMarketOrderDraft = function getMarketOrderDraft() {
     pickup_place: qs("#pickupPlace").value.trim(),
     pickup_time: qs("#pickupTime").value,
     request_memo: qs("#pickupMemo").value.trim() || null,
+    contains_alcohol: state.cart.some((item) => isAlcoholProduct(findProduct(item.productId)?.product || {})),
     items,
   };
 };
@@ -3950,7 +3951,7 @@ async function requestTossPayment() {
       orderName: payment.itemName,
       successUrl: `${window.location.origin}/payment`,
       failUrl: `${window.location.origin}/payment`,
-      customerEmail: payment.customerEmail || activeSession.user.email || undefined,
+      customerEmail: payment.customerEmail || (activeSession.user.email?.endsWith("@accounts.motf.invalid") ? undefined : activeSession.user.email) || undefined,
       customerName: payment.customerName || "moTF 이용자",
       customerMobilePhone: String(payment.customerPhone || "").replace(/\D/g, "") || undefined,
       transfer: { useEscrow: false },

@@ -22,6 +22,7 @@ module.exports = async function handler(req, res) {
     }
 
     const resendKey = String(process.env.RESEND_API_KEY || "").trim();
+    if (user.email.endsWith("@accounts.motf.invalid")) return json(res, 200, { ok: true, skipped: true });
     if (!resendKey) {
       console.warn("welcome-email skipped: RESEND_API_KEY is not configured");
       return json(res, 200, {

@@ -62,7 +62,9 @@
   }
 
   function formatPhone(value = "") {
-    const digits = String(value || "").replace(/\D/g, "").slice(0, 11);
+    let digits = String(value || "").replace(/\D/g, "");
+    if (digits.startsWith("82") && digits.length > 11) digits = "0" + digits.slice(2);
+    digits = digits.slice(0, 11);
     if (digits.startsWith("02")) {
       if (digits.length <= 2) return digits;
       if (digits.length <= 6) return `${digits.slice(0, 2)}-${digits.slice(2)}`;
@@ -106,8 +108,8 @@
           <button class="auth-tab" type="button" data-auth-tab="signup">회원가입</button>
         </div>
         <form class="auth-form" id="customerLoginForm">
-          <label>이메일
-            <input id="customerLoginEmail" type="email" autocomplete="email" required placeholder="example@email.com" />
+          <label>아이디
+            <input id="customerLoginEmail" type="text" autocomplete="username" required placeholder="아이디 또는 기존 가입 이메일" />
           </label>
           <label>비밀번호
             <span class="password-field">
@@ -117,7 +119,7 @@
               </button>
             </span>
           </label>
-          <button class="primary-btn auth-submit" type="submit">이메일로 로그인</button>
+          <button class="primary-btn auth-submit" type="submit">로그인</button>
           <div class="auth-divider"><span>또는</span></div>
           <button class="auth-kakao-btn" type="button" data-kakao-login>
             <span class="auth-kakao-symbol">K</span>카카오로 로그인
@@ -134,8 +136,9 @@
           <label>이름<input id="customerSignupName" autocomplete="name" readonly required placeholder="본인인증 후 자동 입력" /></label>
           <label>휴대전화번호<input id="customerSignupPhone" type="tel" autocomplete="tel" readonly required placeholder="본인인증 후 자동 입력" /></label>
           <label>생년월일<input id="customerSignupBirthDate" readonly required placeholder="본인인증 후 자동 입력" /></label>
-          <label>이메일
-            <input id="customerSignupEmail" type="email" autocomplete="email" required placeholder="example@email.com" />
+          <label>아이디<input id="customerSignupUsername" autocomplete="username" pattern="[a-zA-Z][a-zA-Z0-9_]{3,23}" minlength="4" maxlength="24" required placeholder="영문으로 시작하는 영문·숫자·밑줄 4~24자리" /></label>
+          <label>연락 이메일 (선택)
+            <input id="customerSignupEmail" type="email" autocomplete="email" placeholder="example@email.com" />
           </label>
           <label>비밀번호
             <input id="customerSignupPassword" type="password" autocomplete="new-password" required minlength="8" maxlength="12" placeholder="영문·숫자·특수문자 8~12자리" />
@@ -160,8 +163,8 @@
           </button>
         </form>
         <form class="auth-form" id="identityPasswordResetForm" hidden>
-          <p class="auth-helper-text">가입한 이메일과 휴대폰 본인인증 정보가 일치하면 바로 새 비밀번호를 설정할 수 있어요.</p>
-          <label>가입 이메일<input id="identityResetEmail" type="email" autocomplete="email" required placeholder="example@email.com" /></label>
+          <p class="auth-helper-text">가입 아이디 또는 기존 가입 이메일과 본인확인 정보로 비밀번호를 재설정합니다. 카카오 전용 계정은 카카오로 로그인해주세요.</p>
+          <label>가입 아이디<input id="identityResetEmail" type="text" autocomplete="username" required placeholder="아이디 또는 기존 가입 이메일" /></label>
           <button class="secondary-btn" type="button" data-identity-verify="password_reset">휴대폰 본인인증</button>
           <div class="identity-result" id="passwordIdentityResult" hidden></div>
           <label>새 비밀번호<input id="identityResetPassword" type="password" autocomplete="new-password" minlength="8" maxlength="12" required placeholder="영문·숫자·특수문자 8~12자리" /></label>
@@ -179,17 +182,11 @@
           <button class="primary-btn auth-submit" type="submit">새 비밀번호 저장</button>
         </form>
         <form class="auth-form" id="profileCompleteForm" hidden>
-          <p class="auth-helper-text">카카오 로그인도 안전한 예약과 성인 상품 확인을 위해 최초 1회 휴대폰 본인인증이 필요합니다.</p>
-          <button class="secondary-btn" type="button" data-identity-verify="profile_upgrade">휴대폰 본인인증</button>
-          <div class="identity-result" id="profileIdentityResult" hidden></div>
-          <label>휴대전화번호<input id="profileCompletePhone" type="tel" autocomplete="tel" readonly maxlength="20" placeholder="본인인증 후 자동 입력" /></label>
-          <label>학교/소속
-            <input id="profileCompleteOrganization" autocomplete="organization" maxlength="80" required placeholder="예: 한국대 경영학과 학생회" />
-          </label>
-          <div id="kakaoPasswordFields" hidden>
-            <label>서비스 비밀번호<input id="profileCompletePassword" type="password" autocomplete="new-password" minlength="8" maxlength="12" placeholder="영문·숫자·특수문자 8~12자리" /></label>
-            <label>비밀번호 확인<input id="profileCompletePasswordConfirm" type="password" autocomplete="new-password" minlength="8" maxlength="12" /></label>
-          </div>
+          <p class="auth-helper-text">예약 연락에 사용할 기본 정보를 입력해주세요.</p>
+          <label>이름<input id="profileCompleteName" autocomplete="name" maxlength="80" required /></label>
+          <label>휴대전화번호<input id="profileCompletePhone" type="tel" autocomplete="tel" maxlength="20" required /></label>
+          <label>학교/소속 (선택)<input id="profileCompleteOrganization" autocomplete="organization" maxlength="80" /></label>
+          <label class="auth-agreement"><input id="profileCompleteTerms" type="checkbox" required /><span>이용약관과 개인정보 처리방침에 동의합니다.<span class="auth-policy-links"><button type="button" data-auth-legal-route="terms">이용약관 보기</button><button type="button" data-auth-legal-route="privacy">개인정보 처리방침 보기</button></span></span></label>
           <button class="primary-btn auth-submit" type="submit">기본 정보 저장</button>
           <button class="auth-link" type="button" data-profile-complete-later>나중에 입력하기</button>
         </form>
@@ -229,7 +226,7 @@
     const email = purpose === "password_reset"
       ? document.querySelector("#identityResetEmail")?.value.trim()
       : document.querySelector("#customerSignupEmail")?.value.trim();
-    if (purpose === "password_reset" && !email) throw new Error("가입한 이메일을 먼저 입력해주세요.");
+    if (purpose === "password_reset" && !email) throw new Error("가입 아이디 또는 기존 가입 이메일을 먼저 입력해주세요.");
     const popup = window.open("", "motf_identity", "width=430,height=640,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
     if (!popup) throw new Error("본인인증 팝업이 차단되었습니다. 브라우저에서 팝업을 허용해주세요.");
     popup.document.write("<!doctype html><html lang='ko'><meta charset='utf-8'><title>본인인증 연결 중</title><body style='font-family:sans-serif;padding:32px;text-align:center'>본인인증 화면을 연결하고 있습니다.</body></html>");
@@ -237,7 +234,7 @@
     try {
       start = await apiJson("/api/identity-start", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}) },
         body: JSON.stringify({ purpose, email, accountType: "user", returnUrl: window.location.href, mobile: window.innerWidth < 720 }),
       });
     } catch (error) {
@@ -387,8 +384,8 @@
 
   function needsProfileCompletion() {
     if (!session?.user || !profile || profile.role !== "user") return false;
-    const kakaoUser = (session?.user?.app_metadata?.providers || []).includes("kakao");
-    return !profile.identity_verified_at || !profile.organization || (kakaoUser && !profile.password_set_at);
+    const kakaoUser = (session.user.app_metadata?.providers || []).includes("kakao");
+    return kakaoUser && !profile.profile_completed_at;
   }
 
   function openProfileCompletion() {
@@ -400,32 +397,17 @@
     profileCompleteForm.hidden = false;
     document.querySelector(".auth-tabs").hidden = true;
     document.querySelector("#authTitle").textContent = "기본 정보 입력";
-    document.querySelector("#profileCompletePhone").value = formatPhone(profile?.phone || "");
-    document.querySelector("#profileCompleteOrganization").value = profile?.organization || "";
-    const identityComplete = Boolean(profile?.identity_verified_at);
-    const identityButton = profileCompleteForm.querySelector('[data-identity-verify="profile_upgrade"]');
-    const identityHelper = profileCompleteForm.querySelector(".auth-helper-text");
-    const identityResult = document.querySelector("#profileIdentityResult");
-    if (identityButton) identityButton.hidden = identityComplete;
-    if (identityHelper) identityHelper.textContent = identityComplete
-      ? "최초 본인인증은 완료되었습니다. 남은 기본 정보만 입력해주세요."
-      : "안전한 예약과 성인 상품 확인을 위해 최초 1회 휴대폰 본인인증이 필요합니다.";
-    if (identityResult && identityComplete) identityResult.hidden = true;
-    const needsPassword = (session.user.app_metadata?.providers || []).includes("kakao") && !profile?.password_set_at;
-    const passwordFields = document.querySelector("#kakaoPasswordFields");
-    passwordFields.hidden = !needsPassword;
-    passwordFields.querySelectorAll("input").forEach((input) => { input.required = needsPassword; });
-    modal.querySelectorAll("[data-auth-close], [data-profile-complete-later]").forEach((button) => { button.hidden = true; });
+    document.querySelector("#profileCompleteName").value = profile.full_name || "";
+    document.querySelector("#profileCompletePhone").value = formatPhone(profile.phone || session.user.user_metadata?.phone_number || session.user.user_metadata?.kakao_account?.phone_number || "");
+    document.querySelector("#profileCompleteOrganization").value = profile.organization || "";
+    modal.querySelectorAll("[data-auth-close], [data-profile-complete-later]").forEach((button) => { button.hidden = false; });
     modal.hidden = false;
     document.body.classList.add("auth-modal-open");
-    setMessage(profile?.identity_verified_at
-      ? "학교/소속을 입력하면 예약 정보를 더 빠르게 작성할 수 있어요."
-      : "휴대폰 본인인증을 먼저 완료해주세요.");
-    window.setTimeout(() => document.querySelector(profile?.phone ? "#profileCompleteOrganization" : "#profileCompletePhone")?.focus(), 0);
+    setMessage("");
   }
 
   function maybePromptProfileCompletion() {
-    if (needsProfileCompletion()) window.setTimeout(openProfileCompletion, 250);
+    if (needsProfileCompletion() && !window.sessionStorage.getItem(profileCompletionDismissKey())) window.setTimeout(openProfileCompletion, 250);
   }
 
   function openPasswordChange() {
@@ -459,16 +441,37 @@
 
   window.motfRequireLogin = requireLogin;
 
-  window.motfEnsureIdentityVerified = async function ensureIdentityVerified() {
-    if (!session?.user) {
-      requireLogin();
+  window.motfEnsureIdentityVerified = async function ensureCheckoutAccount() {
+    if (!requireLogin()) return false;
+    if (!profile) await loadProfile();
+    if (needsProfileCompletion()) {
+      openProfileCompletion();
+      setMessage("예약·주문에 사용할 이름과 연락처를 입력해주세요.");
       return false;
     }
-    if (!profile) await loadProfile();
-    if (profile?.identity_verified_at) return true;
-    openProfileCompletion();
-    setMessage("예약과 주문을 계속하려면 휴대폰 본인인증을 완료해주세요.", "error");
-    return false;
+    return profile?.status === "approved";
+  };
+
+  window.motfEnsureAdultVerified = async function ensureAdultVerified() {
+    if (!requireLogin()) return false;
+    await loadProfile();
+    if (profile?.adult_verification_source === "adult_purchase"
+      && new Date(profile.adult_verified_until).getTime() > Date.now()) return true;
+    if (!window.confirm("주류 주문을 위한 성인확인이 필요합니다. 인증 결과는 1년간 사용할 수 있습니다. 지금 인증할까요?")) return false;
+    try {
+      const identity = await startIdentityVerification("adult_purchase");
+      await apiJson("/api/identity-attach", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ identityToken: identity.token, purpose: "adult_purchase" }),
+      });
+      await loadProfile();
+      showToast("성인확인이 완료되었습니다.");
+      return true;
+    } catch (error) {
+      showToast(error.message || "성인확인을 완료하지 못했습니다.");
+      return false;
+    }
   };
 
   async function loadProfile() {
@@ -481,11 +484,12 @@
     }
     const { data, error } = await client
       .from("profiles")
-      .select("email, full_name, phone, birth_date, identity_verified_at, adult_verified_at, password_set_at, organization, role, status")
+      .select("email, username, full_name, phone, birth_date, identity_verified_at, adult_verified_at, adult_verified_until, adult_verification_source, password_set_at, profile_completed_at, organization, role, status")
       .eq("id", session.user.id)
       .maybeSingle();
     if (!error) profile = data;
     window.motfCurrentUserProfile = profile;
+    window.motfCurrentUserEmail = profile?.email || "";
   }
 
   function updateHeader() {
@@ -499,7 +503,9 @@
     const accountForm = document.querySelector("#myAccount form.tool-panel");
     const inputs = accountForm ? [...accountForm.querySelectorAll("input")] : [];
     if (inputs[0]) {
-      inputs[0].value = session?.user?.email || "";
+      const labelText = inputs[0].closest("label")?.firstChild;
+      if (labelText?.nodeType === 3) labelText.textContent = "연락 이메일 ";
+      inputs[0].value = profile?.email || "";
       inputs[0].readOnly = true;
     }
     if (inputs[1]) {
@@ -513,6 +519,19 @@
     }
     if (inputs[3]) inputs[3].value = formatPhone(profile?.phone || "");
 
+    if (accountForm) {
+      let usernamePanel = accountForm.querySelector("[data-account-username-panel]");
+      if (!usernamePanel) {
+        usernamePanel = document.createElement("div");
+        usernamePanel.dataset.accountUsernamePanel = "";
+        usernamePanel.innerHTML = '<label>로그인 아이디<input id="accountUsername" autocomplete="username" minlength="4" maxlength="24" placeholder="영문으로 시작하는 영문·숫자·밑줄 4~24자리" /></label><button type="button" class="secondary-btn" data-save-account-username>아이디 등록</button><p class="muted" data-account-identity-label></p>';
+        accountForm.appendChild(usernamePanel);
+      }
+      usernamePanel.querySelector("input").value = profile?.username || "";
+      usernamePanel.querySelector("input").readOnly = Boolean(profile?.username);
+      usernamePanel.querySelector("button").hidden = Boolean(profile?.username);
+      usernamePanel.querySelector("[data-account-identity-label]").textContent = profile?.identity_verified_at ? "본인확인 완료" : "본인확인 미완료";
+    }
     const dangerPanel = document.querySelector("#myAccount .danger-panel");
     if (!dangerPanel) return;
     let note = dangerPanel.querySelector(".auth-session-note");
@@ -522,7 +541,7 @@
       dangerPanel.insertBefore(note, dangerPanel.querySelector("button"));
     }
     note.textContent = session?.user
-      ? `${profile?.full_name || "이용자"}님 · ${session.user.email}`
+      ? `${profile?.full_name || "이용자"}님 · ${profile?.username || "카카오 / 기존 이메일 로그인"}`
       : "로그인이 필요합니다.";
 
     let logoutButton = dangerPanel.querySelector("[data-auth-logout]");
@@ -552,7 +571,7 @@
   }
 
   async function requestWelcomeEmail() {
-    if (!session?.access_token || !session.user?.email_confirmed_at) return;
+    if (!session?.access_token || !session.user?.email_confirmed_at || session.user.email?.endsWith("@accounts.motf.invalid")) return;
     const userId = session.user.id;
     if (welcomeEmailRequestUserId === userId && welcomeEmailRequestPromise) {
       return welcomeEmailRequestPromise;
@@ -629,25 +648,21 @@
     submitButton.textContent = "로그인 중...";
     setMessage("");
 
-    const { data, error } = await client.auth.signInWithPassword({
-      email: document.querySelector("#customerLoginEmail").value.trim(),
-      password: document.querySelector("#customerLoginPassword").value,
-    });
-
-    submitButton.disabled = false;
-    submitButton.textContent = "이메일로 로그인";
-    if (error) {
-      const friendlyMessage = loginErrorMessage(error);
-      const code = error?.code || "";
-      const detail = String(error?.message || "").toLowerCase();
-      if (code === "email_not_confirmed" || detail.includes("email not confirmed")) {
-        alert(friendlyMessage);
-      }
-      setMessage(friendlyMessage, "error");
-      return;
+    try {
+      const result = await apiJson("/api/account-login", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: document.querySelector("#customerLoginEmail").value.trim(), password: document.querySelector("#customerLoginPassword").value }),
+      });
+      const { data, error } = await client.auth.setSession(result.session);
+      if (error) throw error;
+      session = data.session;
+      await finishLogin();
+    } catch (error) {
+      setMessage(error.message || "로그인하지 못했습니다.", "error");
+    } finally {
+      submitButton.disabled = false;
+      submitButton.textContent = "로그인";
     }
-    session = data.session;
-    await finishLogin();
   });
 
   document.addEventListener("click", (event) => {
@@ -691,6 +706,7 @@
     setMessage("");
 
     const email = document.querySelector("#customerSignupEmail").value.trim();
+    const username = document.querySelector("#customerSignupUsername").value.trim().toLowerCase();
     let result;
     try {
       result = await apiJson("/api/identity-signup", {
@@ -699,6 +715,8 @@
         body: JSON.stringify({
           accountType: "user",
           identityToken: verifiedIdentity.token,
+          username,
+          termsAccepted: document.querySelector("#customerSignupTerms").checked,
           email,
           password,
           emailRedirectTo: `${window.location.origin}${window.location.pathname}`,
@@ -717,10 +735,8 @@
     verifiedIdentity = null;
     document.querySelector("#signupIdentityResult").hidden = true;
     switchTab("login");
-    document.querySelector("#customerLoginEmail").value = email;
-    const verificationMessage = `인증 메일을 보냈습니다.\n\n${email}로 보낸 인증 링크를 눌러야 최종 가입됩니다.\n인증 전에는 로그인할 수 없으니 스팸 메일함도 함께 확인해주세요.`;
-    alert(verificationMessage);
-    setMessage("인증 메일을 보냈습니다. 이메일 인증 후 로그인해 주세요.", "success");
+    document.querySelector("#customerLoginEmail").value = username;
+    setMessage("가입이 완료되었습니다. 아이디로 로그인해주세요.", "success");
   });
 
   identityPasswordResetForm.addEventListener("submit", async (event) => {
@@ -738,7 +754,7 @@
       await apiJson("/api/identity-password-reset", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, identityToken: passwordResetIdentity.token }),
+        body: JSON.stringify({ identifier: email, password, identityToken: passwordResetIdentity.token }),
       });
       identityPasswordResetForm.reset();
       passwordResetIdentity = null;
@@ -782,44 +798,15 @@
   profileCompleteForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!session?.user) return;
-    if (!profile?.identity_verified_at) {
-      setMessage("휴대폰 본인인증을 먼저 완료해주세요.", "error");
-      return;
-    }
     const phone = normalizePhone(document.querySelector("#profileCompletePhone").value);
     const organization = document.querySelector("#profileCompleteOrganization").value.trim();
-    const kakaoUser = (session.user.app_metadata?.providers || []).includes("kakao");
-    const needsPassword = kakaoUser && !profile.password_set_at;
-    const newPassword = document.querySelector("#profileCompletePassword").value;
-    const passwordConfirm = document.querySelector("#profileCompletePasswordConfirm").value;
-    if (needsPassword && (!passwordIsValid(newPassword) || newPassword !== passwordConfirm)) {
-      setMessage("서비스 비밀번호를 영문·숫자·특수문자 8~12자리로 동일하게 입력해주세요.", "error");
-      return;
-    }
-    if (phone && phone.replace(/\D/g, "").length < 9) {
-      setMessage("연락처를 다시 확인해주세요.", "error");
-      return;
-    }
-    if (!organization) {
-      setMessage("학교/소속을 입력해주세요.", "error");
-      return;
-    }
-
+    const name = document.querySelector("#profileCompleteName").value.trim();
     const submitButton = profileCompleteForm.querySelector('[type="submit"]');
     submitButton.disabled = true;
     submitButton.textContent = "저장 중...";
-    if (needsPassword) {
-      const { error: passwordError } = await client.auth.updateUser({ password:newPassword });
-      if (passwordError) {
-        submitButton.disabled = false;
-        submitButton.textContent = "기본 정보 저장";
-        setMessage(`서비스 비밀번호를 저장하지 못했습니다: ${passwordError.message}`, "error");
-        return;
-      }
-    }
-    const { data, error } = await client.rpc("complete_verified_user_profile", {
-      profile_organization: organization,
-      password_was_set: needsPassword,
+    const { data, error } = await client.rpc("complete_basic_user_profile", {
+      profile_name: name, profile_phone: phone, profile_organization: organization,
+      terms_accepted: document.querySelector("#profileCompleteTerms").checked,
     });
     submitButton.disabled = false;
     submitButton.textContent = "기본 정보 저장";
@@ -839,11 +826,16 @@
   document.addEventListener("click", async (event) => {
     const closeButton = event.target.closest("[data-auth-close]");
     if (closeButton) {
-      if (!profileCompleteForm.hidden && needsProfileCompletion()) return;
+      if (!profileCompleteForm.hidden) window.sessionStorage.setItem(profileCompletionDismissKey(), "1");
       closeModal();
       return;
     }
 
+    if (event.target.closest("[data-profile-complete-later]")) {
+      window.sessionStorage.setItem(profileCompletionDismissKey(), "1");
+      closeModal();
+      return;
+    }
     const tabButton = event.target.closest("[data-auth-tab]");
     if (tabButton) {
       switchTab(tabButton.dataset.authTab);
@@ -983,6 +975,22 @@
       return;
     }
 
+    const usernameButton = event.target.closest("[data-save-account-username]");
+    if (usernameButton) {
+      if (!requireLogin()) return;
+      usernameButton.disabled = true;
+      try {
+        await apiJson("/api/account-username", {
+          method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ username: document.querySelector("#accountUsername").value }),
+        });
+        await loadProfile();
+        updateAccountView();
+        showToast("로그인 아이디가 등록되었습니다.");
+      } catch (error) { showToast(error.message); }
+      finally { usernameButton.disabled = false; }
+      return;
+    }
     const accountSaveButton = event.target.closest("[data-account-save]");
     if (accountSaveButton) {
       if (!requireLogin()) return;
@@ -1034,7 +1042,7 @@
         showToast("회원정보를 저장하지 못했습니다. 잠시 후 다시 시도해주세요.");
         return;
       }
-      profile = data;
+      await loadProfile();
       updateAccountView();
       showToast("회원정보가 저장되었습니다.");
     }
