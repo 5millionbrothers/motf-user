@@ -121,7 +121,7 @@
   }
 
   function benefitSignature(kind, context, input = benefitInput(kind)) {
-    return [kind, context?.businessId || "", Number(context?.originalAmount || 0), input.points, input.coupon].join(":");
+    return [window.motfGetOrganizationId?.() || "personal", kind, context?.businessId || "", Number(context?.originalAmount || 0), input.points, input.coupon].join(":");
   }
 
   function invalidateBenefitPreview(kind) {
@@ -144,7 +144,9 @@
     const originalText = button?.textContent;
     if (button) { button.disabled = true; button.textContent = "확인 중"; }
     try {
-      const { data, error } = await client.rpc("preview_checkout_benefits", {
+      const organizationId = window.motfGetOrganizationId?.();
+      const { data, error } = await client.rpc(organizationId ? "preview_organization_checkout_benefits" : "preview_checkout_benefits", {
+        ...(organizationId ? { target_organization_id: organizationId } : {}),
         target_original_amount: Number(context.originalAmount),
         target_transaction_kind: kind,
         target_business_id: context.businessId,
@@ -152,6 +154,7 @@
         requested_coupon_code: input.coupon || null,
       });
       if (error) throw error;
+      if ((organizationId || null) !== (window.motfGetOrganizationId?.() || null)) throw new Error("소속이 바뀌었습니다. 혜택을 다시 확인해주세요.");
       const preview = Array.isArray(data) ? data[0] : data;
       if (!preview) throw new Error("혜택 적용 결과를 확인하지 못했습니다.");
       benefitPreviews[kind] = { ...preview, signature: benefitSignature(kind, context, input) };
@@ -202,7 +205,13 @@
     }
   }
 
+  let transactionLoadVersion = 0;
   async function loadMyTransactions() {
+    const version = ++transactionLoadVersion;
+    await window.motfOrganizationReady;
+    await window.motfReloadOrganization?.();
+    const organizationId = window.motfGetOrganizationId?.();
+    const scopeQuery = (query) => organizationId ? query.eq("organization_id", organizationId) : query.eq("customer_id", userId).is("organization_id", null);
     const { data: authData } = await client.auth.getSession();
     const userId = authData.session?.user?.id;
     if (!userId) {
@@ -211,29 +220,30 @@
       return;
     }
     const [reservationResult, orderResult, intentResult, pointResult, pointLedgerResult] = await Promise.all([
-      client.from("reservations")
+      scopeQuery(client.from("reservations")
         .select("id, business_id, event_date, check_out_date, guest_count, offering_name, total_amount, original_amount, customer_paid_amount, points_used, coupon_discount, base_accommodation_amount, status, refund_status, refund_amount, businesses(business_name)")
-        .eq("customer_id", userId)
+        )
         .order("created_at", { ascending: false }),
-      client.from("market_orders")
+      scopeQuery(client.from("market_orders")
         .select("id, business_id, pickup_time, total_amount, original_amount, customer_paid_amount, points_used, coupon_discount, status, refund_status, refund_amount, businesses(business_name), market_order_items(id)")
-        .eq("customer_id", userId)
+        )
         .order("created_at", { ascending: false }),
-      client.from("payment_intents")
+      scopeQuery(client.from("payment_intents")
         .select("order_id, kind, amount, original_amount, points_used, coupon_discount, order_name, status, payment_method, virtual_account, virtual_account_issued_at, created_at, expires_at, extra_charge_request_id")
-        .eq("customer_id", userId)
+        )
         .in("status", ["virtual_account_issued", "waiting_for_deposit"])
         .order("created_at", { ascending: false }),
-      client.from("point_accounts")
+      organizationId ? Promise.resolve({ data: window.motfGetOrganizationWallet().account }) : client.from("point_accounts")
         .select("balance, lifetime_earned, lifetime_used")
         .eq("user_id", userId)
         .maybeSingle(),
-      client.from("point_ledger")
+      organizationId ? Promise.resolve({ data: window.motfGetOrganizationWallet().ledger }) : client.from("point_ledger")
         .select("id, amount, balance_after, entry_type, reason, created_at")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(100),
     ]);
+    if (version !== transactionLoadVersion || (organizationId || null) !== (window.motfGetOrganizationId?.() || null)) return;
     if (reservationResult.error || orderResult.error || intentResult.error) {
       console.error(reservationResult.error || orderResult.error || intentResult.error);
       return;
@@ -305,6 +315,16 @@
     window.motfApplyMyTransactions?.(reservations, orders);
   }
   window.motfReloadTransactions = loadMyTransactions;
+  window.addEventListener("motf:organization-changed", () => {
+    for (const kind of ["stay", "market"]) {
+      document.querySelector(benefitFields[kind].points).value = "0";
+      document.querySelector(benefitFields[kind].coupon).value = "";
+      invalidateBenefitPreview(kind);
+    }
+    syncPointControls(0);
+    window.motfApplyPointData?.({}, []);
+    window.motfApplyMyTransactions?.([], []);
+  });
 
   document.addEventListener("submit", async (event) => {
     if (event.target.id === "bookingForm") {
@@ -320,6 +340,7 @@
       const submitButton = event.target.querySelector('[type="submit"]');
       const originalHtml = submitButton?.innerHTML;
       if (submitButton) { submitButton.disabled = true; submitButton.textContent = "결제 금액 확인 중..."; }
+      window.motfCheckoutPending = true;
       try {
         const verified = await window.motfEnsureIdentityVerified?.();
         if (verified === false) throw new Error("로그인과 예약·주문에 필요한 기본정보를 확인해주세요.");
@@ -327,7 +348,9 @@
         if (checkoutAmount > MAX_SINGLE_PAYMENT_AMOUNT) throw new Error(PAYMENT_LIMIT_MESSAGE);
         await ensureCheckoutBenefits("stay");
         const requestedPoints = benefitInput("stay").points;
-        const { data, error } = await client.rpc("prepare_stay_checkout", {
+        const organizationId = window.motfGetOrganizationId?.();
+        const { data, error } = await client.rpc(organizationId ? "prepare_organization_stay_checkout" : "prepare_stay_checkout", {
+          ...(organizationId ? { target_organization_id: organizationId } : {}),
           target_business_id: draft.business_id,
           target_offering_id: draft.offering_id,
           customer_name: draft.customer_name,
@@ -344,11 +367,12 @@
         if (error) throw error;
         const intent = Array.isArray(data) ? data[0] : data;
         if (!intent) throw new Error("결제 대기 정보를 만들지 못했습니다.");
-        window.motfStartPreparedPayment?.(intent, draft);
+        window.motfStartPreparedPayment?.(intent, organizationId ? { ...draft, organization_id: organizationId, customer_name: window.motfCurrentUserProfile?.full_name, contact_phone: window.motfCurrentUserProfile?.phone, group_name: window.motfGetOrganizationName?.() } : draft);
       } catch (error) {
         console.error(error);
         alert(`결제를 준비하지 못했습니다.\n${error.message || "잠시 후 다시 시도해주세요."}`);
       } finally {
+        window.motfCheckoutPending = false;
         if (submitButton) { submitButton.disabled = false; submitButton.innerHTML = originalHtml; window.refreshIcons?.(); }
       }
       return;
@@ -367,6 +391,7 @@
       const submitButton = event.target.querySelector('[type="submit"]');
       const originalHtml = submitButton?.innerHTML;
       if (submitButton) { submitButton.disabled = true; submitButton.textContent = "결제 금액 확인 중..."; }
+      window.motfCheckoutPending = true;
       try {
         const verified = await window.motfEnsureIdentityVerified?.();
         if (verified === false) throw new Error("로그인과 예약·주문에 필요한 기본정보를 확인해주세요.");
@@ -375,7 +400,9 @@
         if (checkoutAmount > MAX_SINGLE_PAYMENT_AMOUNT) throw new Error(PAYMENT_LIMIT_MESSAGE);
         await ensureCheckoutBenefits("market");
         const requestedPoints = benefitInput("market").points;
-        const { data, error } = await client.rpc("prepare_market_checkout", {
+        const organizationId = window.motfGetOrganizationId?.();
+        const { data, error } = await client.rpc(organizationId ? "prepare_organization_market_checkout" : "prepare_market_checkout", {
+          ...(organizationId ? { target_organization_id: organizationId } : {}),
           target_business_id: draft.business_id,
           customer_name: draft.customer_name,
           contact_phone: draft.contact_phone,
@@ -389,11 +416,12 @@
         if (error) throw error;
         const intent = Array.isArray(data) ? data[0] : data;
         if (!intent) throw new Error("결제 대기 정보를 만들지 못했습니다.");
-        window.motfStartPreparedPayment?.(intent, draft);
+        window.motfStartPreparedPayment?.(intent, organizationId ? { ...draft, organization_id: organizationId, customer_name: window.motfCurrentUserProfile?.full_name, contact_phone: window.motfCurrentUserProfile?.phone, group_name: window.motfGetOrganizationName?.() } : draft);
       } catch (error) {
         console.error(error);
         alert(`결제를 준비하지 못했습니다.\n${error.message || "잠시 후 다시 시도해주세요."}`);
       } finally {
+        window.motfCheckoutPending = false;
         if (submitButton) { submitButton.disabled = false; submitButton.innerHTML = originalHtml; window.refreshIcons?.(); }
       }
     }
@@ -485,6 +513,7 @@
   });
 
   client.auth.onAuthStateChange((event) => {
+    transactionLoadVersion += 1;
     if (event === "SIGNED_IN") window.setTimeout(loadMyTransactions, 0);
     if (event === "SIGNED_OUT") {
       syncPointControls(0);

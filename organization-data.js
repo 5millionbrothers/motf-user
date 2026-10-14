@@ -10,7 +10,7 @@
   if (incoming) sessionStorage.setItem(pendingKey, incoming);
   const style = document.createElement("link");
   style.rel = "stylesheet";
-  style.href = "/organization.css";
+  style.href = "/organization.css?v=20261014-org3";
   document.head.append(style);
   const escape = (value) => String(value || "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const message = (value) => window.toast ? window.toast(value) : window.alert(value);
@@ -18,13 +18,14 @@
   window.motfGetOrganizationId = () => selected || null;
   window.motfCanEditOrganization = (id) => dashboard.organizations.some((o) => o.id === id);
   window.motfGetOrganizationName = () => current()?.name || "";
+  window.motfGetOrganizationWallet = () => ({ account: dashboard.wallet || {}, ledger: dashboard.ledger || [] });
   const modal = document.createElement("dialog");
   modal.className = "organization-dialog";
   modal.innerHTML = '<header><h2>단체 담당자 관리</h2><button type="button" data-org-close aria-label="닫기">닫기</button></header><div data-org-detail></div><form data-org-create><h3>새 단체</h3><label>단체 이름<input name="name" required minlength="2" maxlength="80" autocomplete="off"></label><label>학교 · 소속<input name="affiliation" maxlength="120" autocomplete="organization"></label><button type="submit">단체 만들기</button></form><p data-org-error role="alert"></p>';
   document.body.append(modal);
   function render() {
-    const host = document.getElementById("myMt");
-    if (!host) return;
+    const hosts = ["myMt", "mypage", "myUsage", "bookingForm", "orderForm", "chat"].map((id) => document.getElementById(id)).filter(Boolean);
+    for (const host of hosts) {
     let bar = host.querySelector(".organization-scope");
     if (!bar) {
       bar = document.createElement("div");
@@ -32,9 +33,11 @@
       host.prepend(bar);
     }
     bar.hidden = !user;
-    bar.innerHTML = '<label>MT 소속<select data-org-scope><option value="">개인</option>' +
+    bar.innerHTML = '<label>' + (host.id === "myMt" ? "MT 소속" : host.id === "chat" ? "채팅 소속" : "예약 · 포인트 소속") + '<select data-org-scope><option value="">개인</option>' +
       dashboard.organizations.map((o) => '<option value="' + escape(o.id) + '"' + (o.id === selected ? " selected" : "") + '>' + escape(o.name) + '</option>').join("") +
       '</select></label><button type="button" data-org-open>단체 관리</button>';
+    }
+    document.querySelectorAll("[data-point-wallet]").forEach((node) => { node.title = (current()?.name || "개인") + " 포인트"; });
     const org = current();
     const detail = modal.querySelector("[data-org-detail]");
     if (!org) { detail.innerHTML = ""; return; }
@@ -95,10 +98,14 @@
   };
   async function changeScope(id) {
     if (!user) return;
+    if (window.motfCheckoutPending) { render(); throw new Error("결제 준비가 끝난 뒤 소속을 변경해주세요."); }
+    if (window.motfChatPending) { render(); throw new Error("메시지 전송이 끝난 뒤 소속을 변경해주세요."); }
     sessionStorage.setItem("motf.organizationScope." + user.id, id || "");
     await window.motfReloadOrganization();
+    window.dispatchEvent(new CustomEvent("motf:organization-changed"));
     window.motfResetMtDirectory?.();
     await window.motfReloadMtProjects?.();
+    await window.motfReloadTransactions?.();
   }
   window.motfSetOrganizationScope = changeScope;
   document.addEventListener("change", (event) => {

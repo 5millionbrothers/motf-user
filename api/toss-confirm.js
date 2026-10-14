@@ -31,10 +31,13 @@ module.exports = async function handler(req, res) {
     }
 
     const intents = await supabaseRequest(
-      `/rest/v1/payment_intents?select=id,order_id,customer_id,kind,amount,original_amount,status,provider&order_id=eq.${encodeURIComponent(orderId)}&limit=1`,
+      `/rest/v1/payment_intents?select=id,order_id,customer_id,organization_id,kind,amount,original_amount,status,provider&order_id=eq.${encodeURIComponent(orderId)}&limit=1`,
     );
     const intent = intents?.[0];
     if (!intent || intent.customer_id !== user.id) return json(res, 404, { ok: false, message: "결제 준비 내역을 찾을 수 없습니다." });
+    if (intent.organization_id && await supabaseRequest("/rest/v1/rpc/is_organization_member", {
+      method: "POST", body: JSON.stringify({ target_id: intent.organization_id, target_user: user.id }),
+    }) !== true) return json(res, 403, { ok: false, message: "단체 결제 권한이 해제되었습니다." });
     if (Number(intent.amount) > MAX_SINGLE_PAYMENT_AMOUNT || Number(intent.original_amount || intent.amount) > MAX_SINGLE_PAYMENT_AMOUNT) {
       return json(res, 422, { ok: false, code: "PAYMENT_AMOUNT_LIMIT_EXCEEDED", message: PAYMENT_LIMIT_MESSAGE });
     }

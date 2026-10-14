@@ -1162,7 +1162,7 @@
   };
   window.motfOrganizationReady = new Promise((resolve) => {
     const script = document.createElement("script");
-    script.src = "/organization-data.js?v=20261014-org1";
+    script.src = "/organization-data.js?v=20261014-org3";
     script.onload = () => resolve(window.motfReloadOrganization?.());
     script.onerror = () => resolve();
     document.head.append(script);

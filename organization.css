@@ -1,4 +1,4 @@
-.organization-scope { display: flex; align-items: end; gap: 12px; margin: 0 0 20px; flex-wrap: wrap; }
+.organization-scope { display: flex; align-items: end; gap: 12px; margin: 0 0 20px; flex-wrap: wrap; grid-column: 1 / -1; }
 .organization-scope[hidden] { display: none; }
 .organization-scope label { display: grid; gap: 6px; font-size: 12px; color: #555; }
 .organization-scope select { min-width: 180px; max-width: 100%; }
@@ -19,3 +19,5 @@
 .organization-dialog form { border-top: 1px solid #ddd; margin-top: 20px; padding-top: 8px; }
 .organization-dialog [data-org-error] { color: #a32a2a; overflow-wrap: anywhere; }
 .organization-dialog button:disabled { opacity: .5; cursor: wait; }
+.bubble .chat-message-meta { display: block; margin-bottom: 5px; font-size: 11px; font-weight: 400; opacity: .7; overflow-wrap: anywhere; }
+#chat > .organization-scope { margin-bottom: 12px; }

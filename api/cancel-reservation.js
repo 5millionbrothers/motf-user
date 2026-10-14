@@ -40,10 +40,16 @@ module.exports = async function handler(req, res) {
     if (!reservationId) return json(res, 400, { ok: false, message: "예약 ID가 필요합니다." });
 
     const reservations = await supabaseRequest(
-      `/rest/v1/reservations?select=id,customer_id,status,event_date,check_in_date,total_amount,original_amount,businesses(refund_policy)&id=eq.${encodeURIComponent(reservationId)}&customer_id=eq.${encodeURIComponent(user.id)}&limit=1`,
+      `/rest/v1/reservations?select=id,customer_id,organization_id,status,event_date,check_in_date,total_amount,original_amount,businesses(refund_policy)&id=eq.${encodeURIComponent(reservationId)}&limit=1`,
     );
     const reservation = reservations?.[0];
     if (!reservation) return json(res, 404, { ok: false, message: "예약을 찾을 수 없습니다." });
+    const permitted = reservation.organization_id
+      ? await supabaseRequest("/rest/v1/rpc/is_organization_member", {
+        method: "POST", body: JSON.stringify({ target_id: reservation.organization_id, target_user: user.id }),
+      })
+      : reservation.customer_id === user.id;
+    if (permitted !== true) return json(res, 404, { ok: false, message: "예약을 찾을 수 없습니다." });
     if (!["pending", "confirmed"].includes(reservation.status)) return json(res, 409, { ok: false, message: "현재 상태에서는 취소할 수 없습니다." });
 
     const intents = await supabaseRequest(

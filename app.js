@@ -596,6 +596,7 @@ window.motfStartPreparedPayment = function startPreparedPayment(intent, draft) {
     couponDiscount,
     orderId: intent.order_id,
     userId: window.motfCurrentUserId || "",
+    organizationId: draft.organization_id || null,
     customerName: draft.customer_name || window.motfCurrentUserProfile?.full_name || "이용자",
     customerPhone: draft.contact_phone || window.motfCurrentUserProfile?.phone || "",
     customerEmail: window.motfCurrentUserEmail || "",
@@ -608,6 +609,7 @@ window.motfStartPreparedPayment = function startPreparedPayment(intent, draft) {
     people: isStay ? draft.guest_count : isExtraCharge ? draft.guest_count : undefined,
     pickupTime: isStay || isExtraCharge ? undefined : draft.pickup_time,
     lines: [
+      ...(draft.organization_id ? [["예약 소속", draft.group_name || "단체"]] : []),
       ...(isStay ? [["숙박일", `${draft.event_date} ~ ${draft.check_out_date}`]] : []),
       ...(isExtraCharge ? [["연결 예약", draft.offering_name || "숙소 예약"], ["추가 이용 항목", draft.items_label || "추가 이용금"]] : []),
       [isStay ? "객실 기본금" : isExtraCharge ? "추가 이용금" : "상품 금액", originalAmount],
@@ -2214,8 +2216,10 @@ function bookingNightCount() {
 }
 
 function checkoutPreviewContextKey(kind) {
+  const scope = window.motfGetOrganizationId?.() || "personal";
   if (kind === "stay") {
     return [
+      scope,
       state.selectedStay?.id || "",
       state.selectedRoom?.id || "",
       qs("#stayCheckInDate")?.value || "",
@@ -2223,7 +2227,7 @@ function checkoutPreviewContextKey(kind) {
       Math.max(1, Number(qs("#bookingPeople")?.value || selectedStayPeople())),
     ].join("|");
   }
-  return state.cart
+  return scope + "|" + state.cart
     .map((item) => `${item.productId}:${Math.max(1, Number(item.qty || 1))}`)
     .sort()
     .join("|");
@@ -3744,6 +3748,7 @@ function renderChat() {
       (message) => `
       <div class="message-row ${message.from}">
         <div class="bubble ${message.from}">
+          ${message.senderName || message.createdAt ? `<small class="chat-message-meta">${message.senderName ? escapeHtml(message.senderName) + " · " : ""}${message.createdAt ? escapeHtml(new Date(message.createdAt).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false })) : ""}</small>` : ""}
           ${message.text ? `<span>${escapeHtml(message.text)}</span>` : ""}
           ${message.attachments?.length ? `<div class="attachment-list">${message.attachments.map((name) => `<span class="attachment-chip"><i data-lucide="paperclip"></i>${escapeHtml(name)}</span>`).join("")}</div>` : ""}
         </div>
