@@ -3002,6 +3002,11 @@ function renderMtDirectory() {
   }).join("") : `<div class="mt-directory-empty"><i data-lucide="folder-plus"></i><h2>${state.mtDirectoryFilter === "invited" ? "초대받은 MT가 없습니다" : state.mtDirectoryFilter === "completed" ? "종료된 MT가 없습니다" : "아직 만든 MT가 없습니다"}</h2><p>${state.mtDirectoryFilter === "mine" ? "새 MT를 만들고 숙소와 장보기 후보를 모아보세요." : "해당하는 여행이 생기면 이곳에 구분해 보여드려요."}</p>${state.mtDirectoryFilter === "mine" ? '<button class="primary-btn" type="button" data-create-mt-project><i data-lucide="plus"></i>첫 MT 만들기</button>' : ""}</div>`;
 }
 
+window.motfResetMtDirectory = function () {
+  state.mtProjectMode = "list";
+  renderMyMt();
+};
+
 function renderMtProjectSummary() {
   const project = state.mtProject;
   const readOnly = project.is_owner === false;
@@ -3011,6 +3016,7 @@ function renderMtProjectSummary() {
   const completeButton = qs("[data-complete-mt-project]");
   if (completeButton) completeButton.hidden = project.status === "completed" || readOnly;
   qsa("[data-edit-mt-project], [data-invite-mt-companion], [data-add-mt-itinerary], [data-add-mt-notice]").forEach((button) => { button.hidden = readOnly; });
+  qsa("[data-invite-mt-companion]").forEach((button) => { button.hidden = readOnly || Boolean(project.organization_id); });
   const readOnlyBadge = qs("#mtReadonlyBadge");
   if (readOnlyBadge) readOnlyBadge.hidden = !readOnly;
   const meta = qs("#myMt .mt-project-meta");

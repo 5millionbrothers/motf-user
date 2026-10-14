@@ -1148,4 +1148,23 @@
       setMessage("이 기능은 로그인 후 이용할 수 있어요.");
     }
   })();
+  window.motfVerifyIdentityForTransfer = async function () {
+    if (!requireLogin()) return false;
+    const identity = await startIdentityVerification("profile_upgrade");
+    const { data } = await client.auth.getSession();
+    await apiJson("/api/identity-attach", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${data.session?.access_token || ""}` },
+      body: JSON.stringify({ identityToken: identity.token }),
+    });
+    await refreshAuthUi();
+    return true;
+  };
+  window.motfOrganizationReady = new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = "/organization-data.js?v=20261014-org1";
+    script.onload = () => resolve(window.motfReloadOrganization?.());
+    script.onerror = () => resolve();
+    document.head.append(script);
+  });
 })();

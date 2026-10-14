@@ -1,0 +1,21 @@
+.organization-scope { display: flex; align-items: end; gap: 12px; margin: 0 0 20px; flex-wrap: wrap; }
+.organization-scope[hidden] { display: none; }
+.organization-scope label { display: grid; gap: 6px; font-size: 12px; color: #555; }
+.organization-scope select { min-width: 180px; max-width: 100%; }
+.organization-scope button, .organization-dialog button { min-height: 36px; padding: 7px 12px; border: 1px solid #ddd; border-radius: 6px; background: white; font: inherit; cursor: pointer; }
+.organization-dialog { width: min(620px, calc(100vw - 32px)); max-height: calc(100dvh - 40px); padding: 24px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 8px; color: #222; font: 14px SUIT, sans-serif; }
+.organization-dialog::backdrop { background: rgb(0 0 0 / 30%); }
+.organization-dialog header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.organization-dialog h2 { font-size: 20px; font-weight: 600; margin: 0; }
+.organization-dialog h3 { font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
+.organization-dialog label { display: grid; gap: 6px; margin: 12px 0; }
+.organization-dialog input { width: 100%; box-sizing: border-box; min-height: 40px; border: 1px solid #ddd; padding: 8px; border-radius: 4px; font: inherit; }
+.organization-members { list-style: none; padding: 0; margin: 16px 0; }
+.organization-members li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 0; border-bottom: 1px solid #eee; }
+.organization-members strong { font-weight: 500; overflow-wrap: anywhere; }
+.organization-members span { margin-left: 10px; font-size: 12px; color: #777; }
+.organization-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.organization-transfer { padding: 12px 0; border-top: 1px solid #ddd; }
+.organization-dialog form { border-top: 1px solid #ddd; margin-top: 20px; padding-top: 8px; }
+.organization-dialog [data-org-error] { color: #a32a2a; overflow-wrap: anywhere; }
+.organization-dialog button:disabled { opacity: .5; cursor: wait; }

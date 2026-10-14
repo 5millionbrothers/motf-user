@@ -4,7 +4,12 @@
 
   let currentProject = null;
   let currentUser = null;
-  const projectFields = "id, owner_id, title, organization_name, region, starts_on, ends_on, guest_count, status, final_business_id, final_reservation_id, estimated_budget, created_at, updated_at";
+  let loadVersion = 0;
+  let loadedScope = "";
+  const canEdit = (project) => project.organization_id
+    ? window.motfGetOrganizationId?.() === project.organization_id && window.motfCanEditOrganization?.(project.organization_id) === true
+    : !window.motfGetOrganizationId?.() && project.owner_id === currentUser?.id;
+  const projectFields = "id, owner_id, organization_id, title, organization_name, region, starts_on, ends_on, guest_count, status, final_business_id, final_reservation_id, estimated_budget, created_at, updated_at";
   const itemFields = "id, project_id, item_kind, reference_id, title, quantity, amount, status, note, created_at, updated_at";
   const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -55,16 +60,24 @@
   }
 
   async function loadProjects() {
+    const version = ++loadVersion;
+    await window.motfOrganizationReady;
+    const scope = window.motfGetOrganizationId?.() || null;
     const { data: sessionData } = await client.auth.getSession();
     currentUser = sessionData.session?.user || null;
-    currentProject = null;
+    const context = (currentUser?.id || "") + ":" + (scope || "");
+    if (loadedScope !== context) {
+      currentProject = null;
+      loadedScope = context;
+      window.motfResetMtDirectory?.();
+    }
     if (!currentUser) {
       window.motfApplyMtProjects?.([]);
       return [];
     }
-    const { data: projects, error } = await client.from("mt_projects")
-      .select(projectFields)
-      .order("starts_on", { ascending: false });
+    let query = client.from("mt_projects").select(projectFields);
+    query = scope ? query.eq("organization_id", scope) : query.is("organization_id", null);
+    const { data: projects, error } = await query.order("starts_on", { ascending: false });
     if (error) throw error;
     const projectIds = (projects || []).map((project) => project.id);
     let items = [];
@@ -76,7 +89,8 @@
       if (itemError) throw itemError;
       items = data || [];
     }
-    const hydrated = (projects || []).map((project) => ({ ...project, is_owner: project.owner_id === currentUser.id, items: items.filter((item) => item.project_id === project.id) }));
+    if (version !== loadVersion || scope !== (window.motfGetOrganizationId?.() || null)) return [];
+    const hydrated = (projects || []).map((project) => ({ ...project, is_owner: canEdit(project), items: items.filter((item) => item.project_id === project.id) }));
     window.motfApplyMtProjects?.(hydrated);
     return hydrated;
   }
@@ -89,7 +103,8 @@
       .single();
     if (error) throw error;
     const [children, candidates] = await Promise.all([projectChildren(project.id), candidateDetails(project.id)]);
-    currentProject = { ...project, ...children, is_owner: project.owner_id === currentUser.id };
+    if ((project.organization_id || null) !== (window.motfGetOrganizationId?.() || null)) throw new Error("MT 소속을 먼저 선택해주세요.");
+    currentProject = { ...project, ...children, is_owner: canEdit(project) };
     window.motfApplyMtProject(currentProject, candidates);
     return currentProject;
   };
@@ -97,7 +112,7 @@
   window.motfCreateMtProject = async function createMtProject(payload) {
     const user = requireUser();
     const { data, error } = await client.from("mt_projects")
-      .insert({ ...payload, owner_id: user.id, status: "planning" })
+      .insert({ ...payload, owner_id: user.id, organization_id: window.motfGetOrganizationId?.() || null, status: "planning" })
       .select(projectFields)
       .single();
     if (error) throw error;
@@ -111,12 +126,13 @@
   function ensureProject() {
     requireUser();
     if (!currentProject) throw new Error("내 MT에서 여행을 먼저 선택하거나 새로 만들어주세요.");
-    if (currentProject.owner_id !== currentUser.id) throw new Error("초대받은 MT는 보기만 할 수 있습니다.");
+    if (!canEdit(currentProject)) throw new Error("초대받은 MT는 보기만 할 수 있습니다.");
     return currentProject;
   }
 
   window.motfCreateMtInvite = async function createMtInvite() {
     const project = ensureProject();
+    if (project.organization_id) throw new Error("단체 관리에서 담당자를 초대해주세요.");
     const { data, error } = await client.rpc("create_mt_project_invite", { target_project_id: project.id, valid_days: 7 });
     if (error) throw error;
     return data;
@@ -135,7 +151,6 @@
     const { data, error } = await client.from("mt_projects")
       .update(payload)
       .eq("id", project.id)
-      .eq("owner_id", currentUser.id)
       .select(projectFields)
       .single();
     if (error) throw error;
@@ -164,7 +179,6 @@
     const { data: project, error: projectError } = await client.from("mt_projects")
       .select(projectFields)
       .eq("id", projectId)
-      .eq("owner_id", user.id)
       .single();
     if (projectError) throw projectError;
     const { data: blocks, error: blockError } = await client.rpc("get_public_stay_calendar", {
@@ -182,7 +196,7 @@
   window.motfSaveCandidateToProject = async function saveCandidateToProject(projectId, businessId, offeringId) {
     const user = requireUser();
     const project = (await loadProjects()).find((item) => String(item.id) === String(projectId));
-    if (!project || project.owner_id !== user.id) throw new Error("선택한 내 MT를 찾을 수 없습니다.");
+    if (!project || !canEdit(project)) throw new Error("선택한 내 MT를 찾을 수 없습니다.");
     const { error } = await client.rpc("save_mt_room_candidate", {
       target_project_id: projectId,
       target_business_id: businessId,
@@ -223,7 +237,6 @@
     const { data, error } = await client.from("mt_projects")
       .update({ status: "completed" })
       .eq("id", project.id)
-      .eq("owner_id", currentUser.id)
       .select(projectFields)
       .single();
     if (error) throw error;
@@ -284,12 +297,15 @@
     return data;
   };
 
+  window.motfReloadMtProjects = loadProjects;
+
   async function initializeProjects() {
     await loadProjects();
     const params = new URLSearchParams(location.search);
     const inviteCode = params.get("invite") || window.sessionStorage.getItem("motf.pendingMtInvite");
     if (!inviteCode || !currentUser) return;
     try {
+      await window.motfSetOrganizationScope?.(null);
       const projectId = await window.motfAcceptMtInvite(inviteCode);
       window.sessionStorage.removeItem("motf.pendingMtInvite");
       params.delete("invite");
