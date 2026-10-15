@@ -75,3 +75,18 @@ NAVER_MAP_KEY_ID=네이버 지도 API Key ID
 ## 로컬 확인
 
 정적 화면은 간단한 HTTP 서버로 볼 수 있지만, Vercel Functions까지 확인하려면 Vercel CLI 개발 서버가 필요합니다. 본인확인과 실제 결제는 등록 도메인 및 운영/테스트 키 설정이 완료된 환경에서 검증합니다.
+
+## 모바일 시안 확인
+
+- `mobile-shell.css`: 760px 이하에서만 적용되는 모바일 탐색·안전 영역·터치 영역 스타일
+- `mobile-shell.js`: 상단 현재 화면명, 홈 둘러보기 메뉴, 하단 5개 탭
+- `docs/mobile-refactor-notes.md`: 이번 변경 범위와 다음 리팩터링 순서
+- `tools/sync-route-pages.sh`: 루트 `index.html`을 동일한 경로별 복사본에 동기화
+
+루트 `index.html`의 공통 마크업이나 스크립트 참조를 수정한 뒤에는 아래 명령으로 경로별 복사본을 맞춥니다.
+
+```sh
+./tools/sync-route-pages.sh
+```
+
+새 모바일 탐색은 PC 화면을 바꾸지 않으며, 화면 폭 760px 이하에서만 표시됩니다.

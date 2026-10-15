@@ -1,0 +1,269 @@
+/*
+ * moTF mobile navigation shell
+ *
+ * This file is intentionally isolated from the legacy layout styles so the
+ * mobile navigation can be tested, revised, or removed without changing the
+ * desktop experience.
+ */
+
+.mobile-header-context,
+.mobile-header-action,
+.mobile-discovery-strip,
+.mobile-bottom-nav,
+.mobile-nav-scrim {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  :root {
+    --mobile-shell-height: 68px;
+  }
+
+  html {
+    scroll-padding-top: calc(62px + env(safe-area-inset-top));
+  }
+
+  body {
+    padding-bottom: calc(var(--mobile-shell-height) + env(safe-area-inset-bottom));
+  }
+
+  .app-header {
+    min-height: calc(56px + env(safe-area-inset-top));
+    padding: calc(6px + env(safe-area-inset-top)) 14px 6px;
+    gap: 10px;
+  }
+
+  .header-left {
+    flex: 0 0 auto;
+    min-width: 38px;
+  }
+
+  .brand,
+  .brand-symbol {
+    width: 36px;
+    height: 38px;
+  }
+
+  .top-nav {
+    display: none;
+  }
+
+  .mobile-header-context {
+    display: grid;
+    flex: 1;
+    min-width: 0;
+    gap: 1px;
+  }
+
+  .mobile-header-context small {
+    overflow: hidden;
+    color: #8a8e87;
+    font-size: 10px;
+    font-weight: 650;
+    letter-spacing: .04em;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-header-context strong {
+    overflow: hidden;
+    color: var(--ink);
+    font-size: 15px;
+    font-weight: 720;
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-header-action {
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    color: var(--ink);
+    background: transparent;
+    border: 0;
+    border-radius: 50%;
+  }
+
+  .mobile-header-action:active {
+    background: var(--warm);
+  }
+
+  .mobile-header-action svg {
+    width: 21px;
+    height: 21px;
+  }
+
+  .mobile-discovery-strip {
+    display: flex;
+    gap: 8px;
+    width: calc(100% + 32px);
+    margin: -2px -16px 20px;
+    padding: 10px 16px 4px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .mobile-discovery-strip::-webkit-scrollbar {
+    display: none;
+  }
+
+  body:not([data-current-route="home"]) .mobile-discovery-strip {
+    display: none;
+  }
+
+  .mobile-discovery-strip button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    flex: 0 0 auto;
+    min-height: 42px;
+    padding: 0 15px;
+    color: #4f564b;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 720;
+    white-space: nowrap;
+  }
+
+  .mobile-discovery-strip button:first-child {
+    color: #fff;
+    background: var(--olive);
+    border-color: var(--olive);
+  }
+
+  .mobile-discovery-strip svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .mobile-bottom-nav {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 60;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    min-height: calc(var(--mobile-shell-height) + env(safe-area-inset-bottom));
+    padding: 5px 6px calc(5px + env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, .96);
+    border-top: 1px solid rgba(207, 210, 203, .9);
+    box-shadow: 0 -8px 26px rgba(34, 41, 31, .07);
+    backdrop-filter: blur(18px);
+  }
+
+  .mobile-bottom-nav button {
+    position: relative;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 3px;
+    min-width: 0;
+    min-height: 54px;
+    padding: 3px 1px;
+    color: #82877f;
+    background: transparent;
+    border: 0;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 660;
+    line-height: 1;
+  }
+
+  .mobile-bottom-nav button::before {
+    position: absolute;
+    top: 0;
+    width: 24px;
+    height: 3px;
+    background: transparent;
+    border-radius: 0 0 4px 4px;
+    content: "";
+  }
+
+  .mobile-bottom-nav button svg {
+    width: 21px;
+    height: 21px;
+  }
+
+  .mobile-bottom-nav button.active {
+    color: var(--olive);
+  }
+
+  .mobile-bottom-nav button.active::before {
+    background: var(--olive);
+  }
+
+  .mobile-bottom-nav .mobile-nav-primary span:first-child {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 29px;
+    color: #fff;
+    background: var(--olive);
+    border-radius: 12px;
+  }
+
+  .mobile-bottom-nav .mobile-nav-primary.active span:first-child {
+    background: var(--teal-dark, #34452f);
+  }
+
+  .mobile-bottom-nav .mobile-nav-primary svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .community-floating-write {
+    bottom: calc(var(--mobile-shell-height) + env(safe-area-inset-bottom) + 14px);
+  }
+
+  .photo-gallery-dialog,
+  .motf-dialog {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .home-search-button,
+  .primary-btn,
+  .secondary-btn,
+  .ghost-btn,
+  .text-link,
+  .icon-action,
+  .product-option-button {
+    min-height: 44px;
+  }
+
+  .product-card-actions .icon-action,
+  .stay-card-action-buttons .icon-action {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (max-width: 390px) {
+  .mobile-bottom-nav button {
+    font-size: 9px;
+  }
+
+  .mobile-discovery-strip {
+    gap: 6px;
+  }
+
+  .mobile-discovery-strip button {
+    padding-inline: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-bottom-nav,
+  .mobile-discovery-strip {
+    scroll-behavior: auto;
+  }
+}
