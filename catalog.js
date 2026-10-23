@@ -208,10 +208,33 @@
 
     const businesses = businessResult.data || [];
     const offerings = offeringResult.data || [];
-    const stays = rankCatalog(businesses
+    // PC uses equal random exposure unless an active campaign applies.
+    let exposureCampaigns = [];
+    if (window.innerWidth >= 1024) {
+      const result = await client.from("stay_exposure_campaigns").select("business_id,mode,scope,weight,priority,starts_at,ends_at,enabled");
+      if (result.error) console.warn("기간별 숙소 노출 설정을 불러오지 못했습니다.", result.error.message);
+      else exposureCampaigns = result.data || [];
+    }
+    const randomScores = new Map();
+    window.motfRankStayExposure = function(items, surface) {
+      if (window.innerWidth < 1024) return items;
+      const now = Date.now();
+      const campaignFor = (id) => exposureCampaigns.find(c => c.business_id === id && c.enabled && c.mode !== 'random'
+        && (c.scope === 'both' || c.scope === surface) && new Date(c.starts_at).getTime() <= now && new Date(c.ends_at).getTime() > now);
+      const scored = items.map(item => {
+        const campaign = campaignFor(item.id);
+        const key = `${surface}:${item.id}`;
+        if (!randomScores.has(key)) randomScores.set(key, Math.max(Number.EPSILON, Math.random()));
+        return { item, fixed: campaign?.mode === 'fixed', priority: Number(campaign?.priority || 1),
+          score: -Math.log(randomScores.get(key)) / (campaign?.mode === 'weighted' ? Number(campaign.weight) : 1) };
+      });
+      return scored.sort((a,b) => Number(b.fixed)-Number(a.fixed) || (a.fixed && b.fixed ? a.priority-b.priority : 0) || a.score-b.score).map(x=>x.item);
+    };
+    const stayItems = businesses
       .filter((business) => business.business_type === "stay")
       .map((business) => buildStay(business, offerings.filter((item) => item.business_id === business.id)))
-      .filter((business) => business.rooms.length));
+      .filter((business) => business.rooms.length);
+    const stays = window.innerWidth >= 1024 ? window.motfRankStayExposure(stayItems, 'list') : rankCatalog(stayItems);
     const stores = rankCatalog(businesses
       .filter((business) => business.business_type === "market")
       .map((business) => buildStore(business, offerings.filter((item) => item.business_id === business.id))));

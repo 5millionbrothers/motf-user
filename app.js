@@ -1316,7 +1316,8 @@ function renderHomePicks() {
     refreshIcons();
     return;
   }
-  container.innerHTML = stays.map((stay) => {
+  const homeStays = window.motfRankStayExposure ? window.motfRankStayExposure(stays, "home") : stays;
+  container.innerHTML = homeStays.map((stay) => {
     const estimate = estimateMtStayCost(stay);
     const highlights = (stay.highlights?.length ? stay.highlights : stay.amenities || []).slice(0, 3);
     const reviewSummary = stayReviewSummary(stay);

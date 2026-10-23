@@ -5,12 +5,28 @@
   let selected = "";
   let dashboard = { organizations: [], members: [], invites: [], transfers: [] };
   let queue = Promise.resolve();
+  const inviteCache = new Map();
+  const inviteKey = () => `motf.createdOrganizationInvite.${user?.id || ""}.${selected}`;
+  function savedInvite() {
+    if (!user || !selected) return null;
+    let saved = inviteCache.get(inviteKey());
+    try { saved ||= JSON.parse(sessionStorage.getItem(inviteKey()) || "null"); } catch { /* Storage may be unavailable. */ }
+    if (!saved || (saved.expiresAt && new Date(saved.expiresAt) <= new Date())) return null;
+    if (saved.id && !dashboard.invites.some((item) => item.id === saved.id && !item.accepted_by && !item.revoked_at)) return null;
+    return saved;
+  }
+  function renderInvite() {
+    if (window.innerWidth < 1024) return "";
+    const saved = savedInvite();
+    if (!saved) return "";
+    return '<section class="organization-created-invite"><label>담당자 초대 링크<input data-org-invite-url readonly value="' + escape(saved.url) + '"></label><p>아직 참여하지 않은 상태입니다. 링크를 전달하면 한 사람이 수락할 수 있고, 이후 대표 담당자의 승인이 필요합니다.</p><div class="organization-actions"><button type="button" data-org-copy-invite>링크 복사</button><button type="button" data-org-share-invite>공유하기</button></div></section>';
+  }
   const pendingKey = "motf.organizationInvite";
   const incoming = new URLSearchParams(location.search).get("organization_invite");
   if (incoming) sessionStorage.setItem(pendingKey, incoming);
   const style = document.createElement("link");
   style.rel = "stylesheet";
-  style.href = "/organization.css?v=20261014-final82";
+  style.href = "/organization.css?v=20261023-v1";
   document.head.append(style);
   const escape = (value) => String(value || "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const message = (value) => window.toast ? window.toast(value) : window.alert(value);
@@ -44,7 +60,7 @@
     const rep = org.member_role === "representative";
     const button = (action, title, id, key) => '<button type="button" data-org-action="' + action + '" data-org-key="' + (key || "user_id") + '" data-org-id="' + escape(id) + '">' + title + '</button>';
     detail.innerHTML = '<h3>' + escape(org.name) + '</h3>' + (rep ? '<div class="organization-actions">' + button("rename", "이름 변경") + button("invite", "담당자 초대") + '</div>' : '') +
-      '<ul class="organization-members">' + dashboard.members.filter((m) => m.status === "active" || m.status === "pending").map((m) =>
+      (rep ? renderInvite() : '') + '<ul class="organization-members">' + dashboard.members.filter((m) => m.status === "active" || m.status === "pending").map((m) =>
         '<li><div><strong>' + escape(m.name || "담당자") + '</strong><span>' + (m.status === "pending" ? "승인 대기" : m.role === "representative" ? "대표" : "담당자") + '</span></div><div class="organization-actions">' +
         (rep && m.status === "pending" ? button("approve", "승인", m.user_id) + button("reject", "반려", m.user_id) : '') +
         (rep && m.status === "active" && m.role !== "representative" ? button("handoff_request", "대표 인계", m.user_id) + button("remove", "권한 해제", m.user_id) : '') + '</div></li>').join("") + '</ul>' +
@@ -116,6 +132,16 @@
     if (event.target.matches("[data-org-scope]")) changeScope(event.target.value).catch((e) => message(e.message));
   });
   document.addEventListener("click", async (event) => {
+    if (event.target.closest("[data-org-copy-invite], [data-org-share-invite]")) {
+      const input = modal.querySelector("[data-org-invite-url]");
+      if (!input) return;
+      try {
+        if (event.target.closest("[data-org-share-invite]") && navigator.share) await navigator.share({ title: current()?.name + " 담당자 초대", url: input.value });
+        else if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(input.value); message("초대 링크를 복사했습니다."); }
+        else { input.focus(); input.select(); message("선택된 링크를 복사해주세요."); }
+      } catch (error) { if (error.name !== "AbortError") { input.focus(); input.select(); message("선택된 링크를 복사해주세요."); } }
+      return;
+    }
     if (event.target.closest("[data-org-open]")) { render(); modal.showModal(); return; }
     if (event.target.closest("[data-org-close]")) { modal.close(); return; }
     const button = event.target.closest("[data-org-action]");
@@ -146,20 +172,28 @@
         if (!window.confirm("대표 권한을 후임에게 넘길까요?")) return;
         payload.remove_previous = window.confirm("인계 후 내 단체 접근 권한도 해제할까요?");
       }
+      const previousInviteIds = new Set(dashboard.invites.map((item) => item.id));
       const result = await rpc(action, payload);
       await changeScope(action === "close" ? "" : selected);
       if (action === "close") message("단체가 폐쇄되었습니다. 거래 기록은 보존됩니다.");
       if (action === "invite") {
         const link = new URL("/my-mt", location.origin);
         link.searchParams.set("organization_invite", result.token);
-        const row = document.createElement("label");
-        row.textContent = "초대 링크 (한 사람만 수락 가능)";
-        const input = document.createElement("input");
-        input.readOnly = true;
-        input.value = link.href;
-        row.append(input);
-        modal.querySelector("[data-org-detail]").append(row);
-        input.focus(); input.select();
+        if (window.innerWidth < 1024) {
+          const row = document.createElement("label");
+          row.textContent = "초대 링크 (한 사람만 수락 가능)";
+          const input = document.createElement("input");
+          input.readOnly = true; input.value = link.href; row.append(input);
+          modal.querySelector("[data-org-detail]").append(row);
+          input.focus(); input.select();
+          return;
+        }
+        const invite = dashboard.invites.find((item) => !previousInviteIds.has(item.id) && !item.accepted_by);
+        const saved = { url: link.href, id: invite?.id || result.invite_id, expiresAt: invite?.expires_at || result.expires_at };
+        inviteCache.set(inviteKey(), saved);
+        try { sessionStorage.setItem(inviteKey(), JSON.stringify(saved)); } catch { /* Keep the link in memory. */ }
+        render();
+        modal.querySelector("[data-org-invite-url]")?.select();
       }
     } catch (error) { modal.querySelector("[data-org-error]").textContent = error.message || "단체 작업에 실패했습니다."; }
     finally { button.disabled = false; }
