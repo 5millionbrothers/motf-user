@@ -2671,7 +2671,7 @@ function renderCart() {
               <div>
                 <span class="cart-store-name">${found.store.name}</span>
                 <h3>${found.product.name}</h3>
-                <p>${found.product.unit} · ${money(found.product.price)}</p>
+                <p>${escapeHtml(found.product.variantLabel || found.product.unit)} · ${money(found.product.price)}</p>
               </div>
               <div>
                 <div class="quantity-control">
