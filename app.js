@@ -2303,6 +2303,12 @@ function renderBooking() {
   });
 }
 
+function marketProductCategories(products) {
+  const preferred = ["MT 세트", "정육", "채소·농산물", "즉석밥", "라면", "과자·안주", "음료", "주류", "김치·반찬", "통조림·가공식품", "조미료·소스", "숙취해소", "일회용품", "생활용품", "식재료", "주류/음료", "냉동식품", "기타"];
+  const available = [...new Set(products.map(product => product.category || "기타"))];
+  return ["전체", ...preferred.filter(category => available.includes(category)), ...available.filter(category => !preferred.includes(category))];
+}
+
 function renderStores() {
   const intro = qs("#marketIntro");
   const productSection = qs("#marketProducts");
@@ -2318,7 +2324,7 @@ function renderStores() {
   const store = stores.find((item) => item.id === state.selectedStore?.id) || stores[0];
   state.selectedStore = store;
   ensureMarketBundleProducts(store);
-  const categories = ["전체", "MT 세트", "식재료", "주류/음료", "일회용품", "냉동식품", "기타"];
+  const categories = marketProductCategories(store.products);
   if (!categories.includes(state.activeCategory)) state.activeCategory = "전체";
   const products = state.activeCategory === "전체"
     ? store.products
@@ -2354,7 +2360,7 @@ function renderStores() {
       <span>${productCatalogCountLabel(products)}</span>
     </div>
     <div class="category-tabs">
-      ${categories.map((cat) => `<button class="category-tab ${cat === state.activeCategory ? "active" : ""}" data-category="${cat}">${cat}</button>`).join("")}
+      ${categories.map((cat) => `<button class="category-tab ${cat === state.activeCategory ? "active" : ""}" data-category="${escapeHtml(cat)}">${escapeHtml(cat)}</button>`).join("")}
     </div>
     <div class="product-grid">
       ${productGroups.length ? productGroups.map(productCard).join("") : `<div class="empty-state catalog-error"><strong>${state.activeCategory === "전체" ? "등록된 상품이 아직 없습니다." : "이 분류에 등록된 상품이 없습니다."}</strong><span>마트 사장님이 상품을 공개하면 바로 주문할 수 있습니다.</span></div>`}
@@ -2399,7 +2405,8 @@ function renderStoreDetail() {
     return;
   }
   ensureMarketBundleProducts(store);
-  const categories = ["전체", "MT 세트", "식재료", "주류/음료", "일회용품", "냉동식품", "기타"];
+  const categories = marketProductCategories(store.products);
+  if (!categories.includes(state.activeCategory)) state.activeCategory = "전체";
   const products = state.activeCategory === "전체"
     ? store.products
     : store.products.filter((product) => product.category === state.activeCategory);
@@ -2423,7 +2430,7 @@ function renderStoreDetail() {
       </div>
     </div>
     <div class="category-tabs">
-      ${categories.map((cat) => `<button class="category-tab ${cat === state.activeCategory ? "active" : ""}" data-category="${cat}">${cat}</button>`).join("")}
+      ${categories.map((cat) => `<button class="category-tab ${cat === state.activeCategory ? "active" : ""}" data-category="${escapeHtml(cat)}">${escapeHtml(cat)}</button>`).join("")}
     </div>
     <div class="product-grid">
       ${productGroups.length ? productGroups.map(productCard).join("") : `<div class="empty-state catalog-error"><strong>등록된 상품이 아직 없습니다.</strong><span>상품이 공개되면 바로 주문할 수 있습니다.</span></div>`}
@@ -2471,7 +2478,8 @@ function productPriceLabel(product) {
   const prices = variants.map((item) => Number(item.price) || 0);
   const minimum = Math.min(...prices);
   const maximum = Math.max(...prices);
-  return minimum === maximum ? money(minimum) : `${money(minimum)}부터`;
+  const prefix = productOrderRules(product).unit === "개" ? "" : `${product.unit}당 `;
+  return prefix + (minimum === maximum ? money(minimum) : `${money(minimum)}부터`);
 }
 
 function productImageClass(product) {
@@ -2506,6 +2514,7 @@ function renderProductOrderTotal() {
 function productCard(product) {
   const variants = productVariants(product);
   const hasVariants = variants.length > 1;
+  const rules = productOrderRules(product);
   const optionSummary = hasVariants
     ? `${variants.length}개 옵션 · ${variants.slice(0, 2).map((item) => item.variantLabel || item.unit).join(" / ")}${variants.length > 2 ? " 외" : ""}`
     : `${product.unit}${product.manufacturer ? ` · ${product.manufacturer}` : ` · ${product.origin}`}`;
@@ -2518,6 +2527,7 @@ function productCard(product) {
         <span class="pill ${product.isBundle ? "success" : ""}">${product.isBundle ? "moTF 전용 패키지" : product.category}</span>
         <h3>${product.name}</h3>
         <p class="product-option-summary">${optionSummary}</p>
+        ${rules.minimum > 1 ? `<p class="product-minimum-summary">최소 ${rules.minimum}${escapeHtml(rules.unit)} 주문</p>` : ""}
         <p class="product-review-summary">후기 없음</p>
         <p class="price">${productPriceLabel(product)}</p>
         <div class="product-card-actions">
