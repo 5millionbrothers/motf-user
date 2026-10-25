@@ -119,7 +119,7 @@
     const products = offerings.map((item) => ({
       id: item.id,
       category: text(item.category || "기타"),
-      name: text(item.name),
+      name: text(item.detail_sections?.productDisplayName || item.name),
       unit: text(item.unit || "1개"),
       price: Number(item.price) || 0,
       origin: text(item.origin || "업체 제공 상품"),
@@ -132,6 +132,7 @@
       detailSections: item.detail_sections && typeof item.detail_sections === "object" ? item.detail_sections : {},
       nutritionInfo: item.nutrition_info && typeof item.nutrition_info === "object" ? item.nutrition_info : {},
       isAlcohol: Boolean(item.is_alcohol),
+      isSourceCalibrated: item.detail_sections?.catalogVersion === "20261026",
       isCutout: Boolean(
         String(item.detail_sections?.importSource || "").startsWith("google-sheet:")
         && String(item.image_url || "").includes("/assets/market/daesung/")

@@ -2475,7 +2475,32 @@ function productPriceLabel(product) {
 }
 
 function productImageClass(product) {
-  return product?.isCutout ? "product-cutout-image" : "";
+  return [product?.isCutout ? "product-cutout-image" : "", product?.isSourceCalibrated ? "product-source-calibrated" : ""].filter(Boolean).join(" ");
+}
+
+function productOrderRules(product) {
+  const details = product?.detailSections || {};
+  const integer = (value, fallback) => Number.isInteger(Number(value)) && Number(value) > 0 ? Math.min(1000, Number(value)) : fallback;
+  return { minimum: integer(details.minimumOrderQuantity, 1), step: integer(details.quantityStep, 1), unit: String(details.quantityUnit || "개") };
+}
+
+function normalizeProductQuantity(product, value) {
+  const { minimum, step } = productOrderRules(product);
+  const requested = Number.isFinite(Number(value)) ? Number(value) : minimum;
+  const maximum = minimum + Math.floor((1000 - minimum) / step) * step;
+  return Math.min(maximum, minimum + Math.ceil(Math.max(0, requested - minimum) / step) * step);
+}
+
+function renderProductOrderTotal() {
+  const product = state.selectedProduct;
+  const input = qs("#productQty");
+  const total = qs("#productSelectionTotal");
+  if (!product || !input || !total) return;
+  const qty = normalizeProductQuantity(product, input.value);
+  const rules = productOrderRules(product);
+  total.textContent = money(Number(product.price) * qty);
+  const label = qs("#productSelectionQuantity");
+  if (label) label.textContent = `${qty.toLocaleString("ko-KR")}${rules.unit}`;
 }
 
 function productCard(product) {
@@ -2520,6 +2545,7 @@ function renderProductDetail() {
   }
   const alcoholProduct = isAlcoholProduct(product);
   const variants = productVariants(product);
+  const orderRules = productOrderRules(product);
   qs("#productDetailContent").innerHTML = `
     <div class="product-detail">
       <img class="${productImageClass(product)}" src="${product.image}" alt="${product.name} 사진" />
@@ -2547,12 +2573,14 @@ function renderProductDetail() {
             </div>
           </fieldset>
         ` : ""}
-        <p class="price">${money(product.price)}</p>
+        <p class="price">${money(product.price)}${orderRules.unit !== "개" ? `<small> / ${escapeHtml(product.unit)}</small>` : ""}</p>
+        ${orderRules.minimum > 1 ? `<p class="product-order-note">최소 ${orderRules.minimum}${escapeHtml(orderRules.unit)}부터 ${orderRules.step}${escapeHtml(orderRules.unit)} 단위로 주문할 수 있어요.</p>` : ""}
         <div class="quantity-control">
-          <button type="button" data-qty-change="-1">-</button>
-          <input id="productQty" value="1" inputmode="numeric" />
-          <button type="button" data-qty-change="1">+</button>
+          <button type="button" data-qty-change="-${orderRules.step}" aria-label="수량 줄이기">-</button>
+          <input id="productQty" type="number" min="${orderRules.minimum}" max="1000" step="${orderRules.step}" value="${orderRules.minimum}" inputmode="numeric" aria-label="주문 수량" />
+          <button type="button" data-qty-change="${orderRules.step}" aria-label="수량 늘리기">+</button>
         </div>
+        <div class="product-order-total" aria-live="polite"><span>선택 금액 <small id="productSelectionQuantity">${orderRules.minimum}${escapeHtml(orderRules.unit)}</small></span><strong id="productSelectionTotal">${money(product.price * orderRules.minimum)}</strong></div>
         <div class="button-row">
           <button class="secondary-btn" data-add-current data-alcohol="${alcoholProduct ? "true" : "false"}"><i data-lucide="shopping-cart"></i>장바구니 담기</button>
           <button class="secondary-btn" data-add-current-to-mt><i data-lucide="folder-plus"></i>내 MT에 담기</button>
@@ -2594,14 +2622,15 @@ function findProduct(productId) {
 function addToCart(productId, qty = 1) {
   const found = findProduct(productId);
   if (!found) return;
+  qty = normalizeProductQuantity(found.product, qty);
   const existing = state.cart.find((item) => item.productId === productId);
   if (existing) {
-    existing.qty += qty;
+    existing.qty = normalizeProductQuantity(found.product, existing.qty + qty);
   } else {
     state.cart.push({ productId, storeId: found.store.id, qty });
   }
   updateCartBadge();
-  toast(`${found.product.name} ${qty}개를 장바구니에 담았습니다.`);
+  toast(`${found.product.name} ${qty}${productOrderRules(found.product).unit}를 장바구니에 담았습니다.`);
 }
 
 function updateCartBadge() {
@@ -2618,12 +2647,14 @@ function cartTotal() {
 }
 
 function renderCart() {
+  state.cart = state.cart.filter(item => findProduct(item.productId)).map(item => ({ ...item, qty: normalizeProductQuantity(findProduct(item.productId).product, item.qty) }));
   updateCartBadge();
   qs("#cartItems").innerHTML = state.cart.length
     ? state.cart
         .map((item) => {
           const found = findProduct(item.productId);
           if (!found) return "";
+          const rules = productOrderRules(found.product);
           return `
             <article class="cart-row">
               <img src="${found.product.image}" alt="${found.product.name} 사진" />
@@ -2634,11 +2665,13 @@ function renderCart() {
               </div>
               <div>
                 <div class="quantity-control">
-                  <button type="button" data-cart-change="${item.productId}" data-delta="-1">-</button>
-                  <input value="${item.qty}" data-cart-input="${item.productId}" inputmode="numeric" />
-                  <button type="button" data-cart-change="${item.productId}" data-delta="1">+</button>
+                  <button type="button" data-cart-change="${item.productId}" data-delta="-${rules.step}" ${item.qty <= rules.minimum ? "disabled" : ""} aria-label="수량 줄이기">-</button>
+                  <input type="number" min="${rules.minimum}" max="1000" step="${rules.step}" value="${item.qty}" data-cart-input="${item.productId}" inputmode="numeric" aria-label="${escapeHtml(found.product.name)} 주문 수량" />
+                  <button type="button" data-cart-change="${item.productId}" data-delta="${rules.step}" aria-label="수량 늘리기">+</button>
                 </div>
+                <small class="cart-quantity-unit">${rules.unit === "개" ? "" : `주문 중량 ${item.qty}${escapeHtml(rules.unit)}`}</small>
                 <p class="price">${money(found.product.price * item.qty)}</p>
+                <button class="icon-action" type="button" data-cart-remove="${item.productId}" aria-label="${escapeHtml(found.product.name)} 장바구니에서 삭제" title="상품 삭제"><i data-lucide="trash-2"></i></button>
               </div>
             </article>
           `;
@@ -4777,7 +4810,7 @@ document.addEventListener("click", async (event) => {
     const productId = addMtShoppingButton?.dataset.addMtShopping || state.selectedProduct?.id;
     const product = findProduct(productId)?.product || state.selectedProduct;
     if (!product) return;
-    const qty = event.target.closest("[data-add-current-to-mt]") ? Math.max(1, Number(qs("#productQty")?.value || 1)) : 1;
+    const qty = normalizeProductQuantity(product, event.target.closest("[data-add-current-to-mt]") ? qs("#productQty")?.value : 1);
     const existing = (state.mtProject.items || []).find((item) => item.item_kind === "shopping" && String(item.reference_id) === String(product.id));
     let saved = null;
     try {
@@ -4796,13 +4829,13 @@ document.addEventListener("click", async (event) => {
   }
 
   if (event.target.closest("[data-add-current]")) {
-    const qty = Math.max(1, Number(qs("#productQty").value || 1));
+    const qty = normalizeProductQuantity(state.selectedProduct, qs("#productQty").value);
     addToCart(state.selectedProduct.id, qty);
     return;
   }
 
   if (event.target.closest("[data-buy-current]")) {
-    const qty = Math.max(1, Number(qs("#productQty").value || 1));
+    const qty = normalizeProductQuantity(state.selectedProduct, qs("#productQty").value);
     addToCart(state.selectedProduct.id, qty);
     navigate("cart");
     return;
@@ -4811,7 +4844,15 @@ document.addEventListener("click", async (event) => {
   const qtyButton = event.target.closest("[data-qty-change]");
   if (qtyButton) {
     const input = qs("#productQty");
-    input.value = Math.max(1, Number(input.value || 1) + Number(qtyButton.dataset.qtyChange));
+    input.value = normalizeProductQuantity(state.selectedProduct, Number(input.value || 1) + Number(qtyButton.dataset.qtyChange));
+    renderProductOrderTotal();
+    return;
+  }
+
+  const removeCartButton = event.target.closest("[data-cart-remove]");
+  if (removeCartButton) {
+    state.cart = state.cart.filter(item => item.productId !== removeCartButton.dataset.cartRemove);
+    renderCart();
     return;
   }
 
@@ -4819,8 +4860,7 @@ document.addEventListener("click", async (event) => {
   if (cartButton) {
     const item = state.cart.find((row) => row.productId === cartButton.dataset.cartChange);
     if (item) {
-      item.qty += Number(cartButton.dataset.delta);
-      if (item.qty <= 0) state.cart = state.cart.filter((row) => row !== item);
+      item.qty = normalizeProductQuantity(findProduct(item.productId)?.product, item.qty + Number(cartButton.dataset.delta));
       renderCart();
     }
     return;
@@ -4930,16 +4970,24 @@ document.addEventListener("input", (event) => {
     renderReviews();
   }
   if (event.target.matches("#reviewTarget")) renderReviewKeywords();
-  if (event.target.matches("[data-cart-input]")) {
-    const item = state.cart.find((row) => row.productId === event.target.dataset.cartInput);
-    if (item) {
-      item.qty = Math.max(1, Number(event.target.value || 1));
-      renderCart();
-    }
-  }
+  if (event.target.matches("#productQty")) renderProductOrderTotal();
 });
 
 document.addEventListener("change", (event) => {
+  if (event.target.matches("#productQty, [data-cart-input]")) {
+    const productId = event.target.dataset.cartInput;
+    const product = productId ? findProduct(productId)?.product : state.selectedProduct;
+    const requested = Number(event.target.value);
+    const qty = normalizeProductQuantity(product, requested);
+    if (requested !== qty) toast(`주문 수량을 ${qty}${productOrderRules(product).unit}로 조정했어요.`);
+    event.target.value = qty;
+    if (productId) {
+      const item = state.cart.find(row => row.productId === productId);
+      if (item) item.qty = qty;
+      renderCart();
+    } else renderProductOrderTotal();
+    return;
+  }
   if (event.target.matches("[data-usage-select]")) {
     const id = String(event.target.dataset.usageSelect);
     if (event.target.checked) state.selectedUsageIds.add(id);

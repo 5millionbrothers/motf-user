@@ -62,6 +62,16 @@ button, input, select, textarea { font-size: 13px; }
 }
 .product-card-image-button:hover img { transform: scale(1.025); }
 .product-cutout-image { filter: brightness(1.1) contrast(1.06) saturate(1.04); }
+.product-cutout-image.product-source-calibrated,
+.product-detail img.product-source-calibrated,
+.product-card-image-button:hover .product-cutout-image.product-source-calibrated { filter: none; }
+.product-order-note { margin: 8px 0 16px; color: #516047; font-size: 14px; line-height: 1.6; }
+.product-detail .price small { font-size: 15px; font-weight: 500; color: #68716a; }
+.product-order-total { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-top: 1px solid #e1e6df; padding: 18px 0; margin-top: 18px; }
+.product-order-total > span { font-size: 15px; color: #4f5850; }
+.product-order-total small { margin-left: 8px; color: #68716a; }
+.product-order-total strong { color: #34462c; font-size: 23px; white-space: nowrap; }
+.cart-quantity-unit { display: block; color: #68716a; margin-top: 6px; }
 .product-card-image-button:hover .product-cutout-image { filter: brightness(1.13) contrast(1.07) saturate(1.05); }
 .product-card > div { gap: 5px; padding: 10px; }
 .product-card .pill { min-height: 20px; padding: 2px 6px; font-size: 9px; }
