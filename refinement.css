@@ -6,6 +6,10 @@ h3 { font-size: 15px; font-weight: 620; }
 button, input, select, textarea { font-size: 13px; }
 .eyebrow { font-size: 11px; font-weight: 720; }
 .home-intro-copy .eyebrow { font-size: 13px; }
+.home-curation .eyebrow,
+.home-market-feature .eyebrow,
+.home-events-feature .eyebrow,
+.home-stories .eyebrow { font-size: 14px; }
 
 .app-header { gap: 24px; }
 .header-left { min-width: 40px; }
@@ -17,7 +21,71 @@ button, input, select, textarea { font-size: 13px; }
 
 .home-curation h2,
 .home-market-feature h2,
-.home-stories h2 { font-size: 23px; font-weight: 640; }
+.home-events-feature h2,
+.home-stories h2 { font-size: 24px; font-weight: 700; }
+.home-curation .section-toolbar,
+.home-market-feature .section-toolbar,
+.home-events-feature .section-toolbar,
+.home-stories .section-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  row-gap: 0;
+  column-gap: 12px;
+  align-items: center;
+}
+.home-market-feature .section-toolbar {
+  margin-bottom: 22px;
+}
+.home-market-feature {
+  border-top: 0;
+}
+.home-stories {
+  border-top: 0;
+}
+.home-events-feature .empty-state.compact span {
+  display: block;
+  margin-top: 4px;
+}
+.home-curation .section-toolbar > div:first-child,
+.home-market-feature .section-toolbar > div:first-child,
+.home-events-feature .section-toolbar > div:first-child,
+.home-stories .section-toolbar > div:first-child {
+  display: contents;
+}
+.home-curation .section-toolbar .eyebrow,
+.home-market-feature .section-toolbar .eyebrow,
+.home-events-feature .section-toolbar .eyebrow,
+.home-stories .section-toolbar .eyebrow {
+  grid-column: 1;
+  grid-row: 1;
+  margin-bottom: 0;
+}
+.home-curation .section-toolbar h2,
+.home-market-feature .section-toolbar h2,
+.home-events-feature .section-toolbar h2,
+.home-stories .section-toolbar h2 {
+  grid-column: 1;
+  grid-row: 2;
+}
+.home-curation .home-rail-actions,
+.home-market-feature .home-rail-actions,
+.home-stories .home-rail-actions {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: center;
+  padding-bottom: 0;
+}
+.home-events-feature .section-toolbar > .text-link {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: center;
+}
+.home-stories .section-toolbar > .text-link {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: center;
+}
 .home-stay-pick-body,
 .home-market-pick-body {
   grid-template-rows: auto minmax(32px, auto) minmax(38px, auto) auto;
@@ -28,9 +96,119 @@ button, input, select, textarea { font-size: 13px; }
 .home-market-pick-body strong { font-size: 15px; font-weight: 650; }
 .home-stay-pick-body small,
 .home-market-pick-body small { font-size: 11px; }
+.home-stay-pick:not(.home-market-pick) .home-stay-pick-body small { font-size: 12px; }
+.home-stay-pick:not(.home-market-pick) .home-stay-pick-body small,
+.home-stay-pick:not(.home-market-pick) .home-stay-pick-body strong {
+  line-height: normal;
+}
+.home-stay-pick:not(.home-market-pick) .home-stay-pick-body strong { font-size: 16px; }
+.home-stay-pick:not(.home-market-pick) .home-stay-pick-body strong { font-weight: 600; }
+.home-stay-pick:not(.home-market-pick) .home-stay-pick-body { gap: 8px; }
+.home-stay-pick:not(.home-market-pick) .home-stay-pick-body {
+  grid-template-rows: auto auto minmax(38px, auto) auto;
+}
+.home-stay-pick:not(.home-market-pick) .home-stay-features { margin-top: 0; }
+.home-market-pick .home-market-pick-body { gap: 8px; }
+.home-market-pick .home-market-pick-body {
+  grid-template-rows: auto auto minmax(38px, auto) auto;
+}
+.home-market-pick .home-market-pick-body small { font-size: 12px; line-height: normal; }
+.home-market-pick .home-market-pick-body > strong { font-size: 16px; font-weight: 600; line-height: normal; }
+.home-market-pick .home-stay-features { margin-top: 0; }
+.home-market-pick .home-market-card-price { margin-top: 0; line-height: 1.1; }
+.home-market-pick .home-card-price-value {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  color: #000;
+}
+.home-market-pick .home-card-price-value strong { font-size: 18px !important; font-weight: 600; letter-spacing: -0.36px; }
+.home-market-pick .home-card-price-value > span { font-size: 16px; font-weight: 600; }
 .home-stay-features { min-height: 38px; margin: 1px 0 0; }
-.home-card-price { margin-top: 0; color: var(--ink) !important; font-size: 13px !important; font-weight: 680; line-height: 1.25; }
+.home-search-panel {
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+}
+.home-search-panel label,
+.home-search-panel select,
+.home-search-panel input,
+.home-search-panel button {
+  font-weight: 600;
+}
+
+.home-stay-pick,
+.home-market-pick {
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+}
+.home-stay-features b {
+  padding: 4px 6px;
+  color: #5A6856;
+  background: #f2f3e8;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: normal;
+}
+.home-stay-pick .home-card-price {
+  display: grid;
+  gap: 4px;
+  margin-top: 0;
+  color: var(--ink);
+  line-height: 1.1;
+}
+.home-stay-pick .home-card-price-label {
+  color: #6f6f69;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: -0.12px;
+}
+.home-stay-pick .home-card-price-value {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  color: #000;
+}
+.home-stay-pick .home-card-price-value strong {
+  font-size: 18px !important;
+  font-weight: 600;
+  letter-spacing: -0.36px;
+}
+.home-stay-pick .home-card-price-value > span {
+  font-size: 16px;
+  font-weight: 600;
+}
+.home-stay-review-link { border-top: 0; min-height: auto; padding-top: 8px; }
+.home-stay-review-link > strong { font-weight: 500; }
+.home-stay-review-link > .home-stay-review-new {
+  gap: 2px;
+  color: var(--olive);
+  font-size: 12px;
+  font-weight: 700;
+}
+.home-stay-review-link > .home-stay-review-new svg {
+  width: 12px;
+  height: 12px;
+  color: var(--olive);
+  fill: currentColor;
+}
+.home-stay-review-link > .home-stay-review-rating {
+  gap: 2px;
+  color: var(--olive);
+  font-size: 12px;
+  font-weight: 700;
+}
+.home-stay-review-link > .home-stay-review-rating svg {
+  width: 12px;
+  height: 12px;
+  fill: currentColor;
+}
+.home-stay-review-link > .home-stay-review-rating b { font-weight: 700; }
+.home-stay-review-link > .home-stay-review-rating em {
+  color: var(--muted);
+  font-style: normal;
+  font-weight: 500;
+}
+.home-stay-picks,
 .home-market-picks { padding-bottom: 0; scrollbar-width: none; }
+.home-stay-picks::-webkit-scrollbar,
 .home-market-picks::-webkit-scrollbar { display: none; }
 
 .view.active { animation: motf-view-enter 0.2s ease-out both; }

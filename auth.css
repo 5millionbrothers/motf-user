@@ -241,10 +241,14 @@
   width: 22px;
   height: 22px;
   color: #fee500;
-  background: #191919;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 800;
+  background: transparent;
+}
+
+.auth-kakao-symbol svg {
+  display: block;
+  width: 22px;
+  height: 22px;
+  fill: #191919;
 }
 
 .auth-link {

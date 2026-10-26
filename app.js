@@ -1331,11 +1331,16 @@ function renderHomePicks() {
           <span class="home-stay-features">${Array.from({ length: 3 }, (_, index) => highlights[index]
             ? `<b>${escapeHtml(highlights[index])}</b>`
             : '<b class="feature-placeholder" aria-hidden="true">&nbsp;</b>').join("")}</span>
-          <span class="home-card-price">${estimate.people}명 예상 총액 ${money(estimate.total)}</span>
+          <span class="home-card-price">
+            <span class="home-card-price-label">${estimate.people}명 예상 총액</span>
+            <span class="home-card-price-value"><strong>${money(estimate.total).replace(/원$/, "")}</strong><span>원</span></span>
+          </span>
         </span>
       </button>
       <button class="home-stay-review-link" type="button" data-stay-review-id="${stay.id}" aria-label="${escapeHtml(stay.name)} 리뷰 바로 보기">
-        <span><i data-lucide="star"></i>${reviewSummary.count ? `${reviewSummary.rating.toFixed(1)} / 5` : "새 숙소"}</span>
+        ${reviewSummary.count
+          ? `<span class="home-stay-review-rating"><i data-lucide="star"></i><b>${reviewSummary.rating.toFixed(1)}</b><em>/ 5</em></span>`
+          : `<span class="home-stay-review-new"><i data-lucide="star"></i>새 숙소</span>`}
         <strong>${reviewSummary.count ? `리뷰 ${reviewSummary.count}개` : "첫 리뷰를 기다리고 있어요"}</strong>
         <i data-lucide="chevron-right"></i>
       </button>
@@ -1392,7 +1397,7 @@ function renderHomeMarketPicks() {
           <b>${product.isBundle ? `${product.bundleProductIds?.length || 1}종 구성` : escapeHtml(product.origin || "원산지 상세 확인")}</b>
           <b>${product.isAlcohol ? "성인 인증 필요" : "장바구니 주문"}</b>
         </span>
-        <span class="home-card-price">${productPriceLabel(product)}</span>
+        <span class="home-card-price home-market-card-price">${productPriceMarkup(product)}</span>
       </span>
     </button>
   `).join("");
@@ -2480,6 +2485,13 @@ function productPriceLabel(product) {
   const maximum = Math.max(...prices);
   const prefix = productOrderRules(product).unit === "개" ? "" : `${product.unit}당 `;
   return prefix + (minimum === maximum ? money(minimum) : `${money(minimum)}부터`);
+}
+
+function productPriceMarkup(product) {
+  const label = productPriceLabel(product);
+  const match = label.match(/^(.*?)(원)(부터)?$/);
+  if (!match) return escapeHtml(label);
+  return `<span class="home-card-price-value"><strong>${escapeHtml(match[1])}</strong><span>${match[2]}${match[3] || ""}</span></span>`;
 }
 
 function productImageClass(product) {

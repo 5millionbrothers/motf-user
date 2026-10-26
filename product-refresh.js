@@ -19,6 +19,14 @@
         disableMobile: true,
         monthSelectorType: "static",
         position: dialog ? "above left" : "below left",
+        onDayCreate: (_selectedDates, _dateStr, _instance, dayElem) => {
+          const textNode = [...dayElem.childNodes].find((node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim());
+          if (!textNode || dayElem.querySelector(".day-number")) return;
+          const number = document.createElement("span");
+          number.className = "day-number";
+          number.textContent = textNode.textContent.trim();
+          textNode.replaceWith(number);
+        },
         ...(dialog ? { appendTo: dialog } : {}),
       });
       if (initialValue) input._flatpickr.setDate(initialValue, false);

@@ -122,7 +122,7 @@
           <button class="primary-btn auth-submit" type="submit">로그인</button>
           <div class="auth-divider"><span>또는</span></div>
           <button class="auth-kakao-btn" type="button" data-kakao-login>
-            <span class="auth-kakao-symbol">K</span>카카오로 로그인
+            <span class="auth-kakao-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.5c-5.1 0-9.2 3.2-9.2 7.2 0 2.6 1.8 4.9 4.5 6.2l-.8 3.1c-.1.4.3.7.6.5l3.6-2.3c.4.1.8.1 1.3.1 5.1 0 9.2-3.2 9.2-7.2S17.1 3.5 12 3.5Z"/><circle cx="9" cy="10.7" r="1"/><circle cx="15" cy="10.7" r="1"/></svg></span>카카오 로그인
           </button>
           <button class="auth-link" type="button" data-password-reset>비밀번호를 잊으셨나요?</button>
         </form>
@@ -159,7 +159,7 @@
           <button class="primary-btn auth-submit" type="submit">회원가입</button>
           <div class="auth-divider"><span>또는</span></div>
           <button class="auth-kakao-btn" type="button" data-kakao-login>
-            <span class="auth-kakao-symbol">K</span>카카오로 시작하기
+            <span class="auth-kakao-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.5c-5.1 0-9.2 3.2-9.2 7.2 0 2.6 1.8 4.9 4.5 6.2l-.8 3.1c-.1.4.3.7.6.5l3.6-2.3c.4.1.8.1 1.3.1 5.1 0 9.2-3.2 9.2-7.2S17.1 3.5 12 3.5Z"/><circle cx="9" cy="10.7" r="1"/><circle cx="15" cy="10.7" r="1"/></svg></span>카카오로 시작하기
           </button>
         </form>
         <form class="auth-form" id="identityPasswordResetForm" hidden>
@@ -315,7 +315,7 @@
     const originalHtml = button?.innerHTML;
     if (button) {
       button.disabled = true;
-      button.innerHTML = '<span class="auth-kakao-symbol">K</span>카카오로 이동 중...';
+      button.innerHTML = '<span class="auth-kakao-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.5c-5.1 0-9.2 3.2-9.2 7.2 0 2.6 1.8 4.9 4.5 6.2l-.8 3.1c-.1.4.3.7.6.5l3.6-2.3c.4.1.8.1 1.3.1 5.1 0 9.2-3.2 9.2-7.2S17.1 3.5 12 3.5Z"/><circle cx="9" cy="10.7" r="1"/><circle cx="15" cy="10.7" r="1"/></svg></span>카카오 로그인 중...';
     }
     setMessage("카카오 로그인 화면으로 이동합니다.");
 

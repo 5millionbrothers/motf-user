@@ -171,7 +171,7 @@ body {
   color: var(--ink);
   background: var(--cream);
   font-family: "SUIT Variable", "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-weight: 400;
+  font-weight: 400 !important;
   letter-spacing: 0;
   line-height: 1.55;
   word-break: keep-all;
@@ -1599,7 +1599,7 @@ input[type="range"] {
 }
 
 .category-tab {
-  min-height: 38px;
+  min-height: 36px;
   padding: 0 12px;
   color: var(--muted);
   background: var(--paper);
@@ -3434,13 +3434,52 @@ main { width: min(1520px, 100%); padding: clamp(20px, 2.5vw, 40px); }
 .home-curation { max-width: 1440px; }
 
 .flatpickr-calendar { width: 310px !important; max-width: calc(100vw - 24px); }
+.flatpickr-calendar .flatpickr-months { padding: 8px; box-sizing: border-box; }
 .flatpickr-rContainer, .flatpickr-days, .dayContainer { width: 100% !important; min-width: 0 !important; max-width: none !important; }
 .flatpickr-months .flatpickr-month { height: 44px; }
-.flatpickr-current-month { display: flex; flex-direction: row-reverse; align-items: center; justify-content: center; gap: 4px; height: 44px; padding-top: 8px; }
+.flatpickr-current-month {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 44px;
+  padding-top: 0;
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+}
 .flatpickr-current-month .numInputWrapper { width: 72px; }
+.flatpickr-current-month input.cur-year { font-weight: 400; }
 .flatpickr-current-month .cur-month { margin: 0; }
-.flatpickr-weekdays { height: 34px; }
+.flatpickr-current-month .cur-month { font-weight: 600 !important; }
+.flatpickr-months .flatpickr-prev-month,
+.flatpickr-months .flatpickr-next-month {
+  top: 11px;
+  padding: 8px;
+  transform: none;
+}
+.flatpickr-months .flatpickr-prev-month { left: 12px !important; }
+.flatpickr-months .flatpickr-next-month { right: 12px !important; }
+.flatpickr-weekdays { height: 34px; padding: 0 8px; }
+.flatpickr-weekday {
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-weight: 400 !important;
+}
 .flatpickr-day { max-width: none; }
+.flatpickr-calendar .dayContainer { padding: 0 8px 8px; }
+.flatpickr-calendar .flatpickr-day {
+  font-family: "Pretendard Variable", Pretendard, sans-serif;
+  font-weight: 450;
+  width: 42px;
+  max-width: 42px;
+  height: 42px;
+  line-height: 42px;
+  margin: 0 auto;
+}
+.flatpickr-calendar .flatpickr-day .day-number {
+  display: inline-block;
+  position: relative;
+  top: -1px;
+}
 
 #boardDetail.compose-mode > .back-btn,
 #boardDetail.compose-mode .board-detail-layout > section,
@@ -3718,7 +3757,7 @@ h2 {
 .home-stay-features {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 4px;
   min-height: 26px;
   margin: 2px 0 3px;
 }
