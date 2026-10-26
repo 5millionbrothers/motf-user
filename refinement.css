@@ -308,7 +308,8 @@ button, input, select, textarea { font-size: 13px; }
   .product-card img { height: auto; aspect-ratio: 1 / 1; padding: 12px; }
   .home-curation h2,
   .home-market-feature h2,
-  .home-stories h2 { font-size: 21px; }
+  .home-events-feature h2,
+  .home-stories h2 { font-size: 19px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
