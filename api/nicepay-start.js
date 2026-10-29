@@ -14,7 +14,6 @@ module.exports = async function handler(req, res) {
     await runtime.ownerAccess(intent, user.id);
     const config = pg.merchantConfig(intent.kind);
     if (!runtime.methods(intent.kind).includes(input.method)) throw runtime.error("METHOD_DISABLED", "사용할 수 없는 결제수단입니다.");
-    if (intent.kind === "market" && ["BANK", "VBANK"].includes(input.method) && env("NICEPAY_MARKET_NON_ESCROW_APPROVED") !== "true") throw runtime.error("CASH_PAYMENT_REVIEW_REQUIRED", "공판장 현금성 결제는 구매안전서비스 적용 확인 후 이용할 수 있습니다.");
     const nonce = runtime.nonce();
     const fields = pg.checkoutFields(intent, config, { method: input.method, returnUrl: runtime.returnOrigin(req) + "/api/nicepay-return" });
     await db("/rest/v1/rpc/bind_nicepay_checkout", { method: "POST", body: JSON.stringify({ target_order_id: intent.order_id, target_customer_id: user.id, target_mid: config.mid, target_method: input.method, target_nonce_hash: pg.sha256(nonce) }) });

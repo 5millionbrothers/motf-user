@@ -35,6 +35,22 @@ test("no cross-kind credential fallback", () => {
   rejects(() => pg.merchantConfig("market", { NICEPAY_STAY_MID: config.mid, NICEPAY_STAY_MERCHANT_KEY: config.merchantKey }), "NICEPAY_NOT_CONFIGURED");
   rejects(() => pg.merchantConfig("other", {}), "INVALID_KIND");
 });
+test("shared MID and MerchantKey configure both accommodation and market", () => {
+  const environment = { NICEPAY_MID: config.mid, NICEPAY_MERCHANT_KEY: config.merchantKey };
+  for (const kind of ["stay", "market"]) {
+    assert.deepEqual(pg.merchantConfig(kind, environment), config);
+    assert.equal(pg.isConfigured(kind, environment), true);
+  }
+});
+test("incomplete common credentials never mix with a legacy key", () => {
+  const environment = { NICEPAY_MID: config.mid, NICEPAY_STAY_MERCHANT_KEY: config.merchantKey };
+  rejects(() => pg.merchantConfig("stay", environment), "NICEPAY_NOT_CONFIGURED");
+  assert.equal(pg.isConfigured("stay", environment), false);
+});
+test("the common credential pair takes precedence over previous per-kind settings", () => {
+  const environment = { NICEPAY_MID: config.mid, NICEPAY_MERCHANT_KEY: config.merchantKey, NICEPAY_MARKET_MID: "oldtest00m", NICEPAY_MARKET_MERCHANT_KEY: "old-key" };
+  assert.deepEqual(pg.merchantConfig("market", environment), config);
+});
 for (const badAmount of [0, -10, 3.5, "1e3", "1,000", "", NaN, Infinity]) {
   test("reject invalid amount " + String(badAmount), () => rejects(() => pg.amount(badAmount), "INVALID_AMOUNT"));
 }

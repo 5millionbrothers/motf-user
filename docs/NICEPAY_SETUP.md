@@ -1,7 +1,10 @@
 # NICEPAY 전환 배포 안내
 
-2026-10-29 작성. 첨부된 인증결제 2.1.5 규격의 MID/MerchantKey 방식입니다.
+2026-10-30 최종 수정: 숙소·공판장 공통 MID와 키 사용, 두 업종 모두 카드·계좌이체 기본 설정.
+첨부된 인증결제 2.1.5 규격의 MID/MerchantKey 방식입니다.
 별도 REST API의 clientId/secretKey 방식과 혼용하지 않습니다.
+
+이번 수정본은 이전 배포 묶음을 대체하는 누적본입니다. SQL 84/85를 이미 실행했다면 이번 공통 MID/결제수단 수정 때문에 다시 실행할 필요는 없습니다. 사장님/DB 파일은 직전 묶음과 같습니다.
 
 ## 현재 완료 범위
 
@@ -46,25 +49,26 @@ Vercel의 Root Directory는 저장소 루트, Framework Preset은 기존 정적 
 
 | 이름 | 값/설명 |
 | --- | --- |
-| `NICEPAY_STAY_MID` | 숙소 결제에 사용하도록 승인된 10자리 MID |
-| `NICEPAY_STAY_MERCHANT_KEY` | 해당 MID의 MerchantKey |
-| `NICEPAY_MARKET_MID` | 공판장 결제에 사용하도록 승인된 10자리 MID |
-| `NICEPAY_MARKET_MERCHANT_KEY` | 해당 MID의 MerchantKey |
+| `NICEPAY_MID` | 숙소·공판장에 공통 사용하는 10자리 MID |
+| `NICEPAY_MERCHANT_KEY` | 공통 MID의 MerchantKey |
 | `MOTF_PUBLIC_ORIGIN` | `https://motf.co.kr` |
-| `NICEPAY_STAY_METHODS` | 우선 `CARD` |
-| `NICEPAY_MARKET_METHODS` | 우선 `CARD` |
+| `NICEPAY_METHODS` | `CARD,BANK` (카드·계좌이체) |
 | `NICEPAY_PARTIAL_CANCEL_ENABLED` | 부분취소 사용 승인 확인 전 `false` |
-| `NICEPAY_MARKET_NON_ESCROW_APPROVED` | 정당한 비에스크로 현금결제 적용을 확인하기 전 `false` |
 | `PAYMENT_PROVIDER` | 전환 직전까지 `toss`, 검수 준비 후 `nicepay` |
 
 기존 `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`는 정상 값을 유지합니다.
 과거 토스 거래 처리를 위해 기존 `TOSS_STAY_*`, `TOSS_MARKET_*` 값도 삭제하지 않습니다.
 사장님 프로젝트에는 나이스 키를 넣지 않아도 됩니다. 실제 승인/환불은 이용자 서버에서만 실행합니다.
-한 MID로 두 업종을 처리해도 되는지 나이스가 승인한 경우에만 두 항목에 같은 값을 넣습니다. 임의로 다른 업종 키를 대신 쓰지 않습니다.
+공통 MID/키를 한 번만 넣으면 두 업종이 함께 사용합니다. 주문 종류와 정산 대상 숙소/마트는 기존 DB 필드로 계속 구분합니다.
+이전 안내의 업종별 `NICEPAY_STAY_MID`, `NICEPAY_MARKET_MID`와 각 MerchantKey는 새로 설정할 필요가 없습니다. 공통 키가 우선 적용됩니다.
+공통 키를 전혀 넣지 않은 기존 설치에서만 업종별 키 설정을 하위 호환으로 지원하며, 서로 다른 설정의 MID와 키를 섞어 쓰지는 않습니다.
+이전에 `NICEPAY_STAY_METHODS` 또는 `NICEPAY_MARKET_METHODS`를 `CARD`로 넣었다면 삭제하거나 둘 다 `CARD,BANK`로 바꾸세요. 기존 업종별 수단 설정은 공통 수단 설정보다 우선합니다.
 
-나중에 승인된 수단만 `CARD,BANK,VBANK,CELLPHONE` 중 쉼표로 추가할 수 있습니다.
+현재 기본 결제수단은 `CARD,BANK`이며 가상계좌·휴대폰 결제는 제외했습니다. 나중에 승인된 수단만 `CARD,BANK,VBANK,CELLPHONE` 중 쉼표로 추가할 수 있습니다.
 환경변수 추가만으로 PG 계약/에스크로 요건이 충족되는 것은 아닙니다.
-공판장 계좌이체·가상계좌는 에스크로가 미구현된 상태에서 무심코 열리지 않도록 차단했습니다.
+사용자 요청에 따라 숙소·공판장 모두 동일하게 카드·계좌이체를 표시하고 일반 결제로 요청합니다. 공판장에만 적용했던 별도 차단은 제거했습니다.
+이전 `NICEPAY_MARKET_NON_ESCROW_APPROVED` 환경변수는 더 이상 사용하지 않습니다. 기존에 `false`로 넣어두었더라도 결제를 차단하지 않으며 삭제해도 됩니다.
+이번 변경은 일반 결제수단 개방이며 에스크로 신청·개통·연동을 완료했다는 의미는 아닙니다. 현재 요청은 두 업종 모두 `TransType=0`입니다.
 휴대폰 결제도 별도 개통 확인이 필요합니다.
 
 ## 4. 나이스 관리자 등록
@@ -123,7 +127,7 @@ Vercel의 Root Directory는 저장소 루트, Framework Preset은 기존 정적 
 
 ## 검증 결과
 
-- Node 자동 테스트 56개 통과: 서명, 금액/권한 검증, 중복 승인·환불 차단, 망취소, 웹훅, 과거 토스 경로 등.
+- Node 자동 테스트 64개 통과: 공통 MID, 카드·계좌이체 설정, 서명, 금액/권한 검증, 중복 승인·환불 차단, 망취소, 웹훅, 과거 토스 경로 등.
 - 로컬 PGlite 격리 DB 검증 32개 통과. 운영 Supabase 전체 스키마를 복제한 통합 테스트는 아닙니다.
 - JavaScript 문법 검사 53개 파일과 HTML 31개 진입점 확인.
 - 사장님 Next.js 프로덕션 빌드/타입 검사 통과. lint 오류 없음, 기존 미사용 변수 경고 1개 유지.

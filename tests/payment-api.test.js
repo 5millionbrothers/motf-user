@@ -9,6 +9,7 @@ const webhook = require("../api/nicepay-webhook");
 const status = require("../api/payment-status");
 const refund = require("../api/refund-payment");
 const reconcile = require("../api/reconcile-payment");
+const paymentConfig = require("../api/payment-config");
 const user = "11111111-1111-4111-8111-111111111111";
 const intentId = "22222222-2222-4222-8222-222222222222";
 const txId = "33333333-3333-4333-8333-333333333333";
@@ -68,14 +69,14 @@ function fixture(options = {}) {
   };
   return { calls, intent, fetcher, get finalizeCount() { return finalizeCount; } };
 }
-async function invoke(handler, body, authorization = "Bearer test-token") {
+async function invoke(handler, body, authorization = "Bearer test-token", method = "POST") {
   const res = { headers: {}, setHeader(key, value) { this.headers[key] = value; }, end(text) { this.text = text; } };
-  await handler({ method: "POST", headers: { authorization, "content-type": "application/json" }, body }, res);
+  await handler({ method, headers: { authorization, "content-type": "application/json" }, body }, res);
   return { code: res.statusCode, headers: res.headers, text: res.text, data: res.headers["Content-Type"]?.includes("json") ? JSON.parse(res.text) : null };
 }
 async function using(options, run) {
   const previousFetch = global.fetch;
-  const values = { PAYMENT_PROVIDER: "nicepay", SUPABASE_URL: "https://db.test", SUPABASE_PUBLISHABLE_KEY: "test-pub", SUPABASE_SERVICE_ROLE_KEY: "test-service", NICEPAY_STAY_MID: mid, NICEPAY_STAY_MERCHANT_KEY: key, NICEPAY_STAY_METHODS: options.methods || "CARD", NICEPAY_PARTIAL_CANCEL_ENABLED: "true", TOSS_STAY_SECRET_KEY: "fixture-only-toss-key" };
+  const values = { PAYMENT_PROVIDER: "nicepay", SUPABASE_URL: "https://db.test", SUPABASE_PUBLISHABLE_KEY: "test-pub", SUPABASE_SERVICE_ROLE_KEY: "test-service", NICEPAY_MID: mid, NICEPAY_MERCHANT_KEY: key, NICEPAY_STAY_MID: "", NICEPAY_STAY_MERCHANT_KEY: "", NICEPAY_MARKET_MID: "", NICEPAY_MARKET_MERCHANT_KEY: "", NICEPAY_METHODS: options.methods || "", NICEPAY_STAY_METHODS: "", NICEPAY_MARKET_METHODS: "", NICEPAY_MARKET_NON_ESCROW_APPROVED: options.marketCashApproved ? "true" : "false", NICEPAY_PARTIAL_CANCEL_ENABLED: "true", TOSS_STAY_SECRET_KEY: "fixture-only-toss-key" };
   const before = Object.fromEntries(Object.keys(values).map(name => [name, process.env[name]]));
   Object.assign(process.env, values); const f = fixture(options); global.fetch = f.fetcher;
   try { await run(f); } finally { global.fetch = previousFetch; for (const name of Object.keys(values)) { if (before[name] == null) delete process.env[name]; else process.env[name] = before[name]; } }
@@ -95,6 +96,34 @@ test("API: checkout requires login and does not expose MerchantKey", async () =>
 }));
 test("API: another account cannot start the order", async () => using({ actor: "another-user" }, async () => assert.equal((await invoke(start, { orderId: "order-test", method: "CARD" })).code, 404)));
 test("API: VBANK is not enabled by default", async () => using({}, async () => assert.equal((await invoke(start, { orderId: "order-test", method: "VBANK" })).code, 409)));
+test("API: accommodation bank transfer uses the common MID by default", async () => using({}, async () => {
+  const result = await invoke(start, { orderId: "order-test", method: "BANK" });
+  assert.equal(result.code, 200); assert.equal(result.data.fields.MID, mid); assert.equal(result.data.fields.PayMethod, "BANK");
+}));
+test("API: market card payments use the same common MID", async () => using({ intent: { kind: "market" } }, async () => {
+  const result = await invoke(start, { orderId: "order-test", method: "CARD" });
+  assert.equal(result.code, 200); assert.equal(result.data.fields.MID, mid);
+}));
+test("API: market bank transfer is available by default with the common MID", async () => using({ intent: { kind: "market" } }, async f => {
+  const result = await invoke(start, { orderId: "order-test", method: "BANK" });
+  assert.equal(result.code, 200); assert.equal(result.data.fields.MID, mid);
+  assert.equal(result.data.fields.PayMethod, "BANK"); assert.equal(result.data.fields.TransType, "0");
+  assert.equal(f.calls.some(x => x.endsWith("/bind_nicepay_checkout")), true);
+}));
+test("API: public configuration advertises available methods and never the shared key", async () => using({}, async () => {
+  const result = await invoke(paymentConfig, null, "", "GET");
+  assert.deepEqual(result.data.nicepayConfigured, { stay: true, market: true });
+  assert.deepEqual(result.data.nicepayMethods, { stay: ["CARD", "BANK"], market: ["CARD", "BANK"] });
+  assert.equal(result.data.nicepayCashReviewRequired, undefined);
+  assert.equal(JSON.stringify(result.data).includes(key), false);
+}));
+test("API: explicitly disabled payment methods are still rejected for both businesses", async () => using({ methods: "CARD" }, async f => {
+  const result = await invoke(start, { orderId: "order-test", method: "BANK" });
+  assert.equal(result.data.code, "METHOD_DISABLED");
+  f.intent.kind = "market";
+  assert.equal((await invoke(start, { orderId: "order-test", method: "BANK" })).data.code, "METHOD_DISABLED");
+  assert.equal(f.calls.some(x => x.endsWith("/bind_nicepay_checkout")), false);
+}));
 test("API: callback works without user JWT, once only", async () => using({}, async f => {
   const auth = await authentication();
   assert.equal((await invoke(callback, auth, "")).code, 303);

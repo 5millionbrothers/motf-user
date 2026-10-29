@@ -1,5 +1,6 @@
 const { json } = require("./_utils");
 const { methods } = require("./_nicepay-runtime");
+const { isConfigured } = require("./_nicepay");
 
 module.exports = async function handler(req, res) {
   if (req.method !== "GET") {
@@ -11,8 +12,8 @@ module.exports = async function handler(req, res) {
     ok: true,
     provider: process.env.PAYMENT_PROVIDER === "nicepay" ? "nicepay" : "toss",
     nicepayConfigured: {
-      stay: Boolean(process.env.NICEPAY_STAY_MID && process.env.NICEPAY_STAY_MERCHANT_KEY),
-      market: Boolean(process.env.NICEPAY_MARKET_MID && process.env.NICEPAY_MARKET_MERCHANT_KEY),
+      stay: isConfigured("stay"),
+      market: isConfigured("market"),
     },
     nicepayMethods: { stay: methods("stay"), market: methods("market") },
     tossClientKey: stayClientKey,

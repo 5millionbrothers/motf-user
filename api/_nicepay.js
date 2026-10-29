@@ -32,9 +32,15 @@ function credentials(config) {
 }
 function merchantConfig(kind, environment = process.env) {
   if (!["stay", "market"].includes(kind)) fail("INVALID_KIND", "결제 업종을 확인해주세요.");
+  const sharedMid = String(environment.NICEPAY_MID || "").trim();
+  const sharedKey = String(environment.NICEPAY_MERCHANT_KEY || "").trim();
+  if (sharedMid || sharedKey) return credentials({ mid: sharedMid, merchantKey: sharedKey });
   const prefix = kind === "stay" ? "NICEPAY_STAY_" : "NICEPAY_MARKET_";
-  // No cross-MID fallback: a market payment must never use accommodation credentials.
+  // Preserve the old paired settings only when no common credentials are supplied.
   return credentials({ mid: String(environment[prefix + "MID"] || "").trim(), merchantKey: String(environment[prefix + "MERCHANT_KEY"] || "").trim() });
+}
+function isConfigured(kind, environment = process.env) {
+  try { merchantConfig(kind, environment); return true; } catch { return false; }
 }
 function orderId(value) {
   if (!/^[a-z\d_-]{1,64}$/i.test(String(value || ""))) fail("INVALID_ORDER", "주문번호 형식을 확인해주세요.");
@@ -128,4 +134,4 @@ function verifyCancellation(response, request, config, { netCancel = false } = {
   return { status: response.ResultCode === "2211" ? "processing" : "cancelled", amount: amount(response.CancelAmt), transactionId: response.TID };
 }
 
-module.exports = { APPROVAL_CODES, sha256, verifyHash, amount, kstTimestamp, merchantConfig, gateway, checkoutFields, verifyAuthentication, approvalFields, verifyApproval, cancelFields, verifyCancellation };
+module.exports = { APPROVAL_CODES, sha256, verifyHash, amount, kstTimestamp, merchantConfig, isConfigured, gateway, checkoutFields, verifyAuthentication, approvalFields, verifyApproval, cancelFields, verifyCancellation };

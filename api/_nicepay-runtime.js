@@ -6,7 +6,7 @@ const METHODS = { CARD: "카드·간편결제", BANK: "계좌이체", VBANK: "�
 const METHODS_ENV = { stay: "NICEPAY_STAY_METHODS", market: "NICEPAY_MARKET_METHODS" };
 function error(code, message, statusCode = 409) { return Object.assign(new Error(message), { code, statusCode }); }
 function methods(kind) {
-  const list = (env(METHODS_ENV[kind]) || "CARD").split(",").map(x => x.trim()).filter(x => METHODS[x]);
+  const list = (env(METHODS_ENV[kind]) || env("NICEPAY_METHODS") || "CARD,BANK").split(",").map(x => x.trim()).filter(x => METHODS[x]);
   return [...new Set(list)];
 }
 function siteOrigin() {
