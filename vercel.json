@@ -17,7 +17,7 @@
       "maxDuration": 30
     },
     "api/cancel-reservation.js": {
-      "maxDuration": 30
+      "maxDuration": 60
     },
     "api/identity-start.js": {
       "maxDuration": 30
@@ -33,6 +33,24 @@
     },
     "api/notifications-dispatch.js": {
       "maxDuration": 30
+    },
+    "api/nicepay-start.js": {
+      "maxDuration": 60
+    },
+    "api/nicepay-return.js": {
+      "maxDuration": 60
+    },
+    "api/nicepay-webhook.js": {
+      "maxDuration": 60
+    },
+    "api/payment-status.js": {
+      "maxDuration": 60
+    },
+    "api/refund-payment.js": {
+      "maxDuration": 60
+    },
+    "api/reconcile-payment.js": {
+      "maxDuration": 60
     }
   },
   "crons": [

@@ -34,6 +34,7 @@ module.exports = async function handler(req, res) {
       `/rest/v1/payment_intents?select=id,order_id,customer_id,organization_id,kind,amount,original_amount,status,provider&order_id=eq.${encodeURIComponent(orderId)}&limit=1`,
     );
     const intent = intents?.[0];
+    if (intent?.provider !== "toss") return json(res, 409, { ok: false, message: "원결제 PG와 승인 경로가 일치하지 않습니다." });
     if (!intent || intent.customer_id !== user.id) return json(res, 404, { ok: false, message: "결제 준비 내역을 찾을 수 없습니다." });
     if (intent.organization_id && await supabaseRequest("/rest/v1/rpc/is_organization_member", {
       method: "POST", body: JSON.stringify({ target_id: intent.organization_id, target_user: user.id }),

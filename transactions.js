@@ -229,9 +229,9 @@
         )
         .order("created_at", { ascending: false }),
       scopeQuery(client.from("payment_intents")
-        .select("order_id, kind, amount, original_amount, points_used, coupon_discount, order_name, status, payment_method, virtual_account, virtual_account_issued_at, created_at, expires_at, extra_charge_request_id")
+        .select("order_id, kind, amount, original_amount, points_used, coupon_discount, order_name, status, provider, payment_key, draft, payment_method, virtual_account, virtual_account_issued_at, created_at, expires_at, extra_charge_request_id")
         )
-        .in("status", ["virtual_account_issued", "waiting_for_deposit"])
+        .in("status", ["virtual_account_issued", "waiting_for_deposit", "in_progress", "expired"])
         .order("created_at", { ascending: false }),
       organizationId ? Promise.resolve({ data: window.motfGetOrganizationWallet().account }) : client.from("point_accounts")
         .select("balance, lifetime_earned, lifetime_used")
@@ -283,30 +283,35 @@
       refundAmount: item.refund_amount,
       items: item.market_order_items || [],
     }));
-    (intentResult.data || []).filter((item) => isFutureDate(pendingAccountExpiresAt(item))).forEach((item) => {
+    (intentResult.data || []).filter((item) =>
+      ["virtual_account_issued", "waiting_for_deposit"].includes(item.status)
+        ? isFutureDate(pendingAccountExpiresAt(item))
+        : item.provider === "nicepay" && item.payment_key
+    ).forEach((item) => {
+      const review = ["in_progress", "expired"].includes(item.status);
       const account = item.virtual_account || {};
-      const label = accountLabel(account);
       const pendingItem = {
         id: item.order_id,
         amount: item.amount,
-        status: "입금 전",
-        virtualAccount: account,
+        status: review ? "결제 확인 필요" : "입금 전",
+        virtualAccount: review ? null : account,
         expiresAt: pendingAccountExpiresAt(item),
-        isPendingVirtualAccount: true,
+        isPendingVirtualAccount: !review,
+        isPaymentReview: review,
       };
       if (item.kind === "stay" || item.kind === "extra_charge") {
         reservations.unshift({
           ...pendingItem,
-          stayName: item.kind === "extra_charge" ? "추가 이용금" : "가상계좌 입금 대기",
+          stayName: item.kind === "extra_charge" ? "추가 이용금" : review ? "결제 확인 필요" : "가상계좌 입금 대기",
           roomName: item.order_name,
-          date: String(item.virtual_account_issued_at || item.created_at || "").slice(0, 10),
+          date: review ? item.draft?.check_in_date || item.draft?.event_date || "" : String(item.virtual_account_issued_at || item.created_at || "").slice(0, 10),
           people: "-",
           isExtraCharge: item.kind === "extra_charge",
         });
       } else {
         orders.unshift({
           ...pendingItem,
-          storeName: "가상계좌 입금 대기",
+          storeName: review ? "결제 확인 필요" : "가상계좌 입금 대기",
           pickupTime: String(item.virtual_account_issued_at || item.created_at || "").slice(11, 16),
           items: [{ id: item.order_id }],
         });
@@ -492,12 +497,22 @@
       const { data: sessionData } = await client.auth.getSession();
       const token = sessionData.session?.access_token;
       if (!token) throw new Error("로그인이 만료되었습니다.");
-      const response = await fetch("/api/cancel-reservation", {
+      let response = await fetch("/api/cancel-reservation", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify({ reservationId, reason }),
       });
-      const result = await response.json().catch(() => null);
+      let result = await response.json().catch(() => null);
+      if (result?.code === "REFUND_ACCOUNT_REQUIRED") {
+        const bankCode = prompt("가상계좌 환불 은행코드 3자리를 입력해주세요. 예: 우리 020, 국민 004, 신한 088, 농협 011");
+        if (bankCode == null) return;
+        const accountNumber = prompt("환불받을 계좌번호를 입력해주세요.");
+        if (accountNumber == null) return;
+        const holderName = prompt("환불계좌 예금주를 입력해주세요.");
+        if (holderName == null) return;
+        response = await fetch("/api/cancel-reservation", { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ reservationId, reason, refundAccount: { bankCode: bankCode.trim(), accountNumber: accountNumber.replace(/\D/g, ""), holderName: holderName.trim() } }) });
+        result = await response.json().catch(() => null);
+      }
       if (!response.ok || !result?.ok) throw new Error(result?.message || "예약 취소를 처리하지 못했습니다.");
       alert(result.message || "예약 취소와 환불 요청이 접수되었습니다.");
       await loadMyTransactions();

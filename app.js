@@ -3330,8 +3330,9 @@ async function loadPaymentConfig() {
     const response = await fetch("/api/payment-config", { cache: "no-store", signal: controller.signal });
     if (!response.headers.get("content-type")?.includes("application/json")) return;
     const data = await response.json();
-    if (response.ok) {
+    if (response.ok && data.ok && ["toss", "nicepay"].includes(data.provider)) {
       TOSS_CLIENT_KEYS.stay = data.tossClientKeys?.stay || data.tossClientKey || TOSS_CLIENT_KEYS.stay;
+      window.motfPaymentConfig = data;
       TOSS_CLIENT_KEYS.market = data.tossClientKeys?.market || TOSS_CLIENT_KEYS.market;
     }
     if (response.ok && data.naverMapKeyId) NAVER_MAP_KEY_ID = data.naverMapKeyId;
@@ -3490,7 +3491,7 @@ function renderPaymentResult() {
   let primaryAction = "";
   if (result.status === "confirming") {
     primaryAction = `<button class="primary-btn" type="button" disabled><i data-lucide="loader-circle"></i>서버 확인 중</button>`;
-  } else if (result.status === "virtual_account_issued") {
+  } else if (result.status === "virtual_account_issued" || result.status === "review") {
     primaryAction = `<button class="primary-btn" data-route="mypage"><i data-lucide="user-round"></i>예약 요청 확인</button>`;
   } else if (result.status !== "success") {
     primaryAction = `<button class="primary-btn" data-route="${result.backRoute}"><i data-lucide="credit-card"></i>다시 결제하기</button>`;
@@ -3897,8 +3898,16 @@ function renderPointHistory() {
 }
 
 async function renderTossWidgets(payment) {
+  if (window.motfPaymentConfig?.provider === "nicepay") return window.motfRenderNicepay(payment);
   const paymentMethods = qs("#tossPaymentMethods");
   if (!paymentMethods || !payment) return;
+  if (window.motfPaymentConfig?.provider !== "toss") {
+    paymentMethods.innerHTML = "";
+    setTossWidgetStatus("결제 설정을 불러오지 못했습니다. 새로고침 후 다시 시도해주세요.");
+    const button = qs("[data-toss-payment]");
+    if (button) button.disabled = true;
+    return;
+  }
   paymentMethods.innerHTML = `
     <div class="toss-launch-summary">
       <span class="toss-launch-icon"><i data-lucide="shield-check"></i></span>
@@ -3948,6 +3957,8 @@ async function confirmPaymentOnServer(payment, params = new URLSearchParams()) {
 
 async function requestTossPayment() {
   const payment = state.pendingPayment;
+  if (!["toss", "nicepay"].includes(window.motfPaymentConfig?.provider)) return toast("결제 설정을 불러오지 못했습니다. 새로고침 후 다시 시도해주세요.");
+  if (window.motfPaymentConfig?.provider === "nicepay") return window.motfRequestNicepay(payment);
   if (!payment) return toast("결제할 내역이 없습니다.");
   if (Number(payment.amount) > MAX_SINGLE_PAYMENT_AMOUNT || Number(payment.originalAmount || payment.amount) > MAX_SINGLE_PAYMENT_AMOUNT) {
     return toast(PAYMENT_LIMIT_MESSAGE);
@@ -4046,6 +4057,34 @@ async function requestTossPayment() {
 
 async function handleTossRedirect() {
   const params = new URLSearchParams(window.location.search);
+  if (params.get("nicepay") === "1") {
+    const orderId = params.get("orderId");
+    const stored = state.pendingPayment || getStoredPendingPayment();
+    try {
+      const result = await window.motfReadPaymentStatus(orderId);
+      const payment = stored?.orderId === orderId ? stored : { type: result.kind, orderId, itemName: result.itemName, amount: result.amount };
+      state.pendingPayment = payment;
+      if (result.status === "paid") {
+        await window.motfReloadTransactions?.();
+        setPaymentResult("success");
+      } else {
+        const waiting = result.status === "awaiting_deposit";
+        const cancelled = ["cancelled", "expired", "failed"].includes(result.status);
+        state.paymentResult = {
+          ...payment, status: waiting ? "virtual_account_issued" : cancelled ? "cancel" : "review",
+          eyebrow: waiting ? "입금 대기" : cancelled ? "결제 미완료" : "결제 확인 필요",
+          title: waiting ? "아래 계좌로 입금해주세요" : cancelled ? "결제가 완료되지 않았습니다" : "결제 상태를 확인하고 있습니다",
+          text: waiting ? "기한 내 입금이 확인되면 예약·주문 요청이 접수됩니다." : cancelled ? "다시 예약·주문을 준비해주세요." : "중복 결제하지 말고 마이페이지 또는 운영팀을 통해 확인해주세요.",
+          virtualAccount: waiting ? result.virtualAccount : null, className: cancelled ? "cancel" : "", icon: waiting ? "landmark" : "info", backRoute: "mypage",
+        };
+        navigate("paymentResult", { replace: true });
+      }
+    } catch (error) {
+      state.paymentResult = { status: "review", type: "stay", orderId: orderId || "-", itemName: "결제 내역 확인", amount: 0, eyebrow: "결제 확인 필요", title: "결제 내역을 확인해주세요", text: error.message, icon: "info", className: "", backRoute: "mypage" };
+      navigate("paymentResult", { replace: true });
+    } finally { window.history.replaceState({}, "", "/payment"); }
+    return true;
+  }
   const paymentKey = params.get("paymentKey");
   const orderId = params.get("orderId");
   const amount = Number(params.get("amount"));
@@ -4110,10 +4149,10 @@ function reservationCard(item) {
   const schedule = [item.date, item.checkOutDate].filter(Boolean).join(" ~ ") || item.date || "";
   return `
     <article class="listing-card usage-history-card ${item.isPendingVirtualAccount ? "pending-payment-card" : ""} ${item.isExtraCharge ? "extra-charge-usage-card" : ""}">
-      <label class="usage-select"><input type="checkbox" data-usage-select="${item.id}" ${state.selectedUsageIds.has(String(item.id)) ? "checked" : ""}><span>예결산에 포함</span></label>
+      ${item.isPaymentReview ? "" : `<label class="usage-select"><input type="checkbox" data-usage-select="${item.id}" ${state.selectedUsageIds.has(String(item.id)) ? "checked" : ""}><span>예결산에 포함</span></label>`}
       <div class="listing-body">
         <div class="listing-meta">
-          <span class="pill ${item.isPendingVirtualAccount ? "warning" : "success"}">${item.status}</span>
+          <span class="pill ${item.isPendingVirtualAccount || item.isPaymentReview ? "warning" : "success"}">${item.status}</span>
           <span class="pill">${schedule}</span>
           <span class="pill">${item.people}명</span>
         </div>
@@ -4122,11 +4161,11 @@ function reservationCard(item) {
         ${item.isExtraCharge && item.itemsLabel ? `<div class="extra-charge-breakdown"><strong>추가 항목</strong><br>${escapeHtml(item.itemsLabel)}</div>` : ""}
         ${account ? `<div class="pending-account"><span>입금 계좌</span><strong>${account}</strong>${dueDate ? `<p>입금 기한 ${formatDateTime(dueDate)}</p>` : ""}</div>` : ""}
         ${item.isPendingVirtualAccount ? `<p class="muted">입금 완료가 자동 확인되면 예약 요청 완료 상태로 넘어가고, 사장님 확인 후 최종 확정됩니다.</p>` : ""}
+        ${item.isPaymentReview ? `<p class="muted">결제 상태를 확인 중입니다. 중복 결제하지 말고 상태를 확인해주세요. 해결되지 않으면 주문번호 ${escapeHtml(item.id)}로 문의해주세요.</p>` : ""}
         ${item.refundAmount ? `<p class="muted">환불 예정 금액 ${money(item.refundAmount)}</p>` : ""}
         <div class="button-row">
           ${!item.isExtraCharge && item.rawStatus === "confirmed" ? `<button class="ghost-btn" data-cancel-reservation="${item.id}"><i data-lucide="rotate-ccw"></i>예약 취소</button>` : ""}
-          <button class="secondary-btn" data-budget-file="${item.id}"><i data-lucide="file-spreadsheet"></i>예결산 엑셀 생성</button>
-          <button class="ghost-btn" data-route="review"><i data-lucide="star"></i>리뷰</button>
+          ${item.isPaymentReview ? `<button class="secondary-btn" data-check-payment="${escapeHtml(item.id)}"><i data-lucide="refresh-cw"></i>결제 상태 확인</button>` : `<button class="secondary-btn" data-budget-file="${item.id}"><i data-lucide="file-spreadsheet"></i>예결산 엑셀 생성</button><button class="ghost-btn" data-route="review"><i data-lucide="star"></i>리뷰</button>`}
         </div>
       </div>
     </article>
@@ -4138,20 +4177,20 @@ function orderCard(item) {
   const dueDate = pendingAccountDueDate(item);
   return `
     <article class="listing-card usage-history-card ${item.isPendingVirtualAccount ? "pending-payment-card" : ""}">
-      <label class="usage-select"><input type="checkbox" data-usage-select="${item.id}" ${state.selectedUsageIds.has(String(item.id)) ? "checked" : ""}><span>예결산에 포함</span></label>
+      ${item.isPaymentReview ? "" : `<label class="usage-select"><input type="checkbox" data-usage-select="${item.id}" ${state.selectedUsageIds.has(String(item.id)) ? "checked" : ""}><span>예결산에 포함</span></label>`}
       <div class="listing-body">
         <div class="listing-meta">
-          <span class="pill ${item.isPendingVirtualAccount ? "warning" : "success"}">${item.status}</span>
+          <span class="pill ${item.isPendingVirtualAccount || item.isPaymentReview ? "warning" : "success"}">${item.status}</span>
           <span class="pill">${item.pickupTime}</span>
         </div>
         <h3>${item.storeName}</h3>
         <p>${item.items.length}개 품목 · ${money(item.amount)}</p>
         ${account ? `<div class="pending-account"><span>입금 계좌</span><strong>${account}</strong>${dueDate ? `<p>입금 기한 ${formatDateTime(dueDate)}</p>` : ""}</div>` : ""}
         ${item.isPendingVirtualAccount ? `<p class="muted">입금 완료가 자동 확인되면 주문 요청 완료 상태로 넘어갑니다.</p>` : ""}
+        ${item.isPaymentReview ? `<p class="muted">중복 결제하지 말고 상태를 확인해주세요. 해결되지 않으면 주문번호 ${escapeHtml(item.id)}로 문의해주세요.</p>` : ""}
         ${item.refundAmount ? `<p class="muted">환불 예정 금액 ${money(item.refundAmount)}</p>` : ""}
         <div class="button-row">
-          <button class="secondary-btn" data-budget-file="${item.id}"><i data-lucide="file-spreadsheet"></i>예결산 엑셀 생성</button>
-          <button class="ghost-btn" data-route="review"><i data-lucide="star"></i>리뷰</button>
+          ${item.isPaymentReview ? `<button class="secondary-btn" data-check-payment="${escapeHtml(item.id)}"><i data-lucide="refresh-cw"></i>결제 상태 확인</button>` : `<button class="secondary-btn" data-budget-file="${item.id}"><i data-lucide="file-spreadsheet"></i>예결산 엑셀 생성</button><button class="ghost-btn" data-route="review"><i data-lucide="star"></i>리뷰</button>`}
         </div>
       </div>
     </article>
@@ -4916,6 +4955,21 @@ document.addEventListener("click", async (event) => {
     return;
   }
 
+  const paymentStatusButton = event.target.closest("[data-check-payment]");
+  if (paymentStatusButton) {
+    if (paymentStatusButton.disabled) return;
+    paymentStatusButton.disabled = true;
+    try {
+      const result = await window.motfReadPaymentStatus(paymentStatusButton.dataset.checkPayment);
+      await window.motfReloadTransactions?.();
+      toast(result.status === "paid" ? "결제가 확인되었습니다." : "아직 확인이 필요합니다. 중복 결제하지 말고 운영팀에 문의해주세요.");
+    } catch (error) {
+      toast(error.message || "결제 상태를 확인하지 못했습니다.");
+    } finally {
+      paymentStatusButton.disabled = false;
+    }
+    return;
+  }
   const tossPaymentButton = event.target.closest("[data-toss-payment]");
   if (tossPaymentButton) {
     requestTossPayment();

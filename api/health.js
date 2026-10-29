@@ -8,12 +8,17 @@ module.exports = async function handler(req, res) {
   return json(res, 200, {
     ok: true,
     service: "motf-prototype",
-    paymentProvider: "toss",
+    paymentProvider: process.env.PAYMENT_PROVIDER === "nicepay" ? "nicepay" : "toss",
+    nicepayPaymentConfigured: Boolean(process.env.NICEPAY_STAY_MID && process.env.NICEPAY_STAY_MERCHANT_KEY),
+    nicepayMarketPaymentConfigured: Boolean(process.env.NICEPAY_MARKET_MID && process.env.NICEPAY_MARKET_MERCHANT_KEY),
+    automatedPayoutEnabled: false,
     paymentConfigured: Boolean(
+      process.env.PAYMENT_PROVIDER === "nicepay" ? process.env.NICEPAY_STAY_MID && process.env.NICEPAY_STAY_MERCHANT_KEY :
       (process.env.TOSS_STAY_CLIENT_KEY || process.env.TOSS_CLIENT_KEY) &&
       (process.env.TOSS_STAY_SECRET_KEY || process.env.TOSS_SECRET_KEY),
     ),
     marketPaymentConfigured: Boolean(
+      process.env.PAYMENT_PROVIDER === "nicepay" ? process.env.NICEPAY_MARKET_MID && process.env.NICEPAY_MARKET_MERCHANT_KEY :
       process.env.TOSS_MARKET_CLIENT_KEY &&
       process.env.TOSS_MARKET_SECRET_KEY,
     ),
