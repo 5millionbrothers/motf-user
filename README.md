@@ -7,11 +7,19 @@
 - 화면과 사용자 흐름: 정적 HTML/CSS/JavaScript
 - 서버 API: Vercel Functions (`api/`)
 - 인증·데이터: Supabase
-- 결제: Toss Payments
+- 결제: NICEPAY (과거 Toss 결제 호환 유지)
 - 휴대폰 본인확인: KCP 인증 어댑터
 - DB 마이그레이션 원본: `motf-database/supabase`
 
 DB SQL은 이 저장소에 복사하지 않습니다. 스키마 변경은 반드시 `motf-database`에 번호가 붙은 SQL로 추가합니다.
+
+## 2026-11-03 디자인 통합
+
+최신 NICEPAY 운영 소스에 홈·공통 스타일과 모바일 탭바를 적용했습니다. 결제·환불 서버 API와 카탈로그·지도 좌표·커뮤니티 저장 어댑터는 기존 운영 경로를 사용합니다.
+운영자 `이벤트·배너·콘텐츠 → 메인 배너`는 기존 `homepage_cards` 테이블을 사용하므로 이번 디자인 변경에 추가 SQL은 없습니다.
+적용 범위, 데이터 연결, 검증 결과와 배포 확인 순서는 [디자인 통합 안내](docs/design-integration-20261103.md)를 확인합니다.
+
+현재 결제 설정은 기존 Vercel의 `PAYMENT_PROVIDER=nicepay`, `NICEPAY_MID`, `NICEPAY_MERCHANT_KEY`를 그대로 유지합니다. 아래 Toss 관련 설정·초기 적용 순서는 이전 연동 기록이며 이번 디자인 적용 때문에 다시 설정하거나 실행하지 않습니다.
 
 ## 출시 준비 기능
 

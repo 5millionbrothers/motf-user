@@ -13,13 +13,17 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600&amp;display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
-    <link rel="stylesheet" href="styles.css?v=20260911-market-variants1" />
+    <link rel="stylesheet" href="styles.css?v=20261026-calendar42-month-600-arrow-weekday-align-date450-number-up1-top-category36" />
     <link rel="stylesheet" href="auth.css?v=20260712-policy-links1" />
     <link rel="stylesheet" href="refinement.css?v=20261029-nicepay" />
+    <link rel="preload" href="assets/SUIT-Variable.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="design-system.css?v=20261103" />
     <link rel="stylesheet" href="loading.css?v=20260904-logo2" />
     <script src="loading.js?v=20260904-loader1"></script>
     <script async src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" onload="window.__motfRefreshIcons && window.__motfRefreshIcons()"></script>
-    </head>
+    <meta name="description" content="모티프는 숙소 찾기부터 장보기, 예산 관리까지 MT와 단체 여행 준비를 돕는 플랫폼입니다." />
+    <meta name="naver-site-verification" content="471f0dd87fee0f68c5867db10cc9fec20706cc7c" />
+  </head>
   <body data-current-route="home">
     <div class="motf-loading-overlay" id="motfLoadingOverlay" role="status" aria-live="polite" aria-label="페이지를 불러오는 중입니다">
       <div class="motf-loading-indicator"><svg class="motf-loading-logo" viewBox="0 0 64 64" aria-hidden="true"><path class="motf-loading-logo-guide" d="M32 13c-8.84 0-16 7.16-16 16 0 11.58 14.16 22.4 14.76 22.85a2.08 2.08 0 0 0 2.48 0C33.84 51.4 48 40.58 48 29c0-8.84-7.16-16-16-16Zm0 9a7 7 0 1 0 0 14 7 7 0 0 0 0-14Z" /><path class="motf-loading-logo-stroke" pathLength="100" d="M32 13c-8.84 0-16 7.16-16 16 0 11.58 14.16 22.4 14.76 22.85a2.08 2.08 0 0 0 2.48 0C33.84 51.4 48 40.58 48 29c0-8.84-7.16-16-16-16Zm0 9a7 7 0 1 0 0 14 7 7 0 0 0 0-14Z" /></svg><span>불러오는 중</span></div>
@@ -28,27 +32,29 @@
       <div class="header-left">
         <div class="brand" role="button" tabindex="0" data-route="home" aria-label="메인 화면으로 이동">
           <img class="brand-symbol" src="assets/motf-logo-icon.png" alt="" />
+          <img class="brand-wordmark" src="assets/motf-logo-wordmark.png" alt="moTF" />
         </div>
       </div>
       <nav class="top-nav" aria-label="주요 메뉴">
         <button class="nav-link nav-link-project" data-route="myMt"><i data-lucide="folder-kanban"></i>내 MT</button>
         <button class="nav-link" data-route="stays">숙소</button>
         <button class="nav-link" data-route="market">장보기</button>
-        <button class="nav-link" data-route="events">MOriginal</button>
         <button class="nav-link" data-route="community">커뮤니티</button>
-        <span class="nav-coming-soon" title="계절 상품 준비 중">빠지·스키 <small>COMING SOON</small></span>
+        <button class="nav-link" data-route="events">MOriginal</button>
+      </nav>
+      <div class="header-account-actions">
         <button class="header-point-wallet" type="button" data-point-wallet data-route="myUsage" hidden aria-label="보유 포인트와 내역 보기"><b data-point-balance>0P</b></button>
         <button class="nav-link icon-nav" data-route="chat" aria-label="채팅"><i data-lucide="message-circle"></i></button>
         <button class="nav-link icon-nav" data-route="mypage" aria-label="마이페이지"><i data-lucide="user-round"></i></button>
-      </nav>
+      </div>
     </header>
 
     <main>
       <section id="home" class="view active home-view">
         <section class="home-search-intro">
           <div class="home-intro-copy">
-            <p class="eyebrow">대학 MT부터 각종 수련회, 워크샵까지</p>
-            <h1>단체 여행의 새로운 주자, <img class="home-headline-logo" src="assets/motf-logo-header.png" alt="moTF" /></h1>
+            <p>대학 MT·워크샵·수련회, 숙소·장보기부터 레크·예결산까지 한 번에.</p>
+            <h1>MT 준비, <em>모티프 한곳에서.</em></h1>
           </div>
         </section>
 
@@ -60,13 +66,7 @@
           <button class="home-search-button" type="submit" aria-label="숙소 검색"><i data-lucide="search"></i><span>숙소 검색</span></button>
         </form>
 
-        <nav class="home-quick-links" aria-label="빠른 메뉴">
-          <button data-route="stays"><span><i data-lucide="sliders-horizontal"></i></span>상세 조건 설정</button>
-          <button data-route="community" data-community-section="orderRecommend"><span><i data-lucide="calculator"></i></span>인원별 준비량</button>
-          <button data-route="myMt"><span><i data-lucide="folder-kanban"></i></span>우리 MT 준비</button>
-          <button data-route="market"><span><i data-lucide="shopping-basket"></i></span>장보기 바로 주문</button>
-          <button data-route="chat"><span><i data-lucide="messages-square"></i></span>사장님 문의</button>
-        </nav>
+        <section class="home-banner" id="homeBanner" aria-label="모티프 소식" aria-roledescription="캐러셀"></section>
 
         <section class="home-curation" aria-label="추천 숙소">
           <div class="section-toolbar"><div><p class="eyebrow">지금 많이 찾는 곳</p><h2>요즘 뜨는 숙소</h2></div><div class="home-rail-actions"><button class="icon-action" type="button" data-home-stay-scroll="-1" aria-label="이전 숙소"><i data-lucide="chevron-left"></i></button><button class="icon-action" type="button" data-home-stay-scroll="1" aria-label="다음 숙소"><i data-lucide="chevron-right"></i></button><button class="text-link" data-route="stays">전체 보기 <i data-lucide="arrow-right"></i></button></div></div>
@@ -78,10 +78,7 @@
           <div class="home-market-picks" id="homeMarketPicks"></div>
         </section>
 
-        <section class="home-events-feature" aria-label="모티프 주최 MT">
-          <div class="section-toolbar"><div><p class="eyebrow">moTF ORIGINAL</p><h2>이번엔 모티프가 MT를 열어요</h2></div><button class="text-link" data-route="events">전체 이벤트 <i data-lucide="arrow-right"></i></button></div>
-          <div id="homeEventPicks" class="home-event-picks"></div>
-        </section>
+        <section id="homeCalculator" class="home-calculator" aria-label="MT 예산 계산기"></section>
 
         <section class="home-card-news" aria-label="모티프 카드뉴스" hidden>
           <div class="section-toolbar"><div><p class="eyebrow">모티프 소식</p><h2>준비할 때 바로 쓰는 이야기</h2></div></div>
@@ -92,6 +89,7 @@
           <div class="section-toolbar"><div><p class="eyebrow">moTF 커뮤니티</p><h2>MT, 이젠 하나의 문화로</h2></div><button class="text-link" data-route="community">더 둘러보기 <i data-lucide="arrow-right"></i></button></div>
           <div class="home-story-grid" id="homeStoryGrid"></div>
         </section>
+        <section class="home-mt-band"><div><p class="eyebrow">우리 MT 준비 공간</p><h2>숙소 후보부터 장보기와 예산까지,<br />내 MT에 모아두세요.</h2></div><p>여행별 준비 내역은 내 MT에서.<br />다음 준비도 같은 곳에서 이어가요.</p><button class="secondary-btn" data-route="myMt">내 MT 열기 <i data-lucide="arrow-up-right"></i></button></section>
       </section>
 
       <section id="events" class="view events-view">
@@ -1216,22 +1214,24 @@
     </dialog>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <nav class="mobile-bottom-nav" aria-label="모바일 주요 메뉴"><button class="nav-link" data-route="home"><i data-lucide="house"></i><span>홈</span></button><button class="nav-link" data-route="stays"><i data-lucide="bed-double"></i><span>숙소</span></button><button class="nav-link" data-route="market"><i data-lucide="shopping-basket"></i><span>장보기</span></button><button class="nav-link" data-route="events"><i data-lucide="sparkles"></i><span>모리지널</span></button><button class="nav-link" data-route="myMt"><i data-lucide="folder-heart"></i><span>내 MT</span></button></nav>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script src="config.js?v=20260622-naver1"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ko.js"></script>
     <script src="nicepay.js?v=20261030-card-bank"></script>
-<script src="app.js?v=20261029-nicepay"></script>
+<script src="app.js?v=20261103-design"></script>
     <script src="budget-export.js?v=20260721-batch2"></script>
-    <script src="auth.js?v=20261023-v1"></script>
+    <script src="auth.js?v=20261103-header"></script>
     <script src="catalog.js?v=20261026-market-catalog"></script>
     <script src="transactions.js?v=20261029-nicepay"></script>
     <script src="chat-data.js?v=20261014-org3"></script>
     <script src="support-data.js?v=20260621-support1"></script>
     <script src="reviews-data.js?v=20260829-hotfix3"></script>
-    <script src="product-refresh.js?v=20260901-launch-review1"></script>
-    <script src="mt-project-data.js?v=20261014-org1"></script>
-    <script src="content-data.js?v=20260908-admin-content2"></script>
+    <script src="product-refresh.js?v=20261026-day-number-up1"></script>
+    <script src="mt-project-data.js?v=20261103-extra-costs"></script>
+    <script src="content-data.js?v=20261103-banners"></script>
+    <script src="home-design.js?v=20261103"></script>
   </body>
 </html>

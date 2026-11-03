@@ -365,8 +365,8 @@ const communityBoards = [
   },
 ];
 
-// 실제 승인된 공판장과 공개 상품은 catalog.js에서 채우고, 없을 때는 데모 공판장을 보여줍니다.
-let stores = legacyDemoStores.map((store) => ({ ...store, products: store.products.map((product) => ({ ...product })) }));
+// 실제 승인된 공판장과 공개 상품만 catalog.js에서 채웁니다.
+let stores = [];
 
 const state = {
   selectedStay: stays[0],
@@ -482,9 +482,7 @@ window.motfApplyCatalog = function applyCatalog(nextStays, nextStores, options =
     state.selectedRoom = state.selectedStay?.rooms?.find((room) => String(room.id) === String(requestedRoomId)) || state.selectedStay?.rooms?.[0] || null;
   }
   if (Array.isArray(nextStores)) {
-    stores = nextStores.length
-      ? nextStores
-      : legacyDemoStores.map((store) => ({ ...store, products: store.products.map((product) => ({ ...product })) }));
+    stores = nextStores;
     state.selectedStore = stores[0] || null;
     state.selectedProduct = stores[0]?.products?.[0] || null;
     state.cart = [];
@@ -1108,6 +1106,12 @@ function navigate(route, options = {}) {
     if (routeHistory.length > 30) routeHistory.shift();
   }
   if (route === "myMt" && options.keepMtWorkspace !== true) state.mtProjectMode = "list";
+  Object.entries(mapState).forEach(([kind, entry]) => {
+    if (route !== kind) {
+      entry.version += 1;
+      entry.map?.stop();
+    }
+  });
   qsa(".view").forEach((view) => view.classList.toggle("active", view.id === route));
   document.body.dataset.currentRoute = route;
   const activeNav = routeParents[route] ?? route;
@@ -1208,6 +1212,7 @@ function renderHome() {
   renderHomeMarketPicks();
   renderHomeStories();
   syncStaySearchPanel(qs("#home") || document);
+  window.motfHomeDesign?.render({ cards: state.homepageCards, events: state.platformEvents });
 }
 
 function effectiveEventStatus(event) {
@@ -1270,7 +1275,7 @@ function renderHomeCardNews() {
   const section = qs(".home-card-news");
   const container = qs("#homeCardNews");
   if (!section || !container) return;
-  const cards = state.homepageCards.filter((card) => ["card_news", "promotion"].includes(card.placement));
+  const cards = state.homepageCards.filter((card) => card.placement === "card_news");
   section.hidden = !cards.length;
   container.innerHTML = cards.map((card) => `<a class="home-news-card ${card.placement === "promotion" ? "is-promotion" : "is-card-news"}" href="${escapeHtml(card.link_url || "#")}" ${card.link_url ? 'target="_blank" rel="noopener noreferrer"' : ""}><img src="${card.image_url}" alt="" /><span><small>${escapeHtml(card.placement === "promotion" ? "프로모션" : "CARD NEWS")}</small><strong>${escapeHtml(card.title)}</strong><b>${escapeHtml(card.subtitle || card.link_label || "자세히 보기")}</b></span></a>`).join("");
 }
@@ -1316,7 +1321,7 @@ function renderHomePicks() {
     refreshIcons();
     return;
   }
-  const homeStays = window.motfRankStayExposure ? window.motfRankStayExposure(stays, "home") : stays;
+  const homeStays = (window.motfRankStayExposure ? window.motfRankStayExposure(stays, "home") : stays).slice(0, 3);
   container.innerHTML = homeStays.map((stay) => {
     const estimate = estimateMtStayCost(stay);
     const highlights = (stay.highlights?.length ? stay.highlights : stay.amenities || []).slice(0, 3);
@@ -1337,6 +1342,7 @@ function renderHomePicks() {
           </span>
         </span>
       </button>
+      <button class="home-mt-save" type="button" data-add-mt-candidate="${stay.id}" aria-label="${escapeHtml(stay.name)} 내 MT에 담기" title="내 MT에 담기"><i data-lucide="folder-plus"></i></button>
       <button class="home-stay-review-link" type="button" data-stay-review-id="${stay.id}" aria-label="${escapeHtml(stay.name)} 리뷰 바로 보기">
         ${reviewSummary.count
           ? `<span class="home-stay-review-rating"><i data-lucide="star"></i><b>${reviewSummary.rating.toFixed(1)}</b><em>/ 5</em></span>`
@@ -1381,13 +1387,13 @@ function renderHomeMarketPicks() {
   const picks = stores.flatMap((store) => {
     ensureMarketBundleProducts(store);
     return groupProductVariants(store.products).map((product) => ({ product, store }));
-  }).slice(0, 8);
+  }).slice(0, 3);
   if (!picks.length) {
     container.innerHTML = `<div class="empty-state compact catalog-error"><strong>제휴 마트 상품을 준비하고 있어요.</strong><span>상품이 공개되면 이곳에서 바로 확인할 수 있습니다.</span></div>`;
     return;
   }
   container.innerHTML = picks.map(({ product, store }) => `
-    <button class="home-stay-pick home-market-pick" type="button" data-product-id="${product.id}">
+    <article class="home-stay-pick home-market-pick"><button class="home-stay-pick-main" type="button" data-product-id="${product.id}">
       <img class="${productImageClass(product)}" src="${product.image}" alt="${escapeHtml(product.name)}" />
       <span class="home-stay-pick-body home-market-pick-body">
         <small>${escapeHtml(store.name)} · ${product.variants.length > 1 ? `${product.variants.length}개 옵션` : escapeHtml(product.unit || "상품")}</small>
@@ -1399,7 +1405,7 @@ function renderHomeMarketPicks() {
         </span>
         <span class="home-card-price home-market-card-price">${productPriceMarkup(product)}</span>
       </span>
-    </button>
+    </button><button class="home-mt-save" type="button" data-add-mt-shopping="${product.id}" aria-label="${escapeHtml(product.name)} 내 MT에 담기" title="내 MT에 담기"><i data-lucide="folder-plus"></i></button></article>
   `).join("");
   window.requestAnimationFrame(() => {
     const canScroll = container.scrollWidth > container.clientWidth + 2;
@@ -1552,7 +1558,7 @@ function infoContent(item, kind) {
 function drawNaverMap(kind, matches, maps) {
   const panel = mapPanel(kind);
   const canvas = panel?.querySelector(".naver-map-canvas");
-  if (!panel || !canvas) return;
+  if (!panel || !canvas || !canvas.offsetWidth || !canvas.offsetHeight) return;
 
   const items = mapItems(kind, matches).filter((item) => item.location);
   const fallbackCenter = kind === "stays" ? { lat: 37.7465, lng: 127.5065 } : { lat: 37.7108, lng: 127.5452 };
@@ -1570,6 +1576,8 @@ function drawNaverMap(kind, matches, maps) {
   }
 
   const map = mapState[kind].map;
+  map.stop();
+  map.autoResize();
   clearNaverMarkers(kind);
   panel.classList.add("map-ready");
   setMapStatus(kind, "");
@@ -1611,7 +1619,7 @@ function drawNaverMap(kind, matches, maps) {
   }
 
   window.setTimeout(() => {
-    map.refresh?.();
+    if (canvas.offsetWidth && canvas.offsetHeight && currentRoute() === kind) map.autoResize();
   }, 0);
 }
 
@@ -1625,7 +1633,7 @@ async function renderListingMap(kind, matches) {
 
   try {
     const maps = await loadNaverMaps();
-    if (mapState[kind].version !== version) return;
+    if (mapState[kind].version !== version || currentRoute() !== kind) return;
     drawNaverMap(kind, matches, maps);
   } catch (error) {
     if (mapState[kind].version !== version) return;
@@ -1732,8 +1740,7 @@ function stayCard(stay) {
           </div>
           <span class="stay-card-availability">${availableCount}/${stay.rooms.length} 객실 가능</span>
           <div class="stay-card-action-buttons">
-            <button class="secondary-btn candidate-button ${selected ? "active" : ""}" data-add-mt-candidate="${stay.id}" aria-label="${selected ? "담은 객실 후보 확인" : "객실 후보 담기"}"><i data-lucide="${selected ? "check" : "plus"}"></i>${selected ? "담김" : "후보"}</button>
-            ${favoriteStayButton(stay, true)}
+            <button class="secondary-btn candidate-button ${selected ? "active" : ""}" data-add-mt-candidate="${stay.id}" aria-label="${selected ? "담은 객실 후보 확인" : "내 MT에 담기"}"><i data-lucide="${selected ? "check" : "folder-plus"}"></i>${selected ? "담김" : "내 MT에 담기"}</button>
             <button class="ghost-btn stay-chat-icon" data-open-chat="${stay.name}" aria-label="${stay.name}에 문의" title="채팅 문의"><i data-lucide="message-circle"></i></button>
           </div>
         </div>
@@ -1968,7 +1975,7 @@ function renderStayDetail() {
       <div class="button-row">
         <button class="secondary-btn" data-open-chat="${stay.name}"><i data-lucide="messages-square"></i>사장님과 채팅</button>
         <button class="ghost-btn" type="button" data-share-stay="${stay.id}"><i data-lucide="share-2"></i>공유</button>
-        ${favoriteStayButton(stay)}
+        <button class="primary-btn" data-add-mt-candidate="${stay.id}"><i data-lucide="folder-plus"></i>내 MT에 담기</button>
         <button class="ghost-btn" data-scroll-stay-reviews><i data-lucide="star"></i>리뷰 바로 보기</button>
       </div>
     </section>
@@ -2344,6 +2351,7 @@ function renderStores() {
       <div class="market-intro-body">
         <p class="eyebrow">${store.region} 제휴 마트</p>
         <h2>${store.name}</h2>
+        <button class="market-mobile-details text-link" type="button" data-market-info>공판장 정보 <i data-lucide="chevron-right"></i></button>
         <p>${store.intro}<br />숙소 일정에 맞춰 수령 또는 배송 요청을 남길 수 있습니다.</p>
         <div class="detail-meta">
           ${store.rating > 0 ? `<span class="pill">★ ${store.rating}</span>` : '<span class="pill">신규 제휴</span>'}
@@ -3135,6 +3143,7 @@ function renderMyMt() {
   const shopping = (state.mtProject.items || []).filter((item) => item.item_kind === "shopping" && item.status !== "cancelled");
   const shoppingList = qs("#mtShoppingItems");
   if (shoppingList) shoppingList.innerHTML = shopping.length ? shopping.map((item) => `<article><span class="mt-shopping-icon"><i data-lucide="shopping-basket"></i></span><div><strong>${escapeHtml(item.title)}</strong><span>${Number(item.quantity || 1)}개 · ${money(Number(item.amount || 0) * Number(item.quantity || 1))}</span></div><button class="icon-action" type="button" data-remove-mt-item="${item.id}" aria-label="장보기 후보 삭제"><i data-lucide="x"></i></button></article>`).join("") : `<div class="empty-state compact">장보기에서 필요한 상품을 ` + "`내 MT에 담기`" + `로 추가해보세요.</div>`;
+  window.motfHomeDesign?.renderMtExtras(state.mtProject);
   refreshIcons();
 }
 
@@ -3342,6 +3351,8 @@ async function loadPaymentConfig() {
 }
 
 function renderPayment() {
+  const providerLabel = window.motfPaymentConfig?.provider === "nicepay" ? "나이스페이 안전결제" : window.motfPaymentConfig?.provider === "toss" ? "토스페이먼츠 안전결제" : "안전결제";
+  qsa("#payment .view-title h1, #payment .view-title .eyebrow").forEach(element => { element.textContent = providerLabel; });
   const payment = state.pendingPayment;
   if (!payment) {
     qs("#paymentSummary").innerHTML = `<div class="empty-state">결제할 내역이 없습니다.</div>`;
@@ -5126,6 +5137,7 @@ qs("#mtProjectForm").addEventListener("submit", async (event) => {
     else state.mtProjects.unshift(state.mtProject);
     state.mtProjectMode = "detail";
     qs("#mtProjectDialog").close();
+    if (creating) await window.motfHomeDesign?.afterProjectCreated(state.mtProject);
     renderMyMt();
     toast(creating ? "새 MT가 만들어졌습니다." : "MT 정보가 저장되었습니다.");
   } catch (error) { toast(error.message || "MT 정보를 저장하지 못했습니다."); }

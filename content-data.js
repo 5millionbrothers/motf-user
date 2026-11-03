@@ -9,7 +9,7 @@
   const nowIso = new Date().toISOString();
   const [eventsResult, cardsResult, settingsResult, popupResult, recreationResult] = await Promise.all([
     client.rpc("get_public_platform_events"),
-    client.from("homepage_cards").select("*").eq("is_active", true).order("sort_order").limit(12),
+    client.from("homepage_cards").select("*").eq("is_active", true).order("sort_order").limit(60),
     client.from("platform_settings").select("setting_value").eq("setting_key", "social").maybeSingle(),
     client.from("popup_banners").select("*").eq("is_active", true).lte("starts_at", nowIso).gte("ends_at", nowIso).order("starts_at", { ascending: false }).limit(3),
     client.from("recreation_activities").select("*").eq("is_active", true).order("sort_order").order("created_at", { ascending: false }),
@@ -22,11 +22,15 @@
   if (!popupResult.error) showPopup(popupResult.data?.[0]);
 
   async function refreshEvents() {
-    const result = await client.rpc("get_public_platform_events");
+    const [result, cards] = await Promise.all([
+      client.rpc("get_public_platform_events"),
+      client.from("homepage_cards").select("*").eq("is_active", true).order("sort_order").limit(60),
+    ]);
     if (result.error) {
       console.warn("MOriginal 목록을 갱신하지 못했습니다.", result.error);
       return;
     }
+    if (!cards.error) cachedCards = cards.data || [];
     applyEvents(result.data || []);
   }
 

@@ -493,7 +493,7 @@
   }
 
   function updateHeader() {
-    const accountButton = document.querySelector('.top-nav [data-route="mypage"]');
+    const accountButton = document.querySelector('.header-account-actions [data-route="mypage"]');
     if (!accountButton) return;
     accountButton.setAttribute("aria-label", session?.user ? "마이페이지" : "로그인");
     accountButton.setAttribute("title", session?.user ? "마이페이지" : "로그인");
@@ -1065,6 +1065,14 @@
 
   document.addEventListener("click", (event) => {
     if (session?.user) return;
+
+    const createMtButton = event.target.closest("[data-create-mt-project]");
+    if (createMtButton) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      requireLogin(() => createMtButton.click());
+      return;
+    }
 
     const routeButton = event.target.closest("[data-route]");
     const route = routeButton?.dataset.route;

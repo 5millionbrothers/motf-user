@@ -275,6 +275,17 @@
     currentProject.items = (currentProject.items || []).filter((item) => item.id !== itemId);
   };
 
+  window.motfAddMtOtherItems = async function addMtOtherItems(items) {
+    const project = ensureProject();
+    const payload = items.map(item => ({ project_id:project.id, item_kind:"other", title:String(item.title || "기타 비용").trim().slice(0,100) || "기타 비용", quantity:1, amount:Number(item.amount), status:"planned" }));
+    if (!payload.length) return [];
+    if (payload.some(item => !Number.isFinite(item.amount) || item.amount <= 0 || item.amount > 100000000)) throw new Error("기타 비용 금액을 확인해주세요.");
+    const { data, error } = await client.from("mt_project_items").insert(payload).select(itemFields);
+    if (error) throw error;
+    currentProject.items = [...(currentProject.items || []), ...data];
+    return data;
+  };
+
   window.motfAddMtItinerary = async function addMtItinerary(payload) {
     const project = ensureProject();
     const { data, error } = await client.from("mt_itinerary_items")
