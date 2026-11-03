@@ -35,6 +35,12 @@ const escapeHtml = (value) => String(value ?? "").replace(/[&<>'"]/g, (character
   '"': "&quot;",
 }[character]));
 window.motfEscapeHtml = escapeHtml;
+const catalogLabel = value => {
+  const text = document.createElement("textarea");
+  text.innerHTML = String(value ?? "");
+  return escapeHtml(text.value);
+};
+window.motfCatalogLabel = catalogLabel;
 
 const TOSS_CLIENT_KEYS = {
   stay: window.MOTF_CONFIG?.TOSS_STAY_CLIENT_KEY?.trim() || window.MOTF_CONFIG?.TOSS_CLIENT_KEY?.trim() || "",
@@ -363,6 +369,7 @@ const communityBoards = [
     description: "픽업, 택시, 편의점, 날씨, 소음 규칙처럼 현장에서 필요한 정보를 공유해요.",
     posts: [],
   },
+  { id:"together", title:"같이 가요", description:"합동 MT와 취향 모임에 함께할 사람을 찾아요.", posts:[] },
 ];
 
 // 실제 승인된 공판장과 공개 상품만 catalog.js에서 채웁니다.
@@ -670,6 +677,7 @@ window.motfApplyCommunityData = function applyCommunityData(posts, likes, commen
     board.posts = remote;
   });
   if (currentRoute() === "community") renderCommunity();
+  if (currentRoute() === "home") renderHome();
   if (currentRoute() === "boardDetail") renderBoardDetail();
 };
 
@@ -1206,6 +1214,7 @@ const marketBundleImages = [
 ];
 
 function renderHome() {
+  if (window.motfLocalDesign) return window.motfLocalDesign.render();
   renderHomePicks();
   renderHomeEvents();
   renderHomeCardNews();
@@ -1716,35 +1725,16 @@ function stayCard(stay) {
   const selected = state.mtCandidateRecords.some((candidate) => String(candidate.businessId || candidate.business_id) === String(stay.id));
   const bathLabel = stay.bathCount ? `화장실 ${stay.bathCount}개` : "화장실 수 확인 필요";
   return `
-    <article class="listing-card stay-listing-card" data-stay-card-id="${stay.id}" role="button" tabindex="0" aria-label="${escapeHtml(stay.name)} 상세 보기">
-      <img src="${stay.image}" alt="${stay.name} 사진" />
-      <div class="listing-body stay-listing-body">
-        <div class="stay-card-copy">
-          <div class="listing-meta">
-            <span class="pill">${stay.region}</span>
-            <span class="pill success">최대 ${stay.maxPeople}명</span>
-            <button class="stay-review-chip" type="button" data-stay-review-id="${stay.id}" aria-label="${escapeHtml(stay.name)} 리뷰 보기"><i data-lucide="star"></i>${reviewSummary.count ? `${reviewSummary.rating.toFixed(1)} / 5 · 리뷰 ${reviewSummary.count}개` : "아직 리뷰 없음"}</button>
-          </div>
-          <h3>${stay.name}</h3>
-          <p class="stay-card-intro">${stay.intro}</p>
-          <div class="stay-card-facts">
-            <span>${stay.distance}</span>
-            <span>${bathLabel}</span>
-            ${(stay.highlights || []).slice(0, 1).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}
-          </div>
-        </div>
-        <div class="listing-actions stay-card-actions">
-          <div class="stay-card-price-block">
-            <span class="price">${money(estimate.total)}</span>
-            <small>${estimate.people}명 예상 총액</small>
-          </div>
-          <span class="stay-card-availability">${availableCount}/${stay.rooms.length} 객실 가능</span>
-          <div class="stay-card-action-buttons">
-            <button class="secondary-btn candidate-button ${selected ? "active" : ""}" data-add-mt-candidate="${stay.id}" aria-label="${selected ? "담은 객실 후보 확인" : "내 MT에 담기"}"><i data-lucide="${selected ? "check" : "folder-plus"}"></i>${selected ? "담김" : "내 MT에 담기"}</button>
-            <button class="ghost-btn stay-chat-icon" data-open-chat="${stay.name}" aria-label="${stay.name}에 문의" title="채팅 문의"><i data-lucide="message-circle"></i></button>
-          </div>
-        </div>
+    <article class="catalog-stay retained-stay-card" data-stay-card-id="${stay.id}">
+      <button class="catalog-stay-photo" data-stay-id="${stay.id}" aria-label="${escapeHtml(stay.name)} 상세 보기"><img src="${escapeHtml(stay.image)}" alt="${escapeHtml(stay.name)} 사진" loading="lazy"></button>
+      <div class="retained-stay-copy">
+        <div class="catalog-tags"><span>${escapeHtml(stay.region)}</span><span>최대 ${stay.maxPeople}명</span><span>${availableCount}/${stay.rooms.length} 객실 가능</span></div>
+        <button class="catalog-stay-name" data-stay-id="${stay.id}">${catalogLabel(stay.name)}</button>
+        <p class="stay-card-intro">${catalogLabel(stay.intro)}</p>
+        <div class="catalog-tags"><span>객실 ${stay.roomCount || stay.rooms.length}개</span><span>${bathLabel}</span>${(stay.highlights || []).slice(0,2).map(item=>`<span>${escapeHtml(item)}</span>`).join('')}</div>
+        <button class="stay-review-chip" type="button" data-stay-review-id="${stay.id}" aria-label="${escapeHtml(stay.name)} 리뷰 보기"><i data-lucide="star"></i>${reviewSummary.count ? `${reviewSummary.rating.toFixed(1)} / 5 · 리뷰 ${reviewSummary.count}개` : '아직 리뷰 없음'}</button>
       </div>
+      <div class="catalog-stay-bottom retained-stay-price"><strong>${money(estimate.total)}<span>${estimate.people}명 예상 총액</span></strong><div><button class="secondary candidate-button ${selected?'active':''}" data-add-mt-candidate="${stay.id}"><i data-lucide="${selected?'check':'folder-plus'}"></i>${selected?'담김':'내 MT에 담기'}</button><button class="icon-button" data-open-chat="${escapeHtml(stay.name)}" aria-label="숙소 문의"><i data-lucide="message-circle"></i></button></div></div>
     </article>
   `;
 }
@@ -2539,25 +2529,22 @@ function productCard(product) {
     ? `${variants.length}개 옵션 · ${variants.slice(0, 2).map((item) => item.variantLabel || item.unit).join(" / ")}${variants.length > 2 ? " 외" : ""}`
     : `${product.unit}${product.manufacturer ? ` · ${product.manufacturer}` : ` · ${product.origin}`}`;
   return `
-    <article class="product-card ${product.isBundle ? "bundle-product-card" : ""} ${hasVariants ? "has-variants" : ""}">
-      <button class="product-card-image-button" type="button" data-product-id="${product.id}" aria-label="${escapeHtml(product.name)} 상세 보기">
+    <article class="home-product-card product-card ${product.isBundle ? "bundle-product-card" : ""} ${hasVariants ? "has-variants" : ""}">
+      <button class="home-product-image product-card-image-button" type="button" data-product-id="${product.id}" aria-label="${escapeHtml(product.name)} 상세 보기">
         <img class="${productImageClass(product)}" src="${product.image}" alt="${product.name} 사진" loading="lazy" decoding="async" />
       </button>
-      <div>
-        <span class="pill ${product.isBundle ? "success" : ""}">${product.isBundle ? "moTF 전용 패키지" : product.category}</span>
-        <h3>${product.name}</h3>
-        <p class="product-option-summary">${optionSummary}</p>
+      <div class="home-card-meta"><span>${escapeHtml(product.isBundle?'moTF 전용 패키지':product.category)}</span><button class="icon-button" ${hasVariants?`data-product-id="${product.id}"`:`data-add-mt-shopping="${product.id}"`} title="내 MT에 담기" aria-label="${escapeHtml(product.name)} 내 MT에 담기"><i data-lucide="folder-plus"></i></button></div>
+        <button class="home-card-title" data-product-id="${product.id}">${catalogLabel(product.name)}</button>
+        <p class="product-unit product-option-summary">${catalogLabel(optionSummary)}</p>
         ${rules.minimum > 1 ? `<p class="product-minimum-summary">최소 ${rules.minimum}${escapeHtml(rules.unit)} 주문</p>` : ""}
         <p class="product-review-summary">후기 없음</p>
-        <p class="price">${productPriceLabel(product)}</p>
+        <strong class="home-price">${productPriceLabel(product)}</strong>
         <div class="product-card-actions">
           ${hasVariants
             ? `<button class="product-option-button" type="button" data-product-id="${product.id}">옵션 선택<i data-lucide="chevron-right"></i></button>`
             : `<button class="icon-action" data-product-id="${product.id}" aria-label="${escapeHtml(product.name)} 상세 보기" title="상세 보기"><i data-lucide="search"></i></button>
-               <button class="icon-action" data-add-product="${product.id}" aria-label="${escapeHtml(product.name)} 장바구니 담기" title="장바구니 담기"><i data-lucide="shopping-cart"></i></button>
-               <button class="icon-action" data-add-mt-shopping="${product.id}" aria-label="${escapeHtml(product.name)} 내 MT에 담기" title="내 MT에 담기"><i data-lucide="folder-plus"></i></button>`}
+               <button class="icon-button" data-add-product="${product.id}" aria-label="${escapeHtml(product.name)} 장바구니 담기" title="장바구니 담기"><i data-lucide="shopping-cart"></i></button>`}
         </div>
-      </div>
     </article>
   `;
 }
@@ -3516,6 +3503,7 @@ function renderPaymentResult() {
 }
 
 function renderCommunity() {
+  if (window.motfCommunityDesign) return window.motfCommunityDesign.render();
   const people = Number(qs("#recommendPeople").value || 32);
   const style = qs("#mealStyle").value;
   const factor = style === "heavy" ? 0.45 : style === "light" ? 0.28 : 0.35;

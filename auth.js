@@ -493,10 +493,11 @@
   }
 
   function updateHeader() {
-    const accountButton = document.querySelector('.header-account-actions [data-route="mypage"]');
-    if (!accountButton) return;
-    accountButton.setAttribute("aria-label", session?.user ? "마이페이지" : "로그인");
-    accountButton.setAttribute("title", session?.user ? "마이페이지" : "로그인");
+    document.querySelectorAll('.header-account-actions [data-route="mypage"]').forEach(accountButton => {
+      accountButton.setAttribute("aria-label", session?.user ? "마이페이지" : "로그인");
+      accountButton.setAttribute("title", session?.user ? "마이페이지" : "로그인");
+      if (accountButton.classList.contains("login")) accountButton.textContent = session?.user ? "마이페이지" : "로그인";
+    });
   }
 
   function updateAccountView() {

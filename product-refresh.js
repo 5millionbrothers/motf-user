@@ -248,6 +248,7 @@
     if (document.body.dataset.currentRoute === "myUsage") renderMyActivity();
   });
   observer.observe(document.body, { attributes: true, attributeFilter: ["data-current-route"] });
+  window.motfInitializeDatePickers = initializePickers;
   initializePickers();
   window.setTimeout(loadCommunityData, 250);
 

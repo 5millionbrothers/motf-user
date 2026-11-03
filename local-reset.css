@@ -1,0 +1,2 @@
+/* The retained operational CSS must not fill gaps in the accepted homepage design. */
+:where(#home,#home *:not(svg,svg *),.site-header,.site-header *:not(svg,svg *)) { all:revert; box-sizing:border-box; letter-spacing:0; }

@@ -1,0 +1,209 @@
+/* Operational screens use the accepted local design, not the previous visual system. */
+body.design-main { font-family:SUIT,Arial,sans-serif; background:#fff; color:#272c25; --teal:#465739; --cream:#fff; --warm:#fafbf8; }
+.design-main :is(h1,h2,h3,h4,p,span,strong,b,label,button,input,textarea,select,td,th,a) { font-family:SUIT,Arial,sans-serif!important; letter-spacing:0!important; }
+.design-main>main { width:100%; max-width:none; padding:0; margin:0; }
+.design-main main>.view { width:min(1280px,calc(100% - 2 * var(--content-gutter))); max-width:1280px; padding:0 0 40px; margin-inline:auto; }
+.design-main main>#home { width:100%; max-width:none; padding:0; }
+.design-main main>.view:not(.active) { display:none; }
+.design-main #home .home-search-intro { padding:0; min-height:0; display:block; }
+.design-main .product-card .home-card-meta { padding:0; }
+.design-main .product-card .product-card-actions { padding:0; }
+.design-main .view.active { animation:local-page-enter .2s ease-out; }
+@keyframes local-page-enter { from { opacity:.45; transform:translateY(4px); } to { opacity:1; transform:none; } }
+.design-main .site-header { position:relative; top:auto; z-index:30; padding:0; background:#fff; border:0; border-radius:0; box-shadow:none; }
+.design-main .site-header .brand { padding:0; min-width:56px; min-height:44px; }
+.design-main .site-header .brand-symbol { display:block; width:44px; height:auto; aspect-ratio:152/111; object-fit:contain; flex-shrink:0; }
+.design-main .site-nav .nav-link { border:0; border-radius:0; box-shadow:none; background:none; padding:8px 0; min-height:0; font-size:13px; font-weight:500; color:#565e4f; }
+.design-main .site-nav .nav-link>svg { display:none; }
+.design-main .site-header .header-actions .icon-button { background:none; border:0; padding:0; color:var(--ink); box-shadow:none; }
+.design-main .site-header .header-actions .home-account { display:none; }
+.design-main .site-header .header-actions .login { border:0; padding:8px 0; background:none; color:#565e4f; font-size:12px; font-weight:450; }
+.design-main .header-point-wallet { background:none; border:0; color:var(--olive); padding:5px 0; font-size:11px; white-space:nowrap; }
+.design-main .header-point-wallet b { font-weight:500; }
+.design-main .home h1,.design-main .home h2,.design-main .home h3 { font-family:SUIT,Arial,sans-serif; }
+.design-main .home .calculator-foot>div { display:none; }
+.design-main .home .home-search-bar label { margin:0; }
+.design-main .home .home-search-bar .flatpickr-input { border:0; box-shadow:none; min-width:0; }
+.design-main .home .home-card-title { background:none; border:0; }
+.design-main .home .home-community-grid>.home-posts:empty { min-height:150px; }
+.design-main .home .home-stay-grid>.page-empty,.design-main .home .home-product-grid>.page-empty { grid-column:1/-1; }
+.design-main .home .planning-calculator input[type="range"] { width:100%; min-height:18px; padding:0; border:0; accent-color:var(--olive); }
+.design-main .home .kit-budget-group .primary { width:100%; }
+.design-main .home input[type="date"],.design-main .home .kit-date .flatpickr-input { min-width:0; width:100%; }
+.design-main .home .home-start .starter-field { min-width:0; }
+.design-main .home .home-start .starter-field label { min-width:0; }
+.design-main .home .home-start .starter-field select { width:100%; }
+.design-main .home .home-card-meta>.icon-button { flex-shrink:0; }
+.design-main .home .home-posts .page-empty { min-height:160px; }
+.design-main .home .org-band { padding-top:32px; }
+.design-main .detail-app :is(h1,h2,h3,h4) { font-weight:550; color:var(--ink); }
+.design-main .detail-app h1 { font-size:30px; line-height:1.45; }
+.design-main .detail-app h2 { font-size:21px; line-height:1.5; }
+.design-main .detail-app h3 { font-size:16px; line-height:1.6; }
+.design-main .detail-app :is(strong,b) { font-weight:550; }
+.design-main .detail-app p { font-size:12px; line-height:1.9; color:#87947a; }
+.design-main .detail-app .page-heading { margin:0; padding-block:34px 25px; flex-direction:row; text-align:left; }
+.design-main .detail-app .page-heading h1 { font-size:30px; font-weight:550; }
+.design-main .detail-app .page-heading p { font-size:12px; color:#919b86; margin-top:8px; }
+.design-main :is(.primary-btn,.secondary-btn,.ghost-btn) { font-size:12px; font-weight:500; min-height:39px; padding:10px 15px; border-radius:5px; }
+.design-main .primary-btn { background:var(--olive); color:#fff; box-shadow:0 2px 5px #46573918; border:1px solid transparent; }
+.design-main .secondary-btn { background:#fff; color:var(--olive); border:1px solid #dce5d2; box-shadow:none; }
+.design-main .ghost-btn { color:var(--olive); background:none; border:0; box-shadow:none; }
+.design-main :is(.primary-btn,.secondary-btn,.ghost-btn) svg { width:15px; height:15px; }
+.design-main .icon-action { border-radius:5px; border:1px solid #e0e7d9; box-shadow:none; color:#879b74; background:#fff; }
+.design-main [data-add-mt-candidate],.design-main [data-add-mt-shopping],.design-main [data-add-current],.design-main [data-add-current-to-mt],.design-main [data-add-product],.design-main #market [data-route="cart"] { background:var(--olive); color:#fff; border-color:var(--olive); }
+.design-main :is(.pill,.detail-meta .pill) { font-size:10px; border-radius:3px; background:#f5f8ef; color:#849771; font-weight:450; padding:4px 7px; }
+.design-main .detail-app :is(.info-panel,.summary-panel,.legal-card,.tool-panel,.form-panel,.booking-summary,.settlement-card,.mypage-card) { background:#fafbf8; border:1px solid #e3e9db; border-radius:7px; box-shadow:none; }
+.design-main .detail-app :is(.result-box,.review-card,.room-card,.review-summary,.activity-card,.mt-project-card,.empty-state) { border-radius:7px; box-shadow:none; border-color:#e3e9db; background:#fff; }
+.design-main .detail-app :is(input,select,textarea) { font-size:13px; font-weight:450; border:1px solid #dfe5d7; border-radius:5px; background:#fff; color:#657b4e; padding:10px 12px; min-width:0; box-shadow:none; }
+.design-main .detail-app input[type="checkbox"],.design-main .detail-app input[type="radio"] { width:16px; height:16px; min-height:0; padding:0; accent-color:var(--olive); }
+.design-main .detail-app input[type="range"] { padding:0; border:0; accent-color:var(--olive); }
+.design-main .detail-app label { font-weight:450; font-size:11px; color:#87947a; }
+.design-main .detail-app :is(.price,.stay-card-price-block .price) { font-weight:550; font-size:19px; color:var(--ink); }
+.design-main .detail-app .back-btn { margin:16px 0 12px; padding:0; min-height:28px; font-size:11px; color:#8d9981; }
+.design-main #stayFilters { display:grid; grid-template-columns:1.05fr 1.05fr .95fr .55fr 1.45fr auto; gap:20px; align-items:end; padding:24px 20px; border:1px solid #e0e6d8; border-radius:7px; background:#fff; margin:0 0 25px; }
+.design-main #stayFilters label { font-size:10px; gap:8px; }
+.design-main #stayFilters input:not([type="range"]),.design-main #stayFilters select { border:0; border-bottom:1px solid #dfe6d7; border-radius:0; box-shadow:none; height:32px; min-height:32px; padding:4px 2px; font-size:12px; }
+.design-main #stayFilters .range-label { display:flex; flex-direction:column; gap:3px; }
+.design-main #stayFilters .detail-filter-trigger { min-height:38px; padding:9px 13px; border:1px solid #dce5d2; border-radius:5px; font-size:11px; background:#fff; color:var(--olive); }
+.design-main .split-layout { grid-template-columns:minmax(0,1fr) minmax(0,1.07fr); gap:27px; }
+.design-main .map-panel { top:20px; border-radius:7px; border-color:#e0e6d8; }
+.design-main .catalog-stay { box-shadow:none; }
+.design-main .catalog-stay-photo { width:100%; border:0; }
+.design-main .catalog-stay .stay-review-chip { color:#8b9e7a; font-size:9px; font-weight:450; padding:4px 0; border:0; background:none; }
+.design-main .catalog-stay .stay-card-facts { font-size:10px; color:#87957a; margin-top:8px; }
+.design-main .catalog-stay .stay-card-intro { font-size:10px; }
+.design-main .catalog-stay .stay-card-availability { display:block; font-size:9px; color:#92a180; margin-top:5px; }
+.design-main .product-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:20px 16px; }
+.design-main .product-card { display:block; border:0; padding:0; border-radius:0; background:none; box-shadow:none; min-width:0; }
+.design-main .product-card .home-product-image { width:100%; border:0; padding:0; }
+.design-main .product-card .home-product-image img { width:100%; height:100%; object-fit:contain; }
+.design-main .product-card .home-card-meta { display:flex; align-items:center; justify-content:space-between; margin-top:10px; height:32px; }
+.design-main .product-card .home-card-meta>span { font-size:10px; color:#98a38b; }
+.design-main .product-card .home-card-title { display:block; font-size:13px; font-weight:500; text-align:left; padding:0; line-height:1.6; background:none; color:var(--ink); }
+.design-main .product-card .product-unit,.design-main .product-card .product-review-summary { font-size:10px; color:#99a68b; margin-top:5px; }
+.design-main .product-card .home-price { display:block; font-size:16px; font-weight:650; margin-top:7px; }
+.design-main .product-card .product-card-actions { display:flex; gap:7px; margin-top:9px; }
+.design-main .product-card .icon-button { width:25px; height:25px; }
+.design-main .market-intro { border:0; border-bottom:1px solid #e4eadb; box-shadow:none; border-radius:0; padding:25px 0; gap:28px; grid-template-columns:180px minmax(0,1fr); }
+.design-main .market-intro>img { width:180px; height:150px; min-height:0; border-radius:6px; }
+.design-main .market-intro h2 { font-size:26px; margin:5px 0 12px; }
+.design-main .category-tabs { background:none; padding:20px 0; gap:15px; border-radius:0; border-bottom:1px solid #e7ecdf; margin-bottom:25px; }
+.design-main .category-tabs button { background:none; color:#8a987b; border:0; border-radius:0; box-shadow:none; padding:7px 0; font-size:12px; font-weight:450; }
+.design-main .category-tabs button.active { color:var(--olive); border-bottom:2px solid var(--olive); }
+.design-main :is(.detail-hero,.product-detail,.room-detail-layout,.event-detail) { border-radius:7px; background:#fff; box-shadow:none; }
+.design-main :is(.room-grid,.activity-grid,.events-grid) { gap:24px; }
+.design-main .room-card { border:0; border-bottom:1px solid #e4eadb; padding-bottom:20px; }
+.design-main .room-card>div { padding:15px 0; }
+.design-main .section-toolbar h2 { font-size:22px; font-weight:500; }
+.design-main .anonymous-post { border:0; border-bottom:1px solid #e5ebdc; border-radius:0; box-shadow:none; background:#fff; padding:24px 0; }
+.design-main .comment-item { background:#fafbf8; border-radius:5px; border-color:#e5ebdc; padding:16px; font-size:12px; }
+.design-main .comment-item .comment-author-line strong { font-size:12px; font-weight:500; }
+.design-main .comment-item .comment-author-line span { font-size:10px; }
+.design-main .chat-shell { border:1px solid #e0e7d8; border-radius:7px; box-shadow:none; background:#fff; overflow:hidden; }
+.design-main .chat-sidebar { background:#fafbf8; border-right:1px solid #e5ebdc; }
+.design-main .chat-sidebar button { border:0; border-radius:5px; box-shadow:none; padding:17px 14px; }
+.design-main .chat-message { font-size:13px; line-height:1.9; border-radius:7px; font-weight:400; }
+.design-main .chat-message.mine,.design-main .chat-bubble.mine { background:#eef3e7; color:#465739; }
+.design-main .chat-header { border-bottom:1px solid #e4eadb; padding:20px; }
+.design-main .chat-header h3 { font-size:18px; font-weight:500; }
+.design-main .chat-form { border-top:1px solid #e4eadb; padding:15px; background:#fafbf8; }
+.design-main .mt-project-card { box-shadow:none; border:1px solid #e2e8d8; padding:25px; }
+.design-main .mt-project-card h3 { font-size:21px; font-weight:500; }
+.design-main #mtProjectWorkspace .mt-project-layout { gap:38px; }
+.design-main .mt-budget-overview { background:#fafbf8; border-radius:0; border-block:1px solid #e4eadb; box-shadow:none; }
+.design-main .mt-project-main>section { border-radius:0; box-shadow:none; border:0; border-bottom:1px solid #e4eadb; }
+.design-main .local-inline-form { display:grid; grid-template-columns:minmax(0,1fr) 160px auto; gap:10px; }
+.design-main .local-record-share { border-bottom:1px solid #e4eadb; padding:24px 0; }
+.design-main .mobile-stay-search { display:none; }
+.design-main .mobile-bottom-nav { display:none; }
+.design-main .site-footer { width:min(1280px,calc(100% - 2 * var(--content-gutter))); margin:38px auto 0; padding:25px 0; font-size:11px; color:#96a18a; border-top:1px solid #e5eadf; background:#fff; }
+.design-main .site-footer address { font-size:10px; line-height:1.9; }
+.design-main .footer-links button { font-size:11px; font-weight:450; border-radius:5px; }
+.design-main .footer-brand { font-size:11px; }
+.design-main dialog.motf-dialog { border:1px solid #e0e6d8; border-radius:8px; background:#fff; color:var(--ink); box-shadow:0 20px 70px #26331c20; padding:28px; }
+.design-main dialog.motf-dialog h2 { font-size:23px; font-weight:550; }
+.design-main .local-search-dialog .home-search-bar { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:25px; border:0; padding:0; background:#fff; box-shadow:none; }
+.design-main .local-search-dialog .starter-field { border:0; padding:0; min-width:0; }
+.design-main .local-search-dialog .starter-field>svg { display:none; }
+.design-main .local-search-dialog .primary { width:100%; grid-column:1/-1; margin:0; }
+.design-main .local-search-dialog .flatpickr-calendar { position:fixed!important; top:50%!important; left:50%!important; transform:translate(-50%,-50%)!important; }
+.design-main .local-filter-dialog .flatpickr-calendar { position:fixed!important; top:50%!important; left:50%!important; transform:translate(-50%,-50%)!important; }
+.design-main .local-filter-dialog .advanced-filter-panel { max-height:none; padding:16px 0; border:0; box-shadow:none; }
+.design-main .local-filter-dialog .advanced-filter-grid { grid-template-columns:1fr; }
+.design-main .local-filter-dialog>.primary { width:100%; margin-top:18px; }
+.design-main .market-mobile-details { display:none; }
+.design-main .auth-dialog { border-radius:8px; border-color:#e0e6d8; background:#fff; box-shadow:0 20px 70px #26331c20; }
+.design-main .auth-dialog h2 { font-size:23px; font-weight:550; }
+.design-main .auth-form label { font-size:12px; font-weight:450; color:#849277; }
+.design-main .auth-form input { font-size:13px; padding:11px 12px; border:1px solid #dfe5d7; border-radius:5px; background:#fff; }
+.design-main .auth-tabs { border-radius:6px; background:#f5f7f1; }
+.design-main .auth-tab { border-radius:5px; font-size:12px; font-weight:500; }
+.design-main .organization-dialog { border-radius:8px; border-color:#e0e6d8; box-shadow:0 20px 70px #26331c20; }
+.design-main .organization-dialog h2 { font-size:23px; font-weight:550; }
+.design-main .organization-dialog h3 { font-size:17px; font-weight:500; }
+.design-main .organization-dialog input,.design-main .organization-dialog select { font-size:13px; border:1px solid #dfe5d7; border-radius:5px; padding:10px; background:#fff; }
+.design-main .organization-scope { border:1px solid #e4eadb; background:#fafbf8; border-radius:6px; font-size:11px; }
+.design-main .organization-scope button { color:var(--olive); font-size:11px; }
+@media(min-width:1001px) and (max-width:1199px) { .design-main .product-grid { grid-template-columns:repeat(5,minmax(0,1fr)); } }
+@media(min-width:430px) and (max-width:699px) { .design-main .product-grid { grid-template-columns:repeat(4,minmax(0,1fr)); } }
+@media(max-width:1000px) {
+  .design-main #stayFilters { gap:12px; grid-template-columns:1fr 1fr .8fr .5fr 1.2fr auto; padding:18px 14px; }
+  .design-main .product-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
+}
+@media(max-width:699px) {
+  .design-main { padding-bottom:calc(68px + env(safe-area-inset-bottom)); }
+  .design-main .site-header .site-nav { display:none; }
+  .design-main .site-header .header-actions { margin-left:auto; gap:4px; }
+  .design-main .site-header .header-actions .icon-button { width:30px; height:34px; }
+  .design-main .site-header .header-actions .home-account { display:inline-flex; }
+  .design-main .site-header .header-actions [data-local-organization] { display:none; }
+  .design-main .site-header .brand { min-width:44px; }
+  .design-main .site-header .brand-symbol { width:36px; height:auto; }
+  .design-main .header-point-wallet { font-size:9px; }
+  .design-main .detail-app .page-heading { padding-block:25px 20px; gap:12px; }
+  .design-main .detail-app .page-heading h1 { font-size:25px; }
+  .design-main .detail-app h1 { font-size:25px; }
+  .design-main .detail-app h2 { font-size:20px; }
+  .design-main .detail-app h3 { font-size:15px; }
+  .design-main .detail-app :is(.primary-btn,.secondary-btn,.ghost-btn) { font-size:10px; padding:8px 10px; min-height:35px; }
+  .design-main .detail-app p { font-size:11px; }
+  .design-main .mobile-bottom-nav.mobile-navigation { display:grid; position:fixed; bottom:0; left:0; right:0; grid-template-columns:repeat(5,minmax(0,1fr)); z-index:40; padding:8px 10px calc(8px + env(safe-area-inset-bottom)); background:#fffffff5; backdrop-filter:blur(16px); border-top:1px solid #e3e9dc; }
+  .design-main .mobile-navigation .nav-link { display:flex; flex-direction:column; justify-content:center; align-items:center; gap:5px; font-size:10px; font-weight:450; color:#8d9d7e; padding:3px 0; background:none; box-shadow:none; border:0; border-radius:0; }
+  .design-main .mobile-navigation .active { color:var(--olive); }
+  .design-main .mobile-navigation svg { width:20px; height:20px; }
+  .design-main .mobile-stay-search { display:flex; gap:5px; margin-bottom:20px; }
+  .design-main .mobile-stay-search button { display:flex; align-items:center; gap:5px; padding:10px 8px; background:#f9fbf5; border:1px solid #e3e9dc; border-radius:5px; color:#819570; font-size:10px; min-width:0; }
+  .design-main .mobile-stay-search button:first-child { flex:1; }
+  .design-main .mobile-stay-search svg { width:14px; height:14px; }
+  .design-main #stayFilters:not(.local-filter-open) { display:none; }
+  .design-main #stayFilters.local-filter-open { grid-template-columns:1fr 1fr; padding:0; border:0; margin:20px 0; gap:16px; }
+  .design-main #stayFilters .range-label { grid-column:1/-1; }
+  .design-main .split-layout { display:block; }
+  .design-main .catalog-stay .catalog-stay-area { font-size:9px; }
+  .design-main .catalog-stay .stay-card-intro { font-size:10px; }
+  .design-main .catalog-stay .catalog-tags { margin-top:6px; }
+  .design-main .catalog-stay .stay-card-facts { display:none; }
+  .design-main .product-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:23px 10px; }
+  .design-main .product-card .home-card-title { font-size:11px; line-height:1.6; }
+  .design-main .product-card .home-card-meta { height:27px; margin-top:7px; }
+  .design-main .product-card .home-card-meta>span { font-size:8px; }
+  .design-main .product-card .home-price { font-size:13px; }
+  .design-main .product-card .product-unit,.design-main .product-card .product-review-summary { font-size:9px; }
+  .design-main .product-card .icon-button { width:22px; height:23px; padding:4px; }
+  .design-main .product-card .icon-button svg { width:13px; height:13px; }
+  .design-main .market-intro { display:grid; grid-template-columns:64px minmax(0,1fr); gap:13px; padding:12px 0 20px; }
+  .design-main .market-intro>img { width:64px; height:64px; min-height:0; }
+  .design-main .market-intro h2 { font-size:18px; margin:5px 0; }
+  .design-main #marketIntro .market-intro-body>p:not(.eyebrow),.design-main #marketIntro .detail-meta,.design-main #marketIntro .button-row { display:none; }
+  .design-main .market-mobile-details { display:inline-flex; font-size:10px; }
+  .design-main .category-tabs { gap:14px; padding-block:13px; margin-bottom:22px; }
+  .design-main .category-tabs button { font-size:10px; }
+  .design-main .local-inline-form { grid-template-columns:minmax(0,1fr) 100px auto; gap:7px; }
+  .design-main .local-inline-form input { width:100%; }
+  .design-main .toast { bottom:80px; }
+  .design-main .community-floating-write { bottom:82px; }
+  .design-main dialog.motf-dialog { max-width:calc(100% - 36px); padding:22px; }
+  .design-main .local-handoff .modal-actions { display:grid; }
+}
+@media(prefers-reduced-motion:reduce) { .design-main .view.active { animation:none; } }

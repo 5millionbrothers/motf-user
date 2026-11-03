@@ -26,18 +26,20 @@
 }
 
 .motf-loading-logo {
-  width: 52px;
-  height: 52px;
+  width: 76px;
+  height: 56px;
   overflow: visible;
   fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: 2.6;
 }
 
-.motf-loading-logo-guide { stroke: rgba(84, 100, 58, 0.13); }
+.motf-loading-logo-guide { fill: #677a4b; opacity: .12; stroke: none; }
+.motf-loading-logo-ink { fill: #677a4b; stroke: none; }
 .motf-loading-logo-stroke {
-  stroke: #54643a;
+  fill: none;
+  stroke: white;
+  stroke-width: 22;
   stroke-dasharray: 100;
   stroke-dashoffset: 100;
   animation: motf-logo-draw 1.45s ease-in-out infinite;
@@ -50,5 +52,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .motf-loading-logo-stroke { animation-duration: 2.4s; }
+  .motf-loading-logo-stroke { animation: none; stroke-dashoffset: 0; }
 }
