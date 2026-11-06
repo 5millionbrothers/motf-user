@@ -4,6 +4,8 @@
 
 ## 저장소 역할
 
+2026-11-06 제목/검색 정보와 디자인 복구는 [적용 안내](docs/seo-and-screen-repair-20261106.md)를 확인합니다. 이번 변경에는 추가 SQL이나 사장님 저장소 변경이 없습니다. 제목·문구 원본은 `site-copy.json`, 화면별 추가 복구 스타일은 `screen-polish.css`입니다.
+
 - 화면과 사용자 흐름: 정적 HTML/CSS/JavaScript
 - 서버 API: Vercel Functions (`api/`)
 - 인증·데이터: Supabase

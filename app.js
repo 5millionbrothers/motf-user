@@ -1259,14 +1259,9 @@ function eventCard(event, featured = false) {
   const status = effectiveEventStatus(event);
   const formUrl = status === "open" ? safeExternalUrl(event.google_form_url) : "";
   const favorite = state.favoriteEventIds.has(String(event.id));
-  return `<article class="platform-event-card event-card-${status} ${featured ? "featured" : ""}">
-    <button class="platform-event-main" type="button" data-event-id="${event.id}" aria-label="${escapeHtml(event.title)} 상세 보기">
-      <span class="platform-event-media"><img src="${event.poster_url}" alt="${escapeHtml(event.title)} 포스터" /><b class="event-status ${status}">${eventStatusLabel(status)}</b></span>
-      <span class="platform-event-body"><small>${formatEventDate(event.starts_at)} · ${escapeHtml(event.venue_name || "장소 공개 예정")}</small><strong>${escapeHtml(event.title)}</strong><span>${escapeHtml(event.short_description)}</span><span class="event-meta"><b>${money(event.price_per_person)} / 1인</b><b>${Number(event.application_count || 0).toLocaleString()} / ${Number(event.capacity).toLocaleString()}명</b></span></span>
-    </button>
-    <span class="platform-event-actions">${formUrl
-      ? `<a class="event-card-apply" href="${escapeHtml(formUrl)}" target="_blank" rel="noopener noreferrer"><i data-lucide="external-link"></i>신청 중 · 바로 신청</a>`
-      : `<span class="event-card-state ${status}">${status === "scheduled" ? `${formatEventDate(event.application_opens_at)} 오픈` : eventStatusLabel(status)}</span>`}<button type="button" class="event-favorite-button ${favorite ? "active" : ""}" data-toggle-favorite-event="${event.id}" aria-pressed="${favorite}"><i data-lucide="bookmark"></i>${favorite ? "저장됨" : "관심 저장"}</button><button type="button" data-event-id="${event.id}">상세보기</button></span>
+  return `<article class="platform-event-card original-program event-card-${status} ${featured ? "featured" : ""}">
+    <button class="event-photo" type="button" data-event-id="${event.id}" aria-label="${escapeHtml(event.title)} 상세 보기"><img src="${escapeHtml(event.poster_url)}" alt="${escapeHtml(event.title)} 포스터" loading="lazy" /><span>${eventStatusLabel(status)}</span></button>
+    <div class="original-program-copy"><small class="original-program-date">${formatEventDate(event.starts_at)} · ${escapeHtml(event.venue_name || "장소 공개 예정")}</small><button class="home-card-title" type="button" data-event-id="${event.id}">${escapeHtml(event.title)}</button><p>${escapeHtml(event.short_description || "")}</p><div class="original-program-meta"><strong>${money(event.price_per_person)} <small>/ 1인</small></strong><span>${Number(event.application_count || 0).toLocaleString()} / ${Number(event.capacity).toLocaleString()}명</span><button type="button" class="icon-button event-favorite-button ${favorite ? "active" : ""}" data-toggle-favorite-event="${event.id}" aria-label="${escapeHtml(event.title)} ${favorite ? "관심 해제" : "관심 저장"}" title="${favorite ? "관심 해제" : "관심 저장"}" aria-pressed="${favorite}"><i data-lucide="bookmark"></i></button></div>${formUrl?`<a class="primary original-apply" href="${escapeHtml(formUrl)}" target="_blank" rel="noopener noreferrer">참가 신청<i data-lucide="arrow-up-right"></i></a>`:`<span class="original-program-state">${status === "scheduled" ? `${formatEventDate(event.application_opens_at)} 신청 시작` : eventStatusLabel(status)}</span>`}</div>
   </article>`;
 }
 
@@ -1296,7 +1291,8 @@ function renderEvents() {
     const status = effectiveEventStatus(event);
     return !["draft", "cancelled"].includes(status) && (state.eventFilter === "all" || status === state.eventFilter);
   });
-  container.innerHTML = filtered.length ? filtered.map((event) => eventCard(event, event.is_featured)).join("") : `<div class="empty-state"><strong>해당 상태의 이벤트가 없습니다.</strong><span>새 일정은 운영팀이 확정하는 즉시 공개됩니다.</span></div>`;
+  qsa('[data-event-filter]').forEach(button=>{const active=button.dataset.eventFilter===state.eventFilter;button.classList.toggle('active',active);button.setAttribute('aria-selected',String(active));});
+  container.innerHTML = filtered.length ? filtered.map((event) => eventCard(event, event.is_featured)).join("") : `<div class="page-empty event-empty"><i data-lucide="calendar-days"></i><h2>${state.platformEvents.some(event=>!["draft","cancelled"].includes(event.status))?'해당 상태의 모리지널이 없어요.':'새로운 모리지널을 준비하고 있어요.'}</h2><p>${state.platformEvents.some(event=>!["draft","cancelled"].includes(event.status))?'다른 모집 상태도 살펴보세요.':'일정이 확정되면 이곳에서 안내할게요.'}</p></div>`;
   refreshIcons();
 }
 
@@ -2336,7 +2332,7 @@ function renderStores() {
   const porkKg = Math.ceil(people * 0.35);
   intro.innerHTML = `
     ${stores.length > 1 ? `<nav class="market-store-tabs" aria-label="제휴 마트 선택">${stores.map((item) => `<button type="button" class="category-tab ${item.id === store.id ? "active" : ""}" data-market-select="${item.id}">${escapeHtml(item.name)}</button>`).join("")}</nav>` : ""}
-    <section class="market-intro">
+    <section class="market-intro retained-merchant">
       <img src="${store.image}" alt="${store.name} 매장 사진" />
       <div class="market-intro-body">
         <p class="eyebrow">${store.region} 제휴 마트</p>
@@ -2349,16 +2345,17 @@ function renderStores() {
           <span class="pill warning">주류 성인 인증</span>
         </div>
         <div class="button-row">
-          <button class="secondary-btn" type="button" data-open-order-recommend><i data-lucide="calculator"></i>추천 주문량 보기</button>
+          <button class="secondary-btn" type="button" data-local-meal><i data-lucide="calculator"></i>추천 주문량 보기</button>
           <button class="secondary-btn" data-open-chat="${store.name}"><i data-lucide="messages-square"></i>장보기 문의</button>
           <button class="ghost-btn" data-route="review" data-review-scope="market"><i data-lucide="star"></i>장보기 리뷰</button>
           <button class="ghost-btn" data-route="cart"><i data-lucide="shopping-cart"></i>장바구니 보기</button>
         </div>
+        <button class="text-button merchant-info-link" type="button" data-market-info>매장·배송 안내 <i data-lucide="chevron-right"></i></button>
       </div>
     </section>
   `;
   productSection.innerHTML = `
-    <div class="section-toolbar">
+    <div class="section-toolbar market-page-toolbar">
       <div><p class="eyebrow">제휴 마트 등록 상품</p><h2>상품 둘러보기</h2></div>
       <span>${productCatalogCountLabel(products)}</span>
     </div>

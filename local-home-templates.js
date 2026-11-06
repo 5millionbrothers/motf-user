@@ -99,7 +99,7 @@ function homeSectionTop(label, title, action, button = '전체 보기') {
 }
 
 function homeSearch() {
-  const intro=`<div class="home-search-intro"><p>대학 MT·워크샵·수련회, 숙소·장보기부터 레크·예결산까지 한 번에.</p><h1>MT 준비, <em>모티프 한곳에서.</em></h1></div>`;
+  const intro=`<div class="home-search-intro"><p>${escapeHtml(window.motfSiteCopy.supporting)}</p><h1>${escapeHtml(window.motfSiteCopy.headline)} <em>${escapeHtml(window.motfSiteCopy.headlineAccent)}</em></h1></div>`;
   if (HomeStudy.isMobile()) return `${intro}<button class="home-mobile-search" data-action="search">${icon('search')}<span><strong>숙소부터 찾아보기</strong><small><span data-value="region">${escapeHtml(state.region)}</span> · <span data-value="dates">${dates()}</span> · <span data-value="people">${state.people}</span>명</small></span><span class="search-round">${icon('arrow-right')}</span></button>`;
   return `${intro}<form class="starter home-search-bar" data-form="search"><div class="starter-field">${icon('map-pin')}<label><span>지역</span><select name="region" aria-label="검색 지역">${regionOptions(state.region)}</select></label></div><div class="starter-field">${icon('calendar-days')}<label><span>체크인</span><input type="date" name="start" aria-label="체크인" value="${state.start}" required></label></div><div class="starter-field">${icon('calendar-days')}<label><span>체크아웃</span><input type="date" name="end" aria-label="체크아웃" value="${state.end}" required></label></div><div class="starter-field">${icon('users-round')}<label><span>인원</span><input type="number" name="people" aria-label="검색 인원" min="2" max="200" value="${state.people}" required></label></div><button class="primary" type="submit" title="숙소 검색" aria-label="숙소 검색">${icon('search')}</button></form>`;
 }

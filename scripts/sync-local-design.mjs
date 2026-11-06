@@ -12,6 +12,7 @@ const selected=['costs','budgetParts','budgetLegend','expenseRows','extraExpense
 selected.push('function purposeTabs(){return "";}');
 for(const name of ['homeSectionTop','homeSearch','homePromoCard','homeEditorial','homeStays','homeMarket','homeCalculator','homeCommunity']){
   let code=extract(home,name);
+  if(name==='homeSearch')code=code.replace(/const intro=`[\s\S]*?`;/,'const intro=`<div class="home-search-intro"><p>${escapeHtml(window.motfSiteCopy.supporting)}</p><h1>${escapeHtml(window.motfSiteCopy.headline)} <em>${escapeHtml(window.motfSiteCopy.headlineAccent)}</em></h1></div>`;');
   if(name==='homeStays')code=code.replaceAll('data-action="stays"','data-stay-id="${stay.id}"').replace('대성리 · 최대 ${[40,60,32][index]}명','${stay.region} · 최대 ${stay.maxPeople}명').replace("${index===0?'독채':index===1?'자연 속 쉼':'단체 공간'}",'${stay.badge}');
   if(name==='homeMarket')code=code.replace("pageProducts().filter(product=>['pork','neck','soda'].includes(product.id))",'pageProducts()').replace('src="assets/${product.image}"','src="${product.image}"').replace('대성 공판장 · ${product.unit}','${product.storeName} · ${product.unit}');
   if(name==='homePromoCard')code=code.replace('src="assets/${promo.image}"','src="${promo.image}"');

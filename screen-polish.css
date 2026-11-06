@@ -1,0 +1,210 @@
+/* Operational markup adopts the accepted page components, including selected/empty states. */
+.design-main { --body-muted:#76826c; }
+.design-main .detail-app .page-heading h1 { font-size:28px; line-height:1.4; }
+.design-main .detail-app .page-heading>div>p { display:none; }
+.design-main .detail-app .page-heading>div>p.page-description { display:block; font-size:12px; color:#7e857b; line-height:1.8; margin:8px 0 0; }
+.design-main .detail-app .page-heading { gap:20px; }
+.design-main .detail-app :is(.section-toolbar,.mt-section-heading) { align-items:center; gap:16px; }
+.design-main .detail-app .section-toolbar h2 { font-size:21px; line-height:1.5; }
+.design-main .detail-app .section-toolbar .eyebrow { font-size:9px; margin:0 0 5px; }
+.design-main .detail-app .empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:36px 20px; font-size:12px; color:var(--body-muted); line-height:1.8; text-align:center; }
+.design-main .detail-app .empty-state strong { color:var(--ink); font-size:15px; }
+.design-main .auth-tab.active { color:#fff; background:var(--olive); border-color:var(--olive); }
+.design-main .auth-tab { color:var(--body-muted); }
+.design-main :is(.event-status-tabs,.mt-directory-tabs) { display:flex; align-items:stretch; gap:25px; min-height:0; padding:0; margin:0; background:none; border:0; border-radius:0; border-bottom:1px solid #e3ead9; box-shadow:none; overflow-x:auto; scrollbar-width:none; }
+.design-main :is(.event-status-tabs,.mt-directory-tabs) button { flex:none; min-height:0; padding:0 0 12px; border:0; border-bottom:2px solid transparent; border-radius:0; background:transparent; box-shadow:none; color:#94a47e; font-size:11px; font-weight:400; white-space:nowrap; }
+.design-main :is(.event-status-tabs,.mt-directory-tabs) button.active { background:transparent; color:#526e3a; border-bottom-color:#526e3a; font-weight:550; }
+.design-main .organization-scope { display:flex; align-items:center; flex-wrap:wrap; gap:12px; width:max-content; max-width:100%; margin:16px 0 8px; padding:10px 12px; background:#fafbf8; border:1px solid #e4eadb; border-radius:6px; }
+.design-main .organization-scope label { display:flex; align-items:center; gap:10px; min-width:0; margin:0; color:#76836c; font-size:11px; }
+.design-main .organization-scope select { width:auto; min-width:150px; max-width:260px; height:36px; margin:0; padding:7px 30px 7px 10px; font-size:12px; color:var(--olive); background-color:#fff; border:1px solid #dfe5d7; border-radius:5px; text-overflow:ellipsis; }
+.design-main .organization-scope button { flex-shrink:0; min-height:36px; padding:7px 12px; background:#fff; border:1px solid #dfe5d7; border-radius:5px; color:var(--olive); font-size:11px; font-weight:500; }
+.design-main .organization-dialog { padding:24px; color:var(--ink); }
+.design-main .organization-dialog header>button { width:32px; min-height:32px; padding:0; font-size:11px; }
+.design-main .organization-dialog .organization-actions button { font-size:11px; color:var(--olive); }
+.design-main .organization-dialog .organization-closure button { color:#a32a2a; }
+.design-main .mt-directory-head { padding:34px 0 25px; border-bottom:0; align-items:center; }
+.design-main .mt-directory-head h1 { font-size:28px; font-weight:550; margin:0; }
+.design-main .mt-directory-head .eyebrow { display:none; }
+.design-main .mt-directory-head p:last-child { font-size:12px; margin-top:8px; }
+.design-main .mt-directory-tools { align-items:end; gap:20px; }
+.design-main .mt-directory-tabs { flex:1; }
+.design-main .mt-project-cards { display:grid; grid-template-columns:1fr; gap:16px; padding-top:24px; }
+.design-main .mt-project-card.mt-directory-item { display:grid; grid-template-columns:52px minmax(0,1fr) auto; gap:20px; align-items:center; padding:22px; text-align:left; }
+.design-main .mt-project-card-icon { display:grid; place-items:center; width:52px; height:52px; background:#f6f8f1; border-radius:6px; color:var(--olive); }
+.design-main .mt-project-card-copy { min-width:0; display:grid; gap:7px; }
+.design-main .mt-project-card-copy>strong { font-size:20px; font-weight:500; line-height:1.5; overflow-wrap:anywhere; }
+.design-main .mt-project-card-copy :is(small,span) { font-size:11px; color:#88977b; line-height:1.7; }
+.design-main .mt-project-card-budget { min-width:160px; display:grid; gap:6px; text-align:right; }
+.design-main .mt-project-card-budget strong { font-size:20px; font-weight:500; }
+.design-main .mt-project-card-budget :is(small,span) { font-size:10px; color:#88977b; }
+.design-main #mtProjectWorkspace .mt-project-hero { align-items:center; padding:14px 0 25px; gap:24px; }
+.design-main .mt-project-hero h1 { margin:5px 0 9px; font-size:30px; font-weight:500; overflow-wrap:anywhere; }
+.design-main .mt-project-hero .button-row { display:flex; justify-content:flex-end; flex-wrap:wrap; gap:8px; flex-shrink:0; max-width:50%; }
+.design-main .mt-project-hero .button-row>button { width:auto; font-size:11px; min-height:34px; padding:8px 10px; }
+.design-main .mt-budget-panel { display:grid; grid-template-columns:1fr 1fr; gap:18px 30px; margin:22px 0 18px; padding:26px 28px 20px; border:0; border-block:1px solid #e4eadb; border-radius:0; background:#fafbf8; }
+.design-main .mt-budget-copy { display:flex; align-items:center; gap:14px; }
+.design-main .mt-budget-copy>span { font-size:11px; color:#87947a; }
+.design-main .mt-budget-copy>strong { font-size:27px; font-weight:500; white-space:nowrap; }
+.design-main .mt-budget-copy>button { font-size:11px; padding:5px; margin-left:0; }
+.design-main .mt-budget-numbers { display:flex; justify-content:flex-end; align-items:center; gap:28px; }
+.design-main .mt-budget-numbers>span { display:grid; gap:7px; font-size:11px; color:#87947a; }
+.design-main .mt-budget-numbers strong { font-size:22px; font-weight:500; color:var(--ink); }
+.design-main #mtBudgetRemaining { color:var(--olive); }
+.design-main .mt-budget-track { grid-column:1/-1; margin:0; height:8px; border-radius:3px; background:#e9eee5; overflow:hidden; }
+.design-main .mt-budget-track>span { background:var(--olive); height:100%; display:block; }
+.design-main .mt-budget-panel>p { grid-column:1/-1; margin:0; font-size:10px; color:#8a977e; }
+.design-main #mtProjectWorkspace .mt-project-layout { display:grid; grid-template-columns:minmax(0,1fr) 285px; gap:38px; padding-top:10px; }
+.design-main .mt-project-main,.design-main .mt-project-side { min-width:0; }
+.design-main .mt-project-main>.section-toolbar { padding-block:22px 0; margin-bottom:20px; }
+.design-main .mt-project-main>.mt-section-heading { margin-top:20px; }
+.design-main .mt-compare-grid { gap:15px; }
+.design-main .mt-candidate-card { border:1px solid #e3ead8; padding:12px; border-radius:7px; background:#fff; }
+.design-main .mt-candidate-card.selected { box-shadow:none; border-color:#a4b98d; }
+.design-main .mt-candidate-card>img { border-radius:5px; aspect-ratio:1.7; }
+.design-main .mt-candidate-card>h3 { min-height:0; margin:10px 0 14px; padding:0; font-size:15px; font-weight:500; line-height:1.6; }
+.design-main .mt-candidate-card dl { padding:0; }
+.design-main .mt-candidate-card dl>div { font-size:10px; padding:8px 0; }
+.design-main .mt-candidate-card dd { font-weight:500; color:#6f8757; overflow-wrap:anywhere; }
+.design-main .mt-candidate-card .button-row { padding:12px 0 0; gap:6px; }
+.design-main .mt-candidate-card .button-row .secondary-btn { min-width:0; font-size:10px; }
+.design-main .mt-candidate-card .secondary-btn.active { color:#fff; background:var(--olive); }
+.design-main .mt-candidate-rank { display:block; position:static; margin:0; border:0; background:none; font-size:9px; padding:0 0 9px; color:#8b9a7e; }
+.design-main .mt-comparison-note { margin-top:13px; font-size:10px; }
+.design-main .mt-side-section,.design-main .mt-side-links { padding:24px 0; border:0; border-bottom:1px solid #e5ebdc; border-radius:0; box-shadow:none; background:none; }
+.design-main .mt-side-section .section-toolbar { margin-bottom:18px; }
+.design-main .mt-side-section h2 { font-size:19px; }
+.design-main .mt-side-links button { padding:15px 0; gap:12px; border:0; border-bottom:1px solid #e5ebdc; background:none; }
+.design-main .mt-side-links strong { font-size:13px; }
+.design-main .mt-side-links small { font-size:10px; line-height:1.8; }
+.design-main .mt-notice { padding:14px 0; background:none; border:0; border-top:1px solid #e5ebdc; }
+.design-main .mt-notice strong { font-size:13px; }
+.design-main .mt-notice p { white-space:pre-wrap; overflow-wrap:anywhere; font-size:11px; }
+.design-main .mt-shopping-items article { padding:16px 0; }
+.design-main .mt-shopping-items article strong { font-size:13px; }
+.design-main .mt-shopping-items article span { font-size:10px; }
+.design-main .market-intro.retained-merchant { display:grid; grid-template-columns:38% minmax(0,1fr); gap:34px; align-items:center; margin:0; padding:22px; background:#fff; border:1px solid #e6eae1; border-radius:7px; }
+.design-main .market-intro.retained-merchant>img { display:block; width:100%; height:270px; border-radius:6px; object-fit:cover; }
+.design-main .market-intro-body { min-width:0; }
+.design-main .market-intro h2 { font-size:29px; font-weight:550; margin:6px 0 12px; line-height:1.4; }
+.design-main .market-intro-body>.eyebrow { font-size:11px; margin:0; color:#8b977f; }
+.design-main .market-intro-body>p:not(.eyebrow) { display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; margin:0 0 14px; font-size:12px; color:#7d8872; line-height:1.9; }
+.design-main .market-intro .detail-meta { display:flex; flex-wrap:wrap; gap:5px; margin:0 0 18px; }
+.design-main .market-intro .button-row { display:flex; flex-wrap:wrap; gap:8px; margin:0; }
+.design-main .market-intro .button-row>* { font-size:10px; min-height:38px; padding:9px 11px; }
+.design-main .merchant-info-link { font-size:10px; margin-top:12px; }
+.design-main #marketProducts>.market-page-toolbar { display:flex; align-items:end; justify-content:space-between; padding:30px 0 0; margin:0 0 22px; }
+.design-main .market-page-toolbar .eyebrow { font-size:9px; margin:0 0 5px; }
+.design-main .market-page-toolbar>span { font-size:10px; color:#87947a; }
+.design-main .category-tabs { min-height:0; margin:0; padding:0; gap:22px; align-items:stretch; border-bottom:1px solid #e3ead9; }
+.design-main .product-grid { margin:0; padding:24px 0 0; }
+.design-main .category-tabs button { padding:0 0 12px; font-size:11px; color:#94a47e; }
+.design-main .merchant-dialog { width:min(620px,calc(100% - 36px)); }
+.design-main .merchant-modal-copy .eyebrow { display:none; }
+.design-main .merchant-modal-copy>p { font-size:13px; color:#6f7968; line-height:1.9; margin:18px 0; }
+.design-main .merchant-modal-photo { width:100%; height:210px; object-fit:cover; border-radius:6px; margin-top:18px; }
+.design-main .merchant-modal-copy .detail-meta { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:18px; }
+.design-main .merchant-modal-copy .button-row { display:flex; flex-wrap:wrap; gap:8px; }
+.design-main .event-directory { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:25px; padding-top:26px; }
+.design-main .original-program.platform-event-card { display:block; border:0; border-radius:0; overflow:visible; box-shadow:none; background:none; }
+.design-main .original-program.platform-event-card:hover { transform:none; }
+.design-main .original-program .event-photo { display:block; width:100%; height:230px; position:relative; border-radius:6px; border:0; padding:0; overflow:hidden; background:#f2f6ea; }
+.design-main .original-program .event-photo img { width:100%; height:100%; object-fit:contain; }
+.design-main .original-program:hover img { transform:none; }
+.design-main .original-program .event-photo>span { position:absolute; top:13px; left:13px; padding:5px 9px; background:#fffffff2; color:#698449; border-radius:4px; font-size:9px; }
+.design-main .original-program-date { display:block; font-size:10px; color:#8b9a7d; margin:15px 0 6px; }
+.design-main .original-program .home-card-title { display:block; width:100%; padding:0; background:none; text-align:left; font-size:20px; font-weight:550; color:var(--ink); line-height:1.55; }
+.design-main .original-program-copy>p { font-size:11px; color:#7d8872; margin-top:5px; }
+.design-main .original-program-meta { display:flex; gap:12px; align-items:center; margin-top:13px; }
+.design-main .original-program-meta>strong { font-size:14px; font-weight:550; }
+.design-main .original-program-meta :is(span,small) { font-size:10px; color:#8b9a7d; }
+.design-main .original-program-meta>.icon-button { margin-left:auto; width:28px; height:29px; padding:0; background:none; border:0; color:#869c72; }
+.design-main .original-program-meta>.icon-button svg { width:16px; height:16px; }
+.design-main .original-program-meta>.icon-button[aria-pressed="true"] { background:#f1f6e8; color:#526e3a; }
+.design-main .original-program-state { display:block; margin-top:12px; font-size:10px; color:#829374; }
+.design-main .original-apply { margin-top:14px; min-height:36px; padding:8px 12px; font-size:11px; }
+.design-main .event-empty { grid-column:1/-1; min-height:260px; gap:12px; padding:50px 20px; border-bottom:1px solid #e5ebdc; }
+.design-main .event-empty h2 { font-size:18px; font-weight:500; }
+.design-main .event-empty p { font-size:12px; color:#7e857b; }
+.design-main .event-detail-hero { display:grid; grid-template-columns:1fr .8fr; gap:65px; align-items:center; padding:13px 0 30px; border:0; border-radius:0; background:none; }
+.design-main .event-detail-hero>img { width:100%; height:425px; object-fit:contain; background:#f6f8f1; border-radius:7px; }
+.design-main .event-detail-hero h1 { font-size:32px; font-weight:550; line-height:1.45; margin:12px 0; }
+.design-main .event-detail-hero dl { margin:25px 0; display:grid; gap:12px; font-size:12px; }
+.design-main .event-detail-hero dl>div { display:flex; gap:22px; }
+.design-main .event-detail-hero dt { color:#8b9a7d; min-width:42px; }
+.design-main .event-detail-hero dd { margin:0; color:#60754f; }
+.design-main .event-detail-actions { display:flex; flex-wrap:wrap; gap:8px; }
+.design-main .event-detail-section { border-top:1px solid #e4eadb; padding:28px 0; }
+.design-main .checkbox-row { display:flex; align-items:center; gap:8px; }
+.design-main .checkbox-row>input[type="checkbox"] { flex:0 0 16px; width:16px; height:16px; margin:0; }
+.design-main #payment .nicepay-methods { display:flex; flex-direction:column; gap:8px; min-width:0; margin:16px 0 0; padding:0; border:0; }
+.design-main #payment .nicepay-methods legend { margin-bottom:10px; padding:0; font-size:11px; color:#76826c; }
+.design-main #payment .nicepay-methods label { flex:none; min-height:44px; margin:0; font-size:12px; }
+.design-main #payment [data-toss-payment] { width:100%; min-height:44px; justify-content:center; font-size:13px; }
+.design-main :is(.legal-layout,.legal-card) { min-width:0; max-width:100%; }
+.design-main .legal-table-wrap { min-width:0; max-width:100%; overflow-x:auto; }
+@media(max-width:1000px) {
+  .design-main #mtProjectWorkspace .mt-project-layout { grid-template-columns:1fr; gap:0; }
+  .design-main .mt-project-side { display:grid; grid-template-columns:1fr 1fr; gap:24px; position:static; }
+  .design-main .mt-side-links { grid-column:1/-1; }
+  .design-main .event-detail-hero { gap:30px; }
+}
+@media(max-width:699px) {
+  .design-main .home-search-intro h1 em { display:block; }
+  .design-main .detail-app .page-heading { padding-block:20px; }
+  .design-main .detail-app .page-heading h1,.design-main .mt-directory-head h1 { font-size:25px; }
+  .design-main .detail-app .page-heading>div>p.page-description { font-size:11px; }
+  .design-main .organization-scope { width:100%; padding:10px; gap:8px; margin-top:12px; }
+  .design-main .organization-scope label { display:grid; gap:6px; flex:1; font-size:10px; }
+  .design-main .organization-scope select { width:100%; min-width:0; max-width:none; font-size:12px; }
+  .design-main .organization-scope button { margin-top:19px; font-size:10px; }
+  .design-main .mt-directory-head { padding-block:22px; gap:16px; }
+  .design-main .mt-directory-head>.primary-btn { align-self:flex-start; width:auto; }
+  .design-main .mt-directory-tools { flex-wrap:wrap; gap:16px; }
+  .design-main .mt-directory-tabs { flex:1 1 100%; }
+  .design-main :is(.event-status-tabs,.mt-directory-tabs) { gap:22px; }
+  .design-main :is(.event-status-tabs,.mt-directory-tabs) button { font-size:10px; padding-bottom:10px; }
+  .design-main .mt-project-card.mt-directory-item { grid-template-columns:38px minmax(0,1fr); gap:12px; padding:17px; }
+  .design-main .mt-project-card-icon { width:38px; height:42px; }
+  .design-main .mt-project-card-copy>strong { font-size:17px; }
+  .design-main .mt-project-card-budget { grid-column:2; display:flex; align-items:center; flex-wrap:wrap; gap:7px; padding-top:12px; text-align:left; min-width:0; border-top:1px solid #e5ecdb; }
+  .design-main .mt-project-card-budget strong { font-size:14px; }
+  .design-main .mt-project-card-budget span { font-size:10px; }
+  .design-main #mtProjectWorkspace .mt-project-hero { align-items:stretch; gap:18px; }
+  .design-main .mt-project-hero h1 { font-size:26px; }
+  .design-main .mt-project-hero .button-row { display:grid; grid-template-columns:1fr 1fr; max-width:none; justify-content:stretch; gap:8px; }
+  .design-main #mtProjectWorkspace .mt-project-hero .button-row>button { width:auto; justify-content:center; font-size:10px; padding:8px; }
+  .design-main .mt-budget-panel { grid-template-columns:1fr; padding:20px 16px; gap:20px; }
+  .design-main .mt-budget-copy>strong { font-size:24px; }
+  .design-main .mt-budget-numbers { justify-content:space-between; }
+  .design-main .mt-budget-numbers strong { font-size:21px; }
+  .design-main #mtProjectWorkspace .mt-project-layout { display:block; }
+  .design-main .mt-project-side { display:block; }
+  .design-main .mt-compare-grid { gap:13px; }
+  .design-main .mt-candidate-card { flex-basis:225px; max-width:225px; }
+  .design-main .mt-side-section h2 { font-size:20px; }
+  .design-main .local-inline-form { grid-template-columns:minmax(0,1fr) 100px auto; gap:6px; }
+  .design-main .market-intro.retained-merchant { grid-template-columns:64px minmax(0,1fr); gap:13px; padding:12px; }
+  .design-main .market-intro.retained-merchant>img { width:64px; height:66px; }
+  .design-main .market-intro h2 { font-size:20px; margin:3px 0; }
+  .design-main .market-intro-body>.eyebrow { display:block; font-size:8px; }
+  .design-main .market-intro-body>:is(p:not(.eyebrow),.detail-meta,.button-row,.merchant-info-link) { display:none; }
+  .design-main #marketIntro .market-mobile-details { display:inline-flex; font-size:10px; padding:5px 0 0; color:#7d8d6c; }
+  .design-main #marketProducts>.market-page-toolbar { padding-top:22px; margin-bottom:16px; gap:12px; }
+  .design-main .market-page-toolbar .eyebrow { display:none; }
+  .design-main .market-page-toolbar h2 { font-size:20px; margin:0; }
+  .design-main .market-page-toolbar>span { font-size:9px; }
+  .design-main .category-tabs { gap:18px; }
+  .design-main .product-grid { padding-top:19px; }
+  .design-main .category-tabs button { font-size:10px; padding-bottom:10px; }
+  .design-main .merchant-modal-photo { height:170px; }
+  .design-main .merchant-modal-copy>p { font-size:12px; }
+  .design-main .event-directory { grid-template-columns:1fr; gap:26px; padding-top:22px; }
+  .design-main .original-program .home-card-title { font-size:21px; }
+  .design-main .original-program-copy>p { font-size:11px; }
+  .design-main .event-empty { min-height:220px; padding:35px 12px; }
+  .design-main .event-empty h2 { font-size:17px; }
+  .design-main .event-detail-hero { display:flex; flex-direction:column; gap:23px; padding-top:2px; align-items:stretch; }
+  .design-main .event-detail-hero>img { height:270px; }
+  .design-main .event-detail-hero h1 { font-size:27px; }
+  .design-main dialog :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),textarea,select) { font-size:16px; }
+}
