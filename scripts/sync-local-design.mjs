@@ -1,7 +1,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 const root=path.resolve(import.meta.dirname,'..');
-const source=path.resolve(process.argv[2]||path.resolve(root,'../../sites/motf-home-review/dist'));
+if(!process.argv.includes('--replace-accepted-design'))throw new Error('The accepted production templates are maintained directly in local-home-templates.js and local-design.css. Re-importing the historical mockup overwrites live adapters. Use --replace-accepted-design only for an intentional full re-import and review the diff.');
+const source=path.resolve(process.argv.slice(2).find(arg=>!arg.startsWith('--'))||path.resolve(root,'../../sites/motf-home-review/dist'));
 const files=['study','round-two','round-three','refinement','home','pages','clarity','projects','community','layout','search-home'];
 const styles=[];
 for(const name of files)styles.push(`/* Accepted local design: ${name}.css */\n`+await fs.readFile(path.join(source,`${name}.css`),'utf8'));

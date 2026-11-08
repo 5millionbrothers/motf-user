@@ -103,7 +103,9 @@
       .single();
     if (error) throw error;
     const [children, candidates] = await Promise.all([projectChildren(project.id), candidateDetails(project.id)]);
-    if ((project.organization_id || null) !== (window.motfGetOrganizationId?.() || null)) throw new Error("MT 소속을 먼저 선택해주세요.");
+    if ((project.organization_id || null) !== (window.motfGetOrganizationId?.() || null)) {
+      await window.motfSetOrganizationScope(project.organization_id || null,{skipProjects:true});
+    }
     currentProject = { ...project, ...children, is_owner: canEdit(project) };
     window.motfApplyMtProject(currentProject, candidates);
     return currentProject;
@@ -111,8 +113,10 @@
 
   window.motfCreateMtProject = async function createMtProject(payload) {
     const user = requireUser();
+    const organizationId = document.querySelector('[data-project-organization]')?.value || null;
+    await window.motfSetOrganizationScope?.(organizationId,{skipProjects:true});
     const { data, error } = await client.from("mt_projects")
-      .insert({ ...payload, owner_id: user.id, organization_id: window.motfGetOrganizationId?.() || null, status: "planning" })
+      .insert({ ...payload, organization_name: organizationId ? window.motfGetOrganizationName() : payload.organization_name, owner_id: user.id, organization_id: organizationId, status: "planning" })
       .select(projectFields)
       .single();
     if (error) throw error;
@@ -204,6 +208,42 @@
     });
     if (error) throw error;
     await loadProjects();
+  };
+
+  window.motfListWritableMtProjects = async function listWritableMtProjects() {
+    requireUser();
+    const { data, error } = await client.from("mt_projects").select(projectFields)
+      .not("status", "in", "(completed,cancelled)").order("starts_on", { ascending: false });
+    if (error) throw error;
+    return (data || []).filter(project => project.organization_id
+      ? window.motfCanEditOrganization?.(project.organization_id)
+      : project.owner_id === currentUser.id);
+  };
+  window.motfSaveRoomsToProject = async function saveRoomsToProject(projectId,businessId,offeringIds) {
+    requireUser();
+    const { data, error } = await client.rpc("save_mt_room_candidates", {
+      target_project_id: projectId, target_business_id: businessId, target_offering_ids: offeringIds,
+    });
+    if (error) throw error;
+    if (currentProject?.id === projectId) await window.motfSelectMtProject(projectId);
+    return data;
+  };
+  window.motfSaveShoppingToProject = async function saveShoppingToProject(projectId,productId,quantity) {
+    requireUser();
+    const { data, error } = await client.rpc("add_mt_shopping_candidate", {
+      target_project_id: projectId, target_offering_id: productId, requested_quantity: quantity,
+    });
+    if (error) throw error;
+    if (currentProject?.id === projectId) await window.motfSelectMtProject(projectId);
+    return data;
+  };
+  window.motfToggleMtStayBudget = async function toggleMtStayBudget(projectId,offeringId,include) {
+    requireUser();
+    const { data, error } = await client.rpc("toggle_mt_room_budget", {
+      target_project_id: projectId, target_offering_id: offeringId, include_room: include,
+    });
+    if (error) throw error;
+    return data;
   };
 
   window.motfSetMtStayItem = async function setMtStayItem({ business_id, offering_id, title, amount }) {

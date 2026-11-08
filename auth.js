@@ -1,4 +1,6 @@
 (function setupMotfAuth() {
+  const organizationInvite = new URLSearchParams(location.search).get("organization_invite");
+  if (organizationInvite) sessionStorage.setItem("motf.organizationInvite", organizationInvite);
   const config = window.MOTF_CONFIG || {};
   const supabaseLibrary = window.supabase;
 
@@ -23,6 +25,7 @@
 
   const protectedRoutes = new Set([
     "myMt",
+    "organizations",
     "mypage",
     "myUsage",
     "myAccount",
@@ -439,7 +442,11 @@
     return false;
   }
 
-  window.motfRequireLogin = requireLogin;
+  window.motfRequireLogin = function runAuthenticatedAction(action = null) {
+    if (!requireLogin(action)) return false;
+    if (typeof action === "function") action();
+    return true;
+  };
 
   window.motfEnsureIdentityVerified = async function ensureCheckoutAccount() {
     if (!requireLogin()) return false;
@@ -1185,7 +1192,7 @@
   };
   window.motfOrganizationReady = new Promise((resolve) => {
     const script = document.createElement("script");
-    script.src = "/organization-data.js?v=20261023-v1";
+    script.src = "/organization-data.js?v=20261108";
     script.onload = () => resolve(window.motfReloadOrganization?.());
     script.onerror = () => resolve();
     document.head.append(script);

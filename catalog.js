@@ -77,6 +77,7 @@
       discoveryWeight: Math.max(0, Math.min(3, Number.isFinite(Number(business.discovery_weight)) ? Number(business.discovery_weight) : 1)),
       isFeatured: Boolean(business.is_featured),
       name: text(business.business_name),
+      phone: String(business.phone || ""),
       region: regionOf(business),
       price: Math.min(...rooms.map((room) => room.price)),
       maxPeople: Math.max(...rooms.map((room) => Number(room.capacity.match(/\d+/)?.[0] || 40))),
@@ -147,6 +148,8 @@
       name: text(business.business_name),
       region: regionOf(business),
       type: "moTF 제휴 마트",
+      phone: String(business.phone || ""),
+      address: text(business.address || ""),
       rating: 0,
       location: locationOf(business),
       image: imageUrl(business.cover_image_url, products[0]?.image || marketFallback),
@@ -179,7 +182,7 @@
   (async () => {
     let [businessResult, offeringResult] = await Promise.all([
       client.from("businesses")
-        .select("id, business_type, business_name, address, description, short_description, highlight_summary, highlight_keys, region, cover_image_url, gallery_image_urls, facilities, approval_status, latitude, longitude, location_verified_at, station_distance_m, convenience_distance_m, nearby_tags, room_count, bath_count, shared_bathroom_count, shared_bathroom_gender_separated, shared_bathroom_note, shoulder_season_ranges, peak_season_ranges, amenity_details, extra_fees, refund_policy, recommended_sets, is_featured, display_order, discovery_weight")
+        .select("id, business_type, business_name, phone, address, description, short_description, highlight_summary, highlight_keys, region, cover_image_url, gallery_image_urls, facilities, approval_status, latitude, longitude, location_verified_at, station_distance_m, convenience_distance_m, nearby_tags, room_count, bath_count, shared_bathroom_count, shared_bathroom_gender_separated, shared_bathroom_note, shoulder_season_ranges, peak_season_ranges, amenity_details, extra_fees, refund_policy, recommended_sets, is_featured, display_order, discovery_weight")
         .eq("approval_status", "approved"),
       client.from("offerings")
         .select("id, business_id, name, description, price, is_active, max_people, min_people, base_people, extra_person_fee, unit, category, image_url, image_urls, sort_order, feature_summary, amenity_details, detail_sections, origin, nutrition_info, is_alcohol, stock_quantity, offseason_weekday_price, offseason_weekend_price, shoulder_weekday_price, shoulder_weekend_price, peak_weekday_price, peak_weekend_price, bathroom_count, bathroom_gender_separated, bathroom_note")
@@ -188,6 +191,11 @@
     ]);
 
     // 새 DB 열과 프론트 배포 순서가 잠시 엇갈려도 전체 카탈로그가 사라지지 않도록
+    if (businessResult.error?.code === "42501") {
+      businessResult = await client.from("businesses")
+        .select("id, business_type, business_name, address, description, short_description, highlight_summary, highlight_keys, region, cover_image_url, gallery_image_urls, facilities, approval_status, latitude, longitude, location_verified_at, station_distance_m, convenience_distance_m, nearby_tags, room_count, bath_count, shared_bathroom_count, shared_bathroom_gender_separated, shared_bathroom_note, shoulder_season_ranges, peak_season_ranges, amenity_details, extra_fees, refund_policy, recommended_sets, is_featured, display_order, discovery_weight")
+        .eq("approval_status", "approved");
+    }
     // 직전 스키마로 한 번만 폴백한다. 새 기능은 migration 50 적용 후 자동 활성화된다.
     if (businessResult.error) {
       businessResult = await client.from("businesses")

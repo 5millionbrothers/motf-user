@@ -10,13 +10,11 @@ function shell(route){const page=copy.routes[route]||copy.routes['/'],url=copy.o
  if(!source.includes('<!-- motf:metadata:start -->'))throw Error('Missing metadata marker');return source.replace(/<!-- motf:metadata:start -->[\s\S]*?<!-- motf:metadata:end -->/,metadata.replace(/^[ \t]+$/gm,''));
 }
 let count=0;
-async function walk(directory){
-  for(const entry of await fs.readdir(directory,{withFileTypes:true})){
-    if(['.git','node_modules','motf-prototype','api','assets','scripts','tests'].includes(entry.name))continue;
-    const file=path.join(directory,entry.name);
-    if(entry.isDirectory())await walk(file);
-    else if(entry.name==='index.html'&&directory!==root){const current=await fs.readFile(file,'utf8');if(current.includes('motf_user_v11')&&current.includes('id="homeStayPicks"')){const route='/'+path.relative(root,directory).split(path.sep).join('/');await fs.writeFile(file,shell(route));count++;}}
-  }
+for(const route of Object.keys(copy.routes)){
+  if(route==='/')continue;
+  const directory=path.join(root,route.slice(1));
+  await fs.mkdir(directory,{recursive:true});
+  await fs.writeFile(path.join(directory,'index.html'),shell(route));count++;
 }
-await walk(root);await fs.writeFile(path.join(root,'index.html'),shell('/'));
+await fs.writeFile(path.join(root,'index.html'),shell('/'));
 console.log(`Synchronized ${count} static route entrypoints with route-specific titles; existing Vercel routing configuration retained.`);

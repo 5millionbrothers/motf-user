@@ -11,6 +11,23 @@
   let authVersion = 0;
   let chatContext = "";
   let linkHandled = false;
+  const contactChecks = new Map();
+  function renderContactNotice(thread) {
+    const form = document.querySelector('#chatForm');
+    if (!form) return;
+    let notice = document.getElementById('chatContactNotice');
+    if (!notice) { notice = document.createElement('div'); notice.id = 'chatContactNotice'; form.before(notice); }
+    const phone = String(window.motfCurrentUserProfile?.phone || '').replace(/[^0-9]/g,'');
+    const key = `${window.motfCurrentUserId}:${thread?.id}:${phone}`;
+    const old = notice.querySelector('input');
+    if (old && notice.dataset.key === key) contactChecks.set(key,old.checked);
+    const alreadyShared = thread?.contactShares?.some(share => share.user_id === window.motfCurrentUserId && share.phone === phone);
+    notice.dataset.key = key;
+    notice.hidden = !thread;
+    const escape = value => window.motfEscapeHtml?.(value) || '';
+    notice.innerHTML = phone ? `<label class="chat-contact-consent"><input type="checkbox" id="chatContactConsent" ${contactChecks.get(key) ?? alreadyShared ? 'checked' : ''}><span><strong>문의 연락처 ${escape(phone)}</strong>를 ${escape(thread?.title || '해당 업장')}의 문의 담당자에게 공유합니다. 예약·상품 상담을 위해 전화로 답변받을 수 있으며, 이 대화의 연락 내역으로 보관됩니다. <button class="text-button" type="button" data-route="privacy">개인정보 안내</button></span></label>` : '<p>메시지를 보내려면 연락 가능한 전화번호가 필요해요. <button class="text-button" type="button" data-route="myAccount">계정에서 연락처 등록</button></p>';
+  }
+  window.motfRenderChatContactNotice = renderContactNotice;
 
   function messageBody(text, attachments) {
     const fileText = attachments.length ? `\n${attachments.map((name) => `[첨부: ${name}]`).join("\n")}` : "";
@@ -121,7 +138,7 @@
       scope ? { target_organization_id: scope } : undefined);
     if (supportError) console.error(supportError);
     let query = client.from("conversations")
-      .select("id, business_id, organization_id, customer_name, group_name, last_message_at, businesses(business_name, business_type, address, cover_image_url), messages(id, sender_id, sender_name, sender_role, body, read_at, created_at)");
+      .select("id, business_id, organization_id, customer_name, group_name, last_message_at, businesses(business_name, business_type, address, phone, cover_image_url), conversation_contact_shares(user_id,phone), messages(id, sender_id, sender_name, sender_role, body, read_at, created_at)");
     query = scope ? query.eq("organization_id", scope) : query.eq("customer_id", authData.session.user.id).is("organization_id", null);
     const { data, error } = await query.order("last_message_at", { ascending: false });
     if (authStamp !== authVersion || version !== loadVersion || scope !== (window.motfGetOrganizationId?.() || null)) return;
@@ -136,6 +153,8 @@
         subtitle: messages.at(-1)?.body || "대화를 시작해보세요.",
         isSupport,
         address: conversation.businesses?.address || "",
+        phone: conversation.businesses?.phone || "",
+        contactShares: conversation.conversation_contact_shares || [],
         image: conversation.businesses?.cover_image_url || "",
         messages: messages.map((message) => ({
           from: message.sender_role === "user" ? "user" : message.sender_role === "partner" ? "owner" : "admin",
@@ -200,14 +219,19 @@
     const attachments = attachmentInput?.files ? [...attachmentInput.files].map((file) => file.name) : [];
     const body = messageBody(input?.value.trim() || "", attachments);
     if (!body) return;
+    if (!document.querySelector('#chatContactConsent')?.checked) {
+      window.toast?.('문의 전화번호 공유 안내를 확인해주세요.');
+      return;
+    }
     const button = event.target.querySelector('[type="submit"]');
     if (button) button.disabled = true;
     window.motfChatPending = true;
     let error;
     try {
-      ({ error } = await client.rpc("send_chat_message", {
+      ({ error } = await client.rpc("send_chat_message_with_contact", {
         target_conversation_id: conversationId,
         message_body: body,
+        contact_consent: true,
       }));
     } catch (failure) { error = failure; }
     finally { window.motfChatPending = false; if (button) button.disabled = false; }

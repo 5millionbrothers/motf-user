@@ -15,9 +15,9 @@ function costs() {
   let groceries = (state.marketItems || []).reduce((sum, item) => sum + item.price * item.quantity, 0);
   if(example) {
     const available = Math.max(0,state.budget-other);
-    const scale = Math.min(1,available/(state.people*(exampleRates.lodging+exampleRates.groceries)));
-    lodging = Math.floor(state.people*exampleRates.lodging*scale/1000)*1000;
-    groceries = Math.floor(state.people*exampleRates.groceries*scale/1000)*1000;
+    const lodgingShare = available / Math.max(1,state.people) >= 80000 ? .60 : .68;
+    lodging = Math.floor(available * lodgingShare);
+    groceries = available - lodging;
   }
   const used = lodging + groceries + other;
   return { stay, lodging, groceries, other, used, example, remaining: state.budget - used, perPerson: Math.ceil(used / state.people) };
@@ -83,13 +83,13 @@ function workspaceSection(fromHome=false) {
       <div class="machine-col"><div class="hardware-label"><span>03 / 예산 모니터</span><span>KRW</span></div><div class="kit-screen"><p class="screen-label" data-budget-label>${cost.remaining < 0 ? '예산을 초과했어요' : fromHome?'예시 배분 후 남은 예산':'준비하고 남은 예산'}</p><p class="screen-amount" data-value="remaining">${money(cost.remaining)}</p><p class="screen-currency">원 / ${fromHome?'배분 예시 · 실제 견적 아님':'전체 예산 기준'}</p>${meter()}${budgetLegend()}<div class="screen-detail"><span>${fromHome?'예시 배분액':'사용 예정'}</span><strong><span data-value="used">${money(cost.used)}</span>원</strong></div><div class="screen-detail"><span>1인 기준</span><strong><span data-value="per-person">${money(cost.perPerson)}</span>원</strong></div></div>
         <div class="kit-budget-group"><div class="budget-unit-tabs" role="group" aria-label="예산 조절 단위">${[10000,100000,1000000].map(step => `<button data-budget-step="${step}" aria-pressed="${budgetStep === step}">${money(step / 10000)}만원</button>`).join('')}</div><div class="budget-control"><button class="icon-button raised" data-budget-adjust="-1" title="선택한 단위만큼 예산 줄이기" aria-label="예산 줄이기">${icon('minus')}</button><label><span>전체 예산</span><span><input data-input="budget" aria-label="총예산" type="number" value="${state.budget}" min="0" max="100000000" step="${budgetStep}">원</span></label><button class="icon-button raised" data-budget-adjust="1" title="선택한 단위만큼 예산 늘리기" aria-label="예산 늘리기">${icon('plus')}</button></div><input class="budget-range" data-input="budget-range" type="range" aria-label="총예산 슬라이더" min="0" max="${Math.max(10000000,state.budget)}" step="${budgetStep}" value="${state.budget}"><button class="primary" ${fromHome?'data-mt-from-estimate':'data-action="create"'}>내 MT에서 준비 이어가기 ${icon('arrow-up-right')}</button></div>
       </div>
-    </div>${extraExpenses()}${fromHome?'':`<div class="calculator-selection">${candidateRows()}</div>`}<div class="calculator-foot"><span>${icon(fromHome?'folder-heart':'flask-conical')} ${fromHome?'숙소 1인 3만원·장보기 1.2만원 가정, 예산 부족 시 비례 조정. 예시 비용은 내 MT에 담기지 않아요.':'숙소·상품 가격은 예시예요. 실제 요금은 예약·주문 시 확인해주세요.'}</span><div><button class="text-button" data-action="compare">${icon('columns-3')} 후보 비교</button><button class="text-button" data-action="schedule">${icon('calendar-check')} 일정·공지</button><button class="text-button" data-action="budget">${icon('download')} 예결산 보기</button></div></div>
+    </div>${extraExpenses()}${fromHome?'':`<div class="calculator-selection">${candidateRows()}</div>`}<div class="calculator-foot"><span>${icon(fromHome?'folder-heart':'flask-conical')} ${fromHome?'기타 비용을 제외한 예산을 숙소·장보기로 전액 배분한 예시예요. 실제 견적이 아니며 내 MT에 자동 저장되지 않아요.':'숙소·상품 가격은 예시예요. 실제 요금은 예약·주문 시 확인해주세요.'}</span></div>
   </section>`;
 }
 
 function organizationBand() {
   return `<section class="org-band wrap"><div><p class="eyebrow">학생회 · 동아리를 위한 단체 공간</p><h2>지난 MT의 예약·주문 기록을, 다음 총무에게.</h2><p>단체의 이용 기록을 모아두고, 새 담당자를 초대해 그대로 이어가세요.</p></div>
-    <div class="org-actions"><div class="org-avatars" aria-hidden="true"><span>총무</span><span>기획</span><span>회계</span></div><button class="secondary" data-action="organization">${icon('users-round')} 단체 공간 살펴보기 ${icon('arrow-up-right')}</button></div></section>`;
+    <div class="org-actions"><div class="org-avatars" aria-hidden="true"><span>총무</span><span>기획</span><span>회계</span></div><button class="secondary" data-action="organization">${icon('users-round')} 우리 단체 관리 ${icon('arrow-up-right')}</button></div></section>`;
 }
 
 function purposeTabs(){return "";}
@@ -114,7 +114,7 @@ function homeEditorial() {
 }
 
 function homeStays() {
-  return `<section class="home-section home-stays wrap" id="home-stays">${homeSectionTop('STAY','함께 머물기 좋은 숙소','stays')}<div class="home-stay-grid home-swipe" tabindex="0" aria-label="숙소 추천">${stays.map((stay,index) => `<article class="home-stay-card"><button class="home-stay-image" data-stay-id="${stay.id}" aria-label="${stay.name} 숙소 후보 보기"><img src="${stay.image}" alt="${stay.name}" loading="lazy"><span>${stay.badge}</span></button><div class="home-stay-body"><div class="home-card-meta"><span>${stay.region} · 최대 ${stay.maxPeople}명</span><button class="icon-button" data-page-choose-stay="${stay.id}" title="내 MT에 담기" aria-label="${stay.name} 내 MT에 담기">${icon('folder-plus')}</button></div><button class="home-card-title" data-stay-id="${stay.id}">${stay.name}</button><p>객실 ${stay.rooms}개 · ${stay.bathLabel}</p><strong class="home-price">${money(stay.price)}<small>원</small></strong><span class="home-per-person">${state.people}명 기준 · 1인 ${money(Math.ceil(stay.price/state.people))}원</span></div></article>`).join('')}</div></section>`;
+  return `<section class="home-section home-stays wrap" id="home-stays">${homeSectionTop('STAY','함께 머물기 좋은 숙소','stays')}<div class="home-stay-grid home-swipe" tabindex="0" aria-label="숙소 추천">${stays.map((stay,index) => `<article class="home-stay-card"><button class="home-stay-image" data-stay-id="${stay.id}" aria-label="${stay.name} 숙소 후보 보기"><img src="${stay.image}" alt="${stay.name}" loading="lazy"><span>${stay.badge}</span></button><div class="home-stay-body"><div class="home-card-meta"><span>${stay.region} · 최대 ${stay.maxPeople}명</span><button class="icon-button" data-page-choose-stay="${stay.id}" title="내 MT에 담기" aria-label="${stay.name} 내 MT에 담기">${icon('folder-plus')}</button></div><button class="home-card-title" data-stay-id="${stay.id}">${stay.name}</button><p>객실 ${stay.rooms}개</p><strong class="home-price">${money(stay.price)}<small>원</small></strong><span class="home-per-person">${state.people}명 기준 · 1인 ${money(Math.ceil(stay.price/state.people))}원</span></div></article>`).join('')}</div></section>`;
 }
 
 function homeMarket() { const products=pageProducts();
@@ -126,7 +126,7 @@ function homeCalculator() {
 }
 
 function homeCommunity() {
-  return `<section class="home-section home-community wrap">${homeSectionTop('TOGETHER','함께 나누는 MT 이야기','community')}<div class="home-community-grid"><div class="home-posts">${homePosts.map(post=>`<article class="home-post"><div class="home-post-meta"><span class="home-post-avatar">${icon(post.symbol)}</span><div><strong>${post.author}</strong><small>${post.time}</small></div><span class="home-post-label">${post.label}</span></div><button class="home-post-title" data-home-post="${post.id}">${post.title}</button></article>`).join('')}</div><aside class="home-play-guide"><span class="home-play-symbol">${icon('dices')}</span><p>MT PLAYBOOK</p><h3>어색함은 짧게,<br>함께 웃는 시간은 길게.</h3><button class="text-button" data-action="recreation">레크 찾아보기 ${icon('arrow-right')}</button></aside></div></section>`;
+  return `<section class="home-section home-community wrap">${homeSectionTop('TOGETHER','함께 나누는 MT 이야기','community')}<div class="home-community-grid"><div class="home-posts">${homePosts.map(post=>`<article class="home-post" data-home-post="${post.id}" role="link" tabindex="0"><div class="home-post-meta"><span class="home-post-avatar">${icon(post.symbol)}</span><div><strong>${post.author}</strong><small>${post.time}</small></div><span class="home-post-label">${post.label}</span></div><button class="home-post-title" data-home-post="${post.id}">${post.title}</button></article>`).join('')}</div><aside class="home-play-guide"><span class="home-play-symbol">${icon('dices')}</span><p>MT PLAYBOOK</p><h3>어색함은 짧게,<br>함께 웃는 시간은 길게.</h3><button class="text-button" data-action="recreation">레크 찾아보기 ${icon('arrow-right')}</button></aside></div></section>`;
 }
 return {homeSearch,homeEditorial,homeStays,homeMarket,homeCalculator,homeCommunity,organizationBand,workspaceSection,costs,budgetParts,budgetLegend,extraExpenses,expenseRows};
 };

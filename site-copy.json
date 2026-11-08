@@ -24,6 +24,7 @@
     "/events": { "title": "모리지널 MOriginal | 모티프(moTF)", "description": "모티프가 직접 기획하는 MT, 모리지널의 일정과 참가 정보를 확인하세요. 모집 중인 프로그램부터 예정된 MT까지 살펴보세요." },
     "/events/detail": { "title": "모리지널 프로그램 안내 | 모티프(moTF)" },
     "/my-mt": { "title": "내 MT 준비 공간 | 모티프(moTF)", "private": true },
+    "/organizations": { "title": "우리 단체 관리 | 모티프(moTF)", "private": true },
     "/chat": { "title": "문의 채팅 | 모티프(moTF)", "private": true },
     "/mypage": { "title": "마이페이지 | 모티프(moTF)", "private": true },
     "/mypage/account": { "title": "계정 관리 | 모티프(moTF)", "private": true },
