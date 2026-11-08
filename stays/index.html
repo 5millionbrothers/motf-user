@@ -35,6 +35,7 @@
     <link rel="stylesheet" href="local-adapter.css?v=20261103-symbol-small" />
     <link rel="stylesheet" href="screen-polish.css?v=20261106" />
     <link rel="stylesheet" href="preparation-workflows.css?v=20261108" />
+    <link rel="stylesheet" href="budget-export.css?v=20261109-clean" />
     <link rel="stylesheet" href="loading.css?v=20261103-symbol" />
     <script src="loading.js?v=20260904-loader1"></script>
     <script async src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" onload="window.__motfRefreshIcons && window.__motfRefreshIcons()"></script>
@@ -704,18 +705,6 @@
         </section>
       </section>
 
-      <section id="budgetPreview" class="view">
-        <button class="ghost-btn back-btn" data-route="myUsage"><i data-lucide="chevron-left"></i>이용 내역</button>
-        <div class="view-title mypage-subpage-title">
-          <div>
-            <h1>예결산 증빙 파일 다운로드</h1>
-            <p class="budget-page-helper">다운로드 전에 금액과 항목을 확인한 뒤 엑셀 파일로 저장할 수 있어요.</p>
-          </div>
-          <button class="primary-btn" type="button" data-budget-download><i data-lucide="download"></i>엑셀 다운로드</button>
-        </div>
-        <div id="budgetPreviewArea"></div>
-      </section>
-
       <section id="myAccount" class="view">
         <button class="ghost-btn back-btn" data-route="mypage"><i data-lucide="chevron-left"></i>마이페이지</button>
         <div class="account-layout">
@@ -1227,13 +1216,13 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <nav class="mobile-bottom-nav" aria-label="모바일 주요 메뉴"><button class="nav-link" data-route="home"><i data-lucide="house"></i><span>홈</span></button><button class="nav-link" data-route="stays"><i data-lucide="bed-double"></i><span>숙소</span></button><button class="nav-link" data-route="market"><i data-lucide="shopping-basket"></i><span>장보기</span></button><button class="nav-link" data-route="events"><i data-lucide="sparkles"></i><span>모리지널</span></button><button class="nav-link" data-route="myMt"><i data-lucide="folder-heart"></i><span>내 MT</span></button></nav>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script src="config.js?v=20260622-naver1"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ko.js"></script>
     <script src="nicepay.js?v=20261030-card-bank"></script>
-    <script src="app.js?v=20261108"></script>
-    <script src="budget-export.js?v=20260721-batch2"></script>
+    <script src="app.js?v=20261109-light"></script>
+    <script src="budget-model.js?v=20261109-clean"></script>
+    <script src="budget-export.js?v=20261109-clean"></script>
     <script src="auth.js?v=20261108"></script>
     <script src="catalog.js?v=20261108"></script>
     <script src="transactions.js?v=20261029-nicepay"></script>

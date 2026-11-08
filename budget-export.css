@@ -1,0 +1,28 @@
+.budget-export-dialog{box-sizing:border-box;position:fixed;inset:0;margin:auto;width:min(440px,calc(100% - 32px));max-height:calc(100dvh - 48px);padding:28px;border:1px solid #e0e5da;border-radius:8px;background:#fff;color:#283025;box-shadow:0 18px 70px #26301f24;overflow:auto;font-family:inherit}
+.budget-export-dialog::backdrop{background:#20271d66;backdrop-filter:blur(3px)}
+.budget-export-dialog:focus{outline:none}
+.budget-dialog-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.budget-dialog-icon{display:grid;place-items:center;width:40px;height:40px;border-radius:8px;background:#f1f4ed;color:#4a6038}
+.budget-dialog-icon svg{width:22px;height:22px}
+.budget-export-dialog .budget-icon-button{display:grid;place-items:center;width:32px;height:32px;padding:0;background:transparent;border:0;color:#6c7565;cursor:pointer}
+.budget-icon-button svg{width:20px;height:20px}
+.budget-export-dialog h2{font-size:22px;line-height:1.4;font-weight:650;margin:0 0 8px;letter-spacing:0}
+.budget-export-dialog .budget-context{font-size:13px;color:#78826e;margin:0 0 20px;overflow-wrap:anywhere}
+.budget-options{display:grid;gap:0;border-top:1px solid #e5e9df}
+.budget-export-dialog .budget-option{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #e5e9df;cursor:pointer;min-width:0}
+.budget-export-dialog input[type=checkbox]{appearance:auto;position:static;flex:0 0 18px;width:18px;min-width:18px;height:18px;margin:0;padding:0;accent-color:#49603a;box-shadow:none}
+.budget-option strong{display:block;font-size:14px;font-weight:550;line-height:1.5;color:#30382a}
+.budget-option small{display:block;font-size:12px;line-height:1.5;color:#7c8672;margin-top:2px}
+.budget-option:has(input:disabled){opacity:.55}
+.budget-total{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-top:20px;font-size:12px;color:#727d66}
+.budget-total strong{font-size:19px;font-weight:600;color:#35472a;white-space:nowrap}
+.budget-export-dialog .budget-footnote{margin:18px 0;font-size:12px;line-height:1.6;color:#7a8470;word-break:keep-all}
+.budget-export-dialog .budget-download{display:flex;justify-content:center;align-items:center;gap:8px;width:100%;min-height:44px;padding:12px;border:0;border-radius:6px;background:#465c36;color:#fff;font-size:14px;font-weight:550;cursor:pointer}
+.budget-download svg{width:17px;height:17px}
+.budget-download:disabled{opacity:.45;cursor:default}
+.budget-status,.budget-error{font-size:13px;line-height:1.7;padding:12px 0;color:#717e64;overflow-wrap:anywhere}
+.budget-error{color:#96502c}
+.budget-error button,.budget-export-dialog .budget-usage-link{font:inherit;color:#49613a;background:transparent;border:0;text-decoration:underline;cursor:pointer}
+.budget-export-dialog .budget-usage-link{display:block;margin:14px auto 0;font-size:13px}
+.budget-export-dialog :focus-visible{outline:2px solid #71845e;outline-offset:3px}
+@media(max-width:480px){.budget-export-dialog{padding:22px}.budget-export-dialog h2{font-size:20px}.budget-export-dialog .budget-option{padding:12px 0}}

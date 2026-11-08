@@ -1,293 +1,105 @@
-(function connectBudgetExport() {
-  const state = {
-    selectedIds: [],
-    report: null,
-  };
-
-  const money = (value) => `${Number(value || 0).toLocaleString("ko-KR")}원`;
-  const escapeHtml = window.motfEscapeHtml || ((value) => String(value ?? ""));
-
-  function todayText() {
-    const date = new Date();
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
+(function () {
+  'use strict';
+  const M = window.MotfBudget;
+  const modal = document.createElement('dialog');
+  modal.className = 'budget-export-dialog'; modal.setAttribute('aria-labelledby', 'budgetExportTitle'); document.body.append(modal);
+  const state = { context: {}, ids: [], sources: [], options: {}, loading: false, busy: false, error: '', token: 0, organizationId: null };
+  const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+  const options = () => M.quickReport(state.context, state.sources, state.options);
+  const count = kind => state.sources.filter(row => row.kind === kind).length + (state.context.project?.items || []).filter(row => row.status !== 'cancelled' && row.item_kind === (kind === 'stay' ? 'stay' : 'shopping') && !state.sources.some(source => source.items.some(item => item.offeringId && item.offeringId === row.reference_id))).length;
+  function render() {
+    const report = options(), hasData = report.budget.length > 0;
+    const check = (name, title, detail, disabled = false) => `<label class="budget-option"><input type="checkbox" data-budget-option="${name}" ${state.options[name] ? 'checked' : ''} ${disabled || state.busy ? 'disabled' : ''}><span><strong>${title}</strong><small>${detail}</small></span></label>`;
+    modal.innerHTML = `<div class="budget-dialog-head"><span class="budget-dialog-icon"><i data-lucide="file-spreadsheet"></i></span><button type="button" class="budget-icon-button" data-budget-close aria-label="닫기"><i data-lucide="x"></i></button></div><h2 id="budgetExportTitle">예결산 엑셀 받기</h2><p class="budget-context">${escape(state.context.project?.title || '선택한 이용 내역')}</p>
+      ${state.loading ? '<p class="budget-status" role="status">예약·주문 내역을 확인하고 있어요.</p>' : `<div class="budget-options">${check('stay', '숙소 비용', `${count('stay')}건`, !count('stay'))}${check('market', '장보기 비용', `${count('market')}건`, !count('market'))}${check('evidence', '주문·결제 내역서 함께 받기', '엑셀과 함께 ZIP으로 · 공식 영수증과 별도')}</div>`}
+      ${state.error ? `<p class="budget-error" role="alert">${escape(state.error)} <button type="button" data-budget-retry>다시 시도</button></p>` : !state.loading && !hasData ? '<p class="budget-status">내 MT나 이용 내역에서 포함할 항목을 선택해주세요.</p>' : ''}
+      ${!state.loading && hasData ? `<div class="budget-total"><span>예상 지출 합계</span><strong>${report.totals.budgetExpense.toLocaleString('ko-KR')}원</strong></div>` : ''}
+      <p class="budget-footnote">참고용 파일이에요. 참가비나 추가 지출은 받은 엑셀에서 자유롭게 수정할 수 있어요.</p><button type="button" class="budget-download" data-budget-download ${state.loading || state.busy || state.error || !hasData ? 'disabled' : ''}><i data-lucide="${state.busy ? 'loader-circle' : 'download'}"></i>${state.busy ? '파일 만드는 중' : state.options.evidence ? '엑셀 + 내역서 받기' : '엑셀 다운로드'}</button>${!state.loading && !hasData && !state.error ? '<button type="button" class="budget-usage-link" data-budget-usage>이용 내역 선택하기</button>' : ''}`;
+    window.lucide?.createIcons({ root: modal });
   }
-
-  function formatDate(value) {
-    if (!value) return "-";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return String(value);
-    return date.toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" });
+  async function request(includeEvidence = false) {
+    const organizationId = state.organizationId, ids = [...state.ids];
+    const session = (await window.motfSupabase?.auth.getSession())?.data?.session;
+    if (!session?.access_token) throw new Error('로그인 후 이용해주세요.');
+    const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 25000);
+    try {
+      const response = await fetch('/api/budget-sources', { method: 'POST', signal: controller.signal, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify({ organizationId, transactionIds: ids, includeEvidence }) });
+      let result;
+      try { result = await response.json(); } catch { throw new Error('주문 내역을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.'); }
+      if (!response.ok || !result.ok) throw new Error(result.message || '주문 내역을 확인하지 못했습니다.');
+      return result;
+    } finally { clearTimeout(timer); }
   }
-
-  function shortReceiptNo(row) {
-    const raw = String(row.id || "").replace(/[^a-zA-Z0-9]/g, "");
-    const suffix = (raw.slice(-8) || "00000000").toUpperCase();
-    return `${isMarketOrderType(row.type) ? "주문" : "예약"}-${suffix}`;
+  async function load(token) {
+    state.loading = true; state.error = ''; render();
+    try {
+      const result = state.ids.length ? await request() : { sources: [] };
+      if (token === state.token) state.sources = result.sources;
+    } catch (error) { if (token === state.token) state.error = error.message; }
+    finally { if (token === state.token) { state.loading = false; render(); } }
   }
-
-  function isMarketOrderType(type) {
-    return type === "마트 주문" || type === "공판장 주문";
+  async function open(selectedIds = [], context = {}) {
+    const token = ++state.token;
+    const session = (await window.motfSupabase?.auth.getSession())?.data?.session;
+    if (token !== state.token) return;
+    if (!session?.user) { window.toast?.('로그인 후 이용해주세요.'); return; }
+    state.context = { ...context, organizationName: context.organizationName || window.motfGetOrganizationName?.() || '' };
+    state.organizationId = context.project ? context.project.organization_id || null : window.motfGetOrganizationId?.() || null;
+    state.ids = [...new Set((Array.isArray(selectedIds) ? selectedIds : [selectedIds]).filter(Boolean))];
+    state.sources = []; state.busy = false;
+    state.options = { stay: true, market: true, evidence: false };
+    if (!modal.open) modal.showModal();
+    await load(token);
   }
-
-  function normalizeRows(selectedIds = []) {
-    const snapshot = window.motfGetUsageSnapshot?.() || { reservations: [], orders: [] };
-    const reservations = (snapshot.reservations || []).map((item) => ({
-      id: item.id,
-      type: "숙소 예약",
-      category: "숙소",
-      place: item.stayName || "숙소",
-      itemName: item.roomName || "예약 상품",
-      date: [item.date, item.checkOutDate].filter(Boolean).join(" ~ ") || item.date || "",
-      people: item.people || "-",
-      status: item.status || "-",
-      amount: Number(item.amount || 0),
-      refundAmount: Number(item.refundAmount || 0),
-      purchaseMethod: "moTF 예약",
-      note: item.isPendingVirtualAccount ? "가상계좌 입금 대기" : "예약/결제 증빙",
+  const libraries = new Map();
+  function library(name, src) {
+    if (window[name]) return Promise.resolve(window[name]);
+    if (!libraries.has(name)) libraries.set(name, new Promise((resolve, reject) => {
+      const script = document.createElement('script'); script.src = src;
+      script.onload = () => resolve(window[name]);
+      script.onerror = () => { libraries.delete(name); script.remove(); reject(new Error('다운로드 도구를 불러오지 못했습니다. 다시 시도해주세요.')); };
+      document.head.append(script);
     }));
-    const orders = (snapshot.orders || []).map((item) => ({
-      id: item.id,
-      type: "마트 주문",
-      category: "식자재 및 일회용품",
-      place: item.storeName || "마트",
-      itemName: `마트 주문 ${Array.isArray(item.items) ? item.items.length : 0}개 품목`,
-      date: item.pickupTime || "",
-      people: "-",
-      status: item.status || "-",
-      amount: Number(item.amount || 0),
-      refundAmount: Number(item.refundAmount || 0),
-      purchaseMethod: "moTF 마트 주문",
-      note: item.isPendingVirtualAccount ? "가상계좌 입금 대기" : "주문/결제 증빙",
-    }));
-    const allRows = [...reservations, ...orders];
-    const ids = new Set((Array.isArray(selectedIds) ? selectedIds : [selectedIds]).filter(Boolean).map(String));
-    if (!ids.size) return allRows;
-    return allRows.filter((row) => ids.has(String(row.id)));
+    return libraries.get(name);
   }
-
-  function buildReport(selectedIds = []) {
-    const rows = normalizeRows(selectedIds);
-    const total = rows.reduce((sum, row) => sum + row.amount, 0);
-    const refundTotal = rows.reduce((sum, row) => sum + row.refundAmount, 0);
-    const payableTotal = total - refundTotal;
-    const first = rows[0] || {};
-    return {
-      generatedAt: todayText(),
-      title: rows.length === 1 ? `${first.place || "MOTF"} 예결산 증빙` : "MOTF 전체 이용 예결산 증빙",
-      fileName: `MOTF_예결산_${todayText()}.xlsx`,
-      rows,
-      total,
-      refundTotal,
-      payableTotal,
-    };
+  function saveFile(blob, name) {
+    const url = URL.createObjectURL(blob), link = document.createElement('a'); link.href = url; link.download = name; document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
-
-  function renderEmpty(area) {
-    area.innerHTML = `
-      <div class="empty-state">
-        아직 엑셀로 만들 이용 내역이 없습니다. 결제 완료 후 다시 확인해주세요.
-      </div>
-    `;
+  async function download() {
+    if (state.loading || state.busy || state.error) return;
+    const token = state.token, selectedOptions = { ...state.options }, context = structuredClone(state.context);
+    state.busy = true; render();
+    try {
+      const result = state.ids.length ? await request(selectedOptions.evidence) : { sources: [], documents: [] };
+      if (token !== state.token) return;
+      const report = M.quickReport(context, result.sources, selectedOptions);
+      if (!report.budget.length) throw new Error('포함할 숙소나 장보기 비용을 선택해주세요.');
+      const ExcelJS = await library('ExcelJS', '/vendor/exceljs-4.4.0.min.js');
+      const workbook = await M.workbook(report, ExcelJS), bytes = await workbook.xlsx.writeBuffer();
+      const name = `${(context.project?.title || 'MT').replace(/[\\/:*?"<>|\x00-\x1f]/g, '_').slice(0, 80)}_예결산_참고`;
+      let blob, extension = 'xlsx';
+      if (selectedOptions.evidence) {
+        const JSZip = await library('JSZip', '/vendor/jszip-3.10.1.min.js'), zip = new JSZip();
+        zip.file(`${name}.xlsx`, bytes);
+        const included = new Set(report.sources.map(row => row.evidenceId));
+        result.documents.filter(doc => included.has(doc.id)).forEach(doc => zip.file(`증빙자료/${doc.fileName}`, doc.html));
+        zip.file('안내.txt', '참고용 예결산 파일과 모티프 주문·결제내역서입니다. 세금계산서·현금영수증·카드 매출전표가 아닙니다.\n내역서는 브라우저에서 열어 인쇄하거나 PDF로 저장할 수 있습니다.\n');
+        blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' }); extension = 'zip';
+      } else blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      if (token !== state.token) return;
+      saveFile(blob, `${name}.${extension}`); modal.close(); window.toast?.('예결산 참고 파일을 만들었어요.');
+    } catch (error) { if (token === state.token) { state.error = error.message; render(); } }
+    finally { if (token === state.token) { state.busy = false; if (modal.open) render(); } }
   }
-
-  function renderPreview() {
-    const area = document.querySelector("#budgetPreviewArea");
-    if (!area) return;
-    const report = state.report || buildReport(state.selectedIds);
-    state.report = report;
-    if (!report.rows.length) {
-      renderEmpty(area);
-      return;
-    }
-
-    area.innerHTML = `
-      <div class="budget-preview-shell">
-        <section class="budget-receipt">
-          <div class="budget-receipt-head">
-            <div>
-              <p class="eyebrow">MOTF RECEIPT</p>
-              <h2>${escapeHtml(report.title)}</h2>
-              <p>발급일 ${escapeHtml(formatDate(report.generatedAt))}</p>
-            </div>
-            <div class="pill success">다운로드 전 미리보기</div>
-          </div>
-          <div class="budget-summary-grid">
-            <div class="budget-summary-card"><span>총 건수</span><strong>${report.rows.length}건</strong></div>
-            <div class="budget-summary-card"><span>총 결제금액</span><strong>${money(report.total)}</strong></div>
-            <div class="budget-summary-card"><span>환불/차감</span><strong>${money(report.refundTotal)}</strong></div>
-            <div class="budget-summary-card"><span>증빙 합계</span><strong>${money(report.payableTotal)}</strong></div>
-          </div>
-          <div class="budget-table-wrap">
-            <table class="budget-table">
-              <thead>
-                <tr>
-                  <th>분류</th>
-                  <th>#</th>
-                  <th>항목</th>
-                  <th>단가</th>
-                  <th>수량</th>
-                  <th>합계</th>
-                  <th>구매 방식</th>
-                  <th>비고</th>
-                  <th>증빙번호</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${report.rows.map((row, index) => `
-                  <tr>
-                    <td>${escapeHtml(row.category)}</td>
-                    <td>${index + 1}</td>
-                    <td>${escapeHtml(row.itemName)}</td>
-                    <td>${money(row.amount)}</td>
-                    <td>1</td>
-                    <td>${money(row.amount - row.refundAmount)}</td>
-                    <td>${escapeHtml(row.purchaseMethod)}</td>
-                    <td>${escapeHtml([row.place, row.date, row.status, row.note].filter(Boolean).join(" · "))}</td>
-                    <td>${escapeHtml(shortReceiptNo(row))}</td>
-                  </tr>
-                `).join("")}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td colspan="5">총합</td>
-                  <td>${money(report.payableTotal)}</td>
-                  <td colspan="3"></td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </section>
-      </div>
-    `;
-    window.refreshIcons?.();
-  }
-
-  function budgetSheetRows(report) {
-    const rows = [
-      [],
-      ["", `${new Date().getFullYear()} moTF 예결산안`],
-      ["", "", "분류", "#", "항목", "단가", "수량", "합계", "구매 방식", "비고", "증빙번호"],
-    ];
-    report.rows.forEach((row, index) => {
-      const excelRow = index + 4;
-      rows.push([
-        "",
-        index === 0 ? "지출" : "",
-        row.category,
-        index + 1,
-        row.itemName,
-        row.amount,
-        1,
-        { f: `F${excelRow}*G${excelRow}-${row.refundAmount || 0}` },
-        row.purchaseMethod,
-        [row.place, row.date, row.status, row.note].filter(Boolean).join(" · "),
-        shortReceiptNo(row),
-      ]);
-    });
-    const totalRow = rows.length + 1;
-    rows.push(["", "", "", "총합", "", "", "", { f: `SUM(H4:H${totalRow - 1})` }, "", `발급일 ${report.generatedAt}`, ""]);
-    return rows;
-  }
-
-  function checklistRows(report) {
-    return [
-      ["분류", "#", "항목", "수량", "수령/이용 장소", "결제 확인", "이용 완료", "담당", "비고", "", "증빙번호", "물품"],
-      ...report.rows.map((row, index) => [
-        row.category,
-        index + 1,
-        row.itemName,
-        1,
-        row.place,
-        row.status && !String(row.status).includes("입금 전") ? "O" : "",
-        String(row.status || "").includes("완료") || String(row.status || "").includes("확정") ? "O" : "",
-        "",
-        row.note,
-        "",
-        shortReceiptNo(row),
-        isMarketOrderType(row.type) ? row.itemName : `${row.place} ${row.itemName}`.trim(),
-      ]),
-    ];
-  }
-
-  function workbookRows(report) {
-    return budgetSheetRows(report);
-  }
-
-  function downloadCsvFallback(report) {
-    const rows = workbookRows(report);
-    const csv = rows.map((row) => row.map((cell) => {
-      const value = cell && typeof cell === "object" && "f" in cell ? `=${cell.f}` : cell;
-      return `"${String(value ?? "").replaceAll('"', '""')}"`;
-    }).join(",")).join("\n");
-    const blob = new Blob([`\ufeff${csv}`], { type: "text/csv;charset=utf-8" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = report.fileName.replace(/\.xlsx$/i, ".csv");
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(link.href);
-  }
-
-  function downloadExcel() {
-    const report = state.report || buildReport(state.selectedIds);
-    if (!report.rows.length) {
-      window.toast?.("다운로드할 이용 내역이 없습니다.");
-      return;
-    }
-    if (!window.XLSX) {
-      downloadCsvFallback(report);
-      window.toast?.("엑셀 호환 CSV 파일로 다운로드했습니다.");
-      return;
-    }
-    const worksheet = window.XLSX.utils.aoa_to_sheet(budgetSheetRows(report));
-    worksheet["!merges"] = [
-      { s: { r: 1, c: 1 }, e: { r: 1, c: 9 } },
-      ...(report.rows.length ? [{ s: { r: 3, c: 1 }, e: { r: 2 + report.rows.length, c: 1 } }] : []),
-    ];
-    worksheet["!cols"] = [
-      { wch: 4 }, { wch: 10 }, { wch: 18 }, { wch: 8 }, { wch: 28 },
-      { wch: 13 }, { wch: 8 }, { wch: 14 }, { wch: 18 }, { wch: 46 }, { wch: 16 },
-    ];
-    worksheet["!rows"] = [
-      { hpt: 8 },
-      { hpt: 28 },
-      { hpt: 22 },
-      ...report.rows.map(() => ({ hpt: 28 })),
-      { hpt: 24 },
-    ];
-    for (let rowIndex = 4; rowIndex <= report.rows.length + 4; rowIndex += 1) {
-      ["F", "H"].forEach((col) => {
-        const cell = worksheet[`${col}${rowIndex}`];
-        if (cell) cell.z = "#,##0";
-      });
-    }
-    const workbook = window.XLSX.utils.book_new();
-    window.XLSX.utils.book_append_sheet(workbook, worksheet, "예산안");
-
-    const checklist = window.XLSX.utils.aoa_to_sheet(checklistRows(report));
-    checklist["!cols"] = [
-      { wch: 16 }, { wch: 8 }, { wch: 28 }, { wch: 8 }, { wch: 22 }, { wch: 10 },
-      { wch: 10 }, { wch: 12 }, { wch: 28 }, { wch: 4 }, { wch: 16 }, { wch: 28 },
-    ];
-    window.XLSX.utils.book_append_sheet(workbook, checklist, "물품 체크리스트");
-    window.XLSX.writeFile(workbook, report.fileName);
-  }
-
-  window.motfOpenBudgetPreview = function openBudgetPreview(selectedIds = []) {
-    state.selectedIds = (Array.isArray(selectedIds) ? selectedIds : [selectedIds]).filter(Boolean);
-    state.report = buildReport(state.selectedIds);
-    window.motfNavigate?.("budgetPreview");
-  };
-
-  window.motfRenderBudgetPreview = renderPreview;
-
-  document.addEventListener("click", (event) => {
-    if (event.target.closest("[data-budget-download]")) {
-      downloadExcel();
-    }
+  modal.addEventListener('change', event => { if (event.target.matches('[data-budget-option]')) { const name = event.target.dataset.budgetOption; state.options[name] = event.target.checked; render(); modal.querySelector(`[data-budget-option="${name}"]`)?.focus(); } });
+  modal.addEventListener('click', event => {
+    if (event.target.closest('[data-budget-close]') || event.target === modal && (event.clientX < modal.getBoundingClientRect().left || event.clientX > modal.getBoundingClientRect().right || event.clientY < modal.getBoundingClientRect().top || event.clientY > modal.getBoundingClientRect().bottom)) modal.close();
+    if (event.target.closest('[data-budget-download]')) void download();
+    if (event.target.closest('[data-budget-retry]') && !state.busy) void load(state.token);
+    if (event.target.closest('[data-budget-usage]')) { modal.close(); window.motfNavigate?.('myUsage'); }
   });
+  modal.addEventListener('close', () => { ++state.token; state.sources = []; state.context = {}; state.busy = false; });
+  window.addEventListener('motf:organization-changed', () => modal.close());
+  window.addEventListener('motf:auth-ready', () => modal.close());
+  window.motfOpenBudgetPreview = open;
 })();

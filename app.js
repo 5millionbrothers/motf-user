@@ -1118,6 +1118,11 @@ function replaceBrowserRoute(route) {
 }
 
 function navigate(route, options = {}) {
+  if (route === "budgetPreview" && window.motfOpenBudgetPreview) {
+    const project = currentRoute() === "myMt" && state.mtProjectMode === "detail" ? state.mtProject : null;
+    window.motfOpenBudgetPreview(project?.final_reservation_id ? [project.final_reservation_id] : [...state.selectedUsageIds], project ? { project } : {});
+    return;
+  }
   if (!appRoutes.has(route)) route = "home";
   const previousRoute = currentRoute();
   if (options.record !== false && previousRoute && previousRoute !== route) {
@@ -1184,7 +1189,6 @@ function renderRoute(route) {
   if (route === "chat") renderChat();
   if (route === "mypage") renderMypage();
   if (route === "myUsage") renderMypage();
-  if (route === "budgetPreview") window.motfRenderBudgetPreview?.();
   if (route === "review") renderReviews();
   if (route === "market") maybeShowMarketGuide();
 }
@@ -4989,24 +4993,10 @@ document.addEventListener("click", async (event) => {
 
   if (event.target.closest("[data-mt-budget-export]")) {
     const exactId = state.mtProject?.final_reservation_id;
-    const finalBusinessIds = new Set([
-      state.mtProject?.final_business_id,
-      ...(state.mtProject?.items || []).filter((item) => item.item_kind === "stay" && item.status !== "cancelled").map((item) => item.reference_id),
-    ].filter(Boolean).map(String));
-    const matchedIds = state.reservations
-      .filter((item) => finalBusinessIds.has(String(item.businessId || "")))
-      .filter((item) => !state.mtProject?.starts_on || String(item.date || "").slice(0, 10) === String(state.mtProject.starts_on).slice(0, 10))
-      .map((item) => item.id);
-    const exactIds = exactId && [...state.reservations, ...state.orders].some((item) => String(item.id) === String(exactId))
-      ? [exactId]
-      : matchedIds;
-    if (exactIds.length) {
-      window.motfOpenBudgetPreview?.(exactIds);
-    } else {
-      state.selectedUsageIds.clear();
-      navigate("myUsage");
-      toast("이 MT와 바로 연결된 이용 내역이 없어, 예결산에 넣을 내역을 직접 선택해주세요.");
-    }
+    window.motfOpenBudgetPreview?.(exactId ? [exactId] : [], {
+      project: state.mtProject,
+      organizationName: window.motfGetOrganizationName?.() || "",
+    });
     return;
   }
 
