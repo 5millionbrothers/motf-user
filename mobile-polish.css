@@ -1,0 +1,763 @@
+/* ==========================================================================
+   moTF 모바일 다듬기 (2026-11-10)
+   - 화면 폭 699px 이하(사이트의 모바일 기준)에서만 적용됩니다. PC 화면은 바뀌지 않습니다.
+   - 모든 CSS 뒤에 로드됩니다. index.html의 링크 한 줄을 지우면 원래대로 돌아갑니다.
+   ========================================================================== */
+
+/* ---------- 상세·설정 화면 공통: 너무 작은 글자(9~11px) 바닥값 ---------- */
+@media (max-width: 699px) {
+  .design-main .view :where(.primary-btn, .secondary-btn, .ghost-btn, button.primary, button.secondary) { font-size: 13.5px !important; }
+  .design-main .view :where(.primary-btn, .secondary-btn, button.primary, button.secondary):not(.icon-button):not(.candidate-button) { min-height: 44px; border-radius: var(--mp-radius) !important; }
+  .design-main .view :where(.tool-panel, .info-panel, .summary-panel, .form-panel, .checkout-form, .booking-summary, .settlement-card, .mypage-card, .legal-card) :where(p, label, small, li, dt, dd) { font-size: 13px !important; line-height: 1.5; }
+  .design-main .view :where(.tool-panel, .info-panel, .summary-panel, .form-panel, .checkout-form, .booking-summary, .settlement-card, .mypage-card, .legal-card) label { font-size: 12.5px !important; font-weight: 600; color: var(--mp-text); }
+  .design-main .view :where(.eyebrow) { font-size: 12px !important; }
+  .design-main .view :where(.muted, .empty-inline, .auth-session-note) { font-size: 12.5px !important; }
+  .design-main .view :where(.text-button) { font-size: 13px !important; }
+  .design-main .view :where(.tool-panel, .form-panel, .checkout-form) label:has(> :where(input, select, textarea)) { display: grid; gap: 6px; }
+  .design-main .view :where(.tool-panel, .form-panel, .checkout-form, .review-form) :where(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="range"]):not([type="file"]), textarea) { border: 1px solid var(--mp-field) !important; border-radius: var(--mp-radius) !important; background-color: #fff !important; box-shadow: none !important; }
+  .design-main .view :where(.tool-panel, .form-panel, .checkout-form, .review-form) input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="range"]):not([type="file"]) { min-height: 46px; padding: 0 12px !important; }
+}
+
+@media (max-width: 699px) {
+  .design-main {
+    --mp-olive: #465739;
+    --mp-olive-press: #3a4a2f;
+    --mp-ink: #232820;
+    --mp-text: #3c4336;
+    --mp-sub: #646b5d;
+    --mp-line: #d9dfd1;
+    --mp-line-strong: #c2cbb5;
+    --mp-field: #cfd6c4;
+    --mp-chip-bg: #f1f3ee;
+    --mp-radius: 10px;
+  }
+
+  /* ---------- 1. 팝업: 왼쪽 아래가 아니라 화면 가운데 ---------- */
+  .design-main dialog[open]:not(.photo-gallery-dialog) {
+    position: fixed !important;
+    inset: 0 !important;
+    margin: auto !important;
+    width: calc(100% - 32px) !important;
+    max-width: 440px !important;
+    height: auto !important;
+    max-height: calc(100dvh - 48px) !important;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-radius: 16px !important;
+    transform: none !important;
+  }
+  .design-main dialog.motf-dialog { padding: 22px 20px 20px !important; }
+  .design-main dialog.motf-dialog h2 { font-size: 20px; font-weight: 600; }
+
+  /* ---------- 2. 입력칸을 눌러도 화면이 확대되지 않게 (아이폰은 16px 미만이면 확대) ---------- */
+  .design-main :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), select, textarea),
+  .auth-modal :is(input, select, textarea) {
+    font-size: 16px !important;
+  }
+
+  /* 3. 기본 날짜·시간 칸(아이폰)이 칸 밖으로 튀어나오던 문제: 폭을 칸에 맞춤 */
+  .design-main :is(input[type="date"], input[type="time"], input[type="datetime-local"]) {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+    text-align: left;
+  }
+  .design-main :is(input[type="date"], input[type="time"])::-webkit-date-and-time-value { text-align: left; margin: 0; }
+  .design-main :is(input[type="date"], input[type="time"])::-webkit-calendar-picker-indicator { opacity: .55; margin-left: 4px; }
+
+  /* 숙소 찾기 팝업: 테두리 없던 칸을 상자로, 아이콘만 있던 검색 버튼에 글자 */
+  .design-main .local-search-dialog .home-search-bar { gap: 14px 10px; margin-top: 18px; }
+  .design-main .local-search-dialog .starter-field { display: grid; gap: 6px; }
+  .design-main .local-search-dialog .starter-field > :is(span, small, label, b) { font-size: 12.5px; font-weight: 600; color: var(--mp-text); }
+  .design-main .local-search-dialog .starter-field :is(input:not([type="hidden"]), select) {
+    width: 100%;
+    height: 46px;
+    padding: 0 12px;
+    border: 1px solid var(--mp-field) !important;
+    border-radius: var(--mp-radius);
+    background-color: #fff;
+    color: var(--mp-ink);
+  }
+  .design-main .local-search-dialog .primary { min-height: 48px; border-radius: var(--mp-radius); font-size: 15px; font-weight: 600; gap: 6px; }
+  .design-main .local-search-dialog .primary:not(:has(span))::after { content: "숙소 검색하기"; }
+
+  /* ---------- 8. 숙소 목록 상단 날짜·인원·필터 버튼: 흐린 배경 대신 또렷한 흰 버튼 ---------- */
+  .design-main .mobile-stay-search {
+    gap: 6px;
+    padding: 0;
+    border: 0 !important;
+    background: none !important;
+    box-shadow: none !important;
+  }
+  .design-main .mobile-stay-search > button {
+    min-height: 46px;
+    padding: 0 10px !important;
+    border: 1px solid var(--mp-line-strong) !important;
+    border-radius: var(--mp-radius);
+    background: #fff !important;
+    color: var(--mp-ink) !important;
+    font-size: 13px !important;
+    font-weight: 600;
+    gap: 6px !important;
+  }
+  .design-main .mobile-stay-search > button + button { border-left: 1px solid var(--mp-line-strong) !important; }
+  .design-main .mobile-stay-search b { color: var(--mp-olive); font-weight: 700; }
+  .design-main .mobile-stay-search svg { color: var(--mp-olive); width: 16px; height: 16px; flex: none; }
+
+  /* ---------- 9. 키워드 태그: 흐린 연초록 대신 읽히는 칩 ---------- */
+  .design-main :is(.pill, .detail-meta .pill),
+  .design-main .catalog-tags > span {
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    line-height: 1.3;
+    padding: 4px 8px !important;
+    border: 1px solid var(--mp-line) !important;
+    border-radius: 6px !important;
+    background: var(--mp-chip-bg) !important;
+    color: var(--mp-text) !important;
+  }
+  .design-main .catalog-tags { gap: 5px !important; }
+  .design-main .pill.success { background: #e9f3e9 !important; border-color: #cfe3cf !important; color: #2f6a3a !important; }
+  .design-main .pill.warning { background: #fdf3df !important; border-color: #f1ddb0 !important; color: #865600 !important; }
+  .design-main .pill.danger { background: #fcebe9 !important; border-color: #f2c9c4 !important; color: #a3322a !important; }
+
+  /* ---------- 3. 숙소·객실 화면의 날짜 박스: 2열로 정리해 튀지 않게 ---------- */
+  .design-main .stay-context-filter {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 10px !important;
+    padding: 16px !important;
+    border: 1px solid var(--mp-line) !important;
+    border-radius: 14px !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 !important;
+  }
+  .design-main .stay-context-filter > label {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+    margin: 0;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--mp-text);
+  }
+  .design-main .stay-context-filter :is(input:not([type="hidden"]), select) {
+    width: 100%;
+    min-width: 0;
+    height: 46px;
+    padding: 0 10px;
+    border: 1px solid var(--mp-field);
+    border-radius: var(--mp-radius);
+    background-color: #fff;
+    color: var(--mp-ink);
+  }
+  .design-main .stay-context-filter .stay-context-note { grid-column: 1 / -1; margin: 2px 0 0; border-radius: var(--mp-radius); }
+
+  /* ---------- 4. 숙소 상세의 객실 카드 ---------- */
+  /* 제목과 설명이 옆으로 붙어 줄바꿈되던 것 → 위아래로 */
+  .design-main .section-toolbar:has(+ .room-list-vertical) {
+    display: grid !important;
+    gap: 4px;
+    margin-bottom: 14px;
+  }
+  .design-main .section-toolbar:has(+ .room-list-vertical) h2 { font-size: 21px; }
+  .design-main .section-toolbar:has(+ .room-list-vertical) > span { font-size: 13px; color: var(--mp-sub); }
+  .design-main .room-list-vertical { gap: 16px !important; }
+  .design-main .room-option-card { border-radius: 14px !important; overflow: hidden; }
+  .design-main .room-option-card > img { border-radius: 0 !important; }
+  .design-main .room-option-card .room-option-body { padding: 18px 16px 16px !important; gap: 12px !important; }
+  /* 사진 바로 아래 작게 붙어 있던 "객실 유형 1" 표시는 숨김 */
+  .design-main .room-option-card .room-option-body .eyebrow { display: none !important; }
+  .design-main .room-option-card .room-option-body h3 { margin: 0 0 4px !important; font-size: 19px !important; font-weight: 600; color: var(--mp-ink); }
+  .design-main .room-option-card .room-option-body .muted { font-size: 13.5px !important; color: var(--mp-sub); }
+  /* 정원·금액·위치·공간 상자 4개는 바로 위 요약과 태그에 이미 있어서 모바일에선 숨김 */
+  .design-main .room-option-card .mini-detail-grid { display: none !important; }
+  /* "객실 자세히 보기" / "내 MT 담기"를 같은 크기 두 버튼으로 */
+  .design-main .room-option-card .room-option-actions {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .design-main .room-option-card .room-option-actions > button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    min-height: 44px;
+    margin: 0;
+    padding: 0 10px !important;
+    border-radius: var(--mp-radius) !important;
+    font-size: 13.5px !important;
+    font-weight: 600 !important;
+    text-decoration: none !important;
+  }
+  .design-main .room-option-card .room-option-actions > .secondary-btn {
+    background: #fff !important;
+    border: 1px solid var(--mp-line-strong) !important;
+    color: var(--mp-ink) !important;
+  }
+  .design-main .room-option-card .room-option-actions > .text-button {
+    background: var(--mp-olive) !important;
+    border: 1px solid var(--mp-olive) !important;
+    color: #fff !important;
+  }
+  .design-main .room-option-card .room-option-actions svg { width: 16px; height: 16px; flex: none; }
+
+  /* 객실 화면: "바로 예약하기"(주)와 "내 MT에 담기"(보조)를 구분 */
+  .design-main .room-reserve-card { gap: 10px; }
+  .design-main .room-reserve-card :is(.primary-btn, .secondary-btn) { min-height: 48px; border-radius: var(--mp-radius); font-size: 15px; font-weight: 600; }
+  .design-main .room-reserve-card .secondary-btn {
+    background: #fff !important;
+    border: 1px solid var(--mp-olive) !important;
+    color: var(--mp-olive) !important;
+  }
+  .design-main .room-detail-hero h1 { margin-bottom: 6px; }
+  .design-main .room-detail-hero p { line-height: 1.5; }
+
+  /* 세부사항 목록: 굵은 대시 대신 작은 점 */
+  .design-main .dash-list { display: grid; gap: 8px; padding: 0 !important; margin: 10px 0 0 !important; }
+  .design-main .dash-list li {
+    position: relative;
+    padding-left: 14px !important;
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--mp-text);
+  }
+  .design-main .dash-list li::before {
+    content: "" !important;
+    position: absolute;
+    left: 2px;
+    top: .7em;
+    width: 5px;
+    height: 5px;
+    margin: 0 !important;
+    border-radius: 50%;
+    background: var(--mp-olive);
+  }
+  .design-main .info-panel h2 { font-size: 19px; margin-top: 6px; }
+  .design-main .info-panel h2 + .dash-list,
+  .design-main .info-panel h2 + .amenity-checklist { margin-top: 10px !important; }
+  .design-main .info-panel .dash-list + h2,
+  .design-main .info-panel .amenity-checklist + h2 { margin-top: 26px !important; }
+
+  /* ---------- 6. 장보기 상품 상세 ---------- */
+  .design-main .product-detail .info-panel h1 { font-size: 24px; line-height: 1.3; margin: 6px 0 12px; }
+  .design-main .product-detail .product-meta { gap: 6px; margin-bottom: 12px; }
+  .design-main .product-detail .price { font-size: 24px !important; font-weight: 700 !important; color: var(--mp-ink); margin: 6px 0 16px; }
+  /* 수량: 따로 놀던 - [1] + 를 하나의 조절기로 */
+  .design-main .product-detail .quantity-control {
+    display: inline-grid !important;
+    grid-template-columns: 44px 56px 44px;
+    align-items: stretch;
+    height: 44px;
+    padding: 0 !important;
+    gap: 0 !important;
+    border: 1px solid var(--mp-line-strong) !important;
+    border-radius: var(--mp-radius) !important;
+    background: #fff !important;
+    overflow: hidden;
+  }
+  .design-main .product-detail .quantity-control button {
+    width: 44px !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    color: var(--mp-ink) !important;
+    font-size: 20px !important;
+    font-weight: 500;
+    line-height: 1;
+    box-shadow: none !important;
+  }
+  .design-main .product-detail .quantity-control button:active { background: var(--mp-chip-bg) !important; }
+  .design-main .product-detail .quantity-control input {
+    width: 56px !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-inline: 1px solid var(--mp-line) !important;
+    border-radius: 0 !important;
+    text-align: center;
+    font-weight: 600;
+    color: var(--mp-ink);
+    box-shadow: none !important;
+  }
+  .design-main .product-detail .product-order-total { margin-top: 18px; padding-top: 16px; }
+  /* 내 MT에 담기 / 장바구니 담기 / 바로구매: 같은 높이, 같은 폭 규칙 */
+  .design-main .product-conversion-actions {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px !important;
+    margin-top: 20px !important;
+  }
+  .design-main .product-conversion-actions > div { display: contents !important; }
+  .design-main .product-conversion-actions > .primary-btn { grid-column: 1 / -1; }
+  .design-main .product-conversion-actions :is(.primary-btn, .secondary-btn) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100% !important;
+    min-height: 48px !important;
+    margin: 0 !important;
+    padding: 0 10px !important;
+    border-radius: var(--mp-radius) !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    white-space: nowrap;
+  }
+  .design-main .product-conversion-actions .secondary-btn {
+    background: #fff !important;
+    border: 1px solid var(--mp-line-strong) !important;
+    color: var(--mp-ink) !important;
+  }
+  .design-main .product-conversion-actions svg { width: 17px; height: 17px; flex: none; }
+
+  /* ---------- 공통: 보조 버튼이 꽉 찬 진한 색으로 보이던 곳 정리 ---------- */
+  .design-main .stay-detail-top .button-row { display: grid !important; grid-template-columns: 1fr 1fr 44px; gap: 8px; width: 100%; }
+  .design-main .stay-detail-top .button-row > button { width: 100%; min-height: 44px; margin: 0; border-radius: var(--mp-radius); font-size: 13.5px; font-weight: 600; }
+  .design-main .stay-detail-top .button-row > .secondary-btn { background: #fff !important; border: 1px solid var(--mp-line-strong) !important; color: var(--mp-ink) !important; }
+  .design-main .stay-detail-top .button-row > .stay-share { border: 1px solid var(--mp-line-strong) !important; padding: 0 !important; }
+}
+
+/* ---------- 숙소 목록: 지도 아래 제목 겹침 · 카드 작은 글자 ---------- */
+@media (max-width: 699px) {
+  .design-main .map-panel { margin-bottom: 28px !important; }
+  .design-main .catalog-stay .stay-card-intro { font-size: 13.5px !important; color: var(--mp-sub) !important; }
+  .design-main .catalog-stay .stay-review-chip { font-size: 12px !important; color: var(--mp-sub) !important; }
+  .design-main .catalog-stay-bottom strong span,
+  .design-main .catalog-stay [class*="price"] small,
+  .design-main .catalog-stay [class*="price"] span { font-size: 11.5px !important; color: var(--mp-sub) !important; }
+  .design-main .catalog-stay .candidate-button { font-size: 12px !important; min-height: 34px; padding: 0 10px !important; border-radius: 8px !important; gap: 4px; }
+  .design-main .catalog-stay .text-button { font-size: 13px !important; font-weight: 600; }
+}
+
+/* ---------- 팝업 높이 · 숙소 검색(필터) 창 ---------- */
+@media (max-width: 699px) {
+  .design-main dialog[open]:not(.photo-gallery-dialog) { height: fit-content !important; }
+  .design-main dialog .modal-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+  .design-main dialog .modal-top h2 { margin: 0; }
+  .design-main dialog .modal-top .icon-button { width: 36px !important; height: 36px !important; min-height: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 50% !important; background: var(--mp-chip-bg) !important; color: var(--mp-ink) !important; flex: none; }
+  .design-main dialog .modal-top .icon-button svg { width: 18px; height: 18px; }
+
+  .design-main .local-filter-dialog #stayFilters { display: grid !important; grid-template-columns: 1fr 1fr; gap: 14px 10px !important; padding: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important; }
+  .design-main .local-filter-dialog #stayFilters > label { display: grid; gap: 6px; min-width: 0; margin: 0; font-size: 12.5px; font-weight: 600; color: var(--mp-text); }
+  .design-main .local-filter-dialog #stayFilters > label :is(input:not([type="hidden"]):not([type="range"]), select) { width: 100%; min-width: 0; height: 46px; padding: 0 12px !important; border: 1px solid var(--mp-field) !important; border-radius: var(--mp-radius) !important; background-color: #fff !important; color: var(--mp-ink); box-shadow: none !important; }
+  .design-main .local-filter-dialog #stayFilters > .range-label { grid-column: 1 / -1; margin-top: 4px; }
+  .design-main .local-filter-dialog #stayFilters > .range-label span { font-size: 15px; font-weight: 700; color: var(--mp-olive); }
+  .design-main .local-filter-dialog .detail-filter-trigger { grid-column: 1 / -1; width: 100%; height: 46px; justify-content: center; border: 1px solid var(--mp-line-strong) !important; border-radius: var(--mp-radius) !important; background: #fff !important; color: var(--mp-ink) !important; font-size: 14px !important; font-weight: 600; }
+  .design-main .local-filter-dialog :is(.primary, .primary-btn) { width: 100%; min-height: 48px; margin-top: 16px; border-radius: var(--mp-radius) !important; font-size: 15px; font-weight: 600; }
+
+  /* 세부필터: 체크박스 → 칩 */
+  .design-main .advanced-filter-panel fieldset { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 14px 0 0; border: 0; border-top: 1px solid var(--mp-line); }
+  .design-main .advanced-filter-panel legend { float: left; width: 100%; padding: 0; margin-bottom: 8px; font-size: 13px; font-weight: 700; color: var(--mp-ink); }
+  .design-main .advanced-filter-panel .check-card { display: inline-flex !important; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px !important; border: 1px solid var(--mp-line-strong) !important; border-radius: 999px !important; background: #fff !important; font-size: 13px; font-weight: 600; color: var(--mp-text); box-shadow: none !important; }
+  .design-main .advanced-filter-panel .check-card input { width: 16px; height: 16px; margin: 0; accent-color: var(--mp-olive); }
+  .design-main .advanced-filter-panel .check-card:has(input:checked) { background: var(--mp-olive) !important; border-color: var(--mp-olive) !important; color: #fff; }
+  .design-main .advanced-filter-panel .space-count-filter label { display: grid; gap: 6px; width: 100%; font-size: 12.5px; font-weight: 600; }
+  .design-main .advanced-filter-panel .space-count-filter input { height: 44px; padding: 0 12px; border: 1px solid var(--mp-field); border-radius: var(--mp-radius); }
+}
+
+/* ---------- 세부필터 패널 정리 ---------- */
+@media (max-width: 699px) {
+  .design-main .local-filter-dialog .advanced-filter-panel { margin-top: 14px !important; padding: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important; }
+  .design-main .local-filter-dialog .advanced-filter-header { display: flex !important; justify-content: flex-end; min-height: 0 !important; margin: 0 0 4px !important; padding: 0 !important; }
+  .design-main .local-filter-dialog .advanced-filter-header > div { display: none; }
+  .design-main .local-filter-dialog .advanced-filter-header .text-button { min-height: 32px; padding: 0 4px !important; font-size: 13px; color: var(--mp-sub) !important; background: none !important; border: 0 !important; }
+  .design-main .local-filter-dialog .advanced-filter-grid { display: grid !important; gap: 14px !important; padding: 0 !important; background: none !important; }
+  .design-main .local-filter-dialog .advanced-filter-panel fieldset { border-radius: 0 !important; background: none !important; box-shadow: none !important; padding: 14px 0 0 !important; }
+  .design-main .local-filter-dialog .advanced-filter-panel .check-card input { position: absolute; opacity: 0; pointer-events: none; }
+  .design-main .local-filter-dialog .advanced-filter-panel .check-card { position: relative; }
+}
+
+/* ---------- 홈 숙소 찾기 창 라벨 ---------- */
+@media (max-width: 699px) {
+  .design-main .local-search-dialog .starter-field > svg { display: none; }
+  .design-main .local-search-dialog .starter-field label { display: grid; gap: 6px; }
+  .design-main .local-search-dialog .starter-field label > span { font-size: 12.5px !important; font-weight: 600; color: var(--mp-text) !important; }
+}
+
+/* ---------- 장보기 상품 목록: 2열, 읽히는 글자 ---------- */
+@media (max-width: 699px) {
+  .design-main .category-tabs { scrollbar-width: none; }
+  .design-main .category-tabs::-webkit-scrollbar { display: none; }
+  .design-main .view .product-grid.retained-market-grid { grid-template-columns: 1fr 1fr !important; gap: 22px 12px !important; }
+  .design-main .retained-market-grid .product-card { min-width: 0; }
+  .design-main .retained-market-grid .home-card-meta { margin-top: 10px; align-items: center; }
+  .design-main .retained-market-grid .home-card-meta > span { font-size: 11.5px !important; color: var(--mp-sub) !important; }
+  .design-main .retained-market-grid .home-card-title { font-size: 14.5px !important; font-weight: 600; line-height: 1.35; color: var(--mp-ink); text-align: left; }
+  .design-main .retained-market-grid .product-unit { font-size: 12px !important; color: var(--mp-sub) !important; margin-top: 2px; }
+  .design-main .retained-market-grid .product-review-summary { font-size: 12px !important; color: var(--mp-sub) !important; }
+  .design-main .retained-market-grid .home-price { font-size: 16px !important; font-weight: 700; color: var(--mp-ink); }
+  .design-main .retained-market-grid :is(.home-card-meta, .product-card-actions) .icon-button { width: 34px !important; height: 34px !important; min-height: 0; border-radius: 8px !important; }
+  .design-main .retained-market-grid :is(.home-card-meta, .product-card-actions) .icon-button svg { width: 17px; height: 17px; }
+}
+
+/* ---------- 장보기 상단 작은 글자 ---------- */
+@media (max-width: 699px) {
+  .design-main .category-tabs button { font-size: 13.5px !important; padding-inline: 2px; white-space: nowrap; }
+  .design-main .category-tabs { gap: 18px !important; }
+  .design-main .view .section-toolbar > span { font-size: 12px !important; color: var(--mp-sub) !important; }
+  .design-main #market [data-route="cart"] { font-size: 13px !important; min-height: 40px; padding-inline: 14px !important; border-radius: var(--mp-radius) !important; }
+}
+
+/* ---------- 상품 상세: 상자 걷어내고 간격 정리 ---------- */
+@media (max-width: 699px) {
+  .design-main .product-detail { gap: 20px !important; }
+  .design-main .product-detail > .info-panel { padding: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important; }
+  .design-main .product-detail .info-panel > .eyebrow { margin: 0 !important; font-size: 12.5px !important; color: var(--mp-sub) !important; }
+  .design-main .product-detail .info-panel h1 { margin: 4px 0 12px !important; }
+  .design-main .product-detail .product-meta { margin: 0 0 12px !important; }
+  .design-main .product-detail .info-panel > p:not(.eyebrow):not(.price) { margin: 0 0 4px !important; font-size: 13.5px !important; line-height: 1.5; color: var(--mp-sub) !important; }
+  .design-main .product-detail .price { margin: 8px 0 16px !important; }
+  .design-main .product-detail .product-order-total { display: flex; align-items: baseline; justify-content: space-between; margin-top: 18px !important; padding-top: 16px !important; border-top: 1px solid var(--mp-line); font-size: 14px; }
+  .design-main .product-conversion-actions .secondary-btn { font-size: 13.5px !important; gap: 5px !important; padding: 0 6px !important; }
+  .design-main .product-conversion-actions .secondary-btn svg { width: 16px; height: 16px; }
+  .design-main .adult-purchase-notice { border-radius: 12px !important; }
+}
+
+/* ---------- 상품 상세: 안내 문구 · 상세표 ---------- */
+@media (max-width: 699px) {
+  .design-main .adult-purchase-notice p { font-size: 12.5px !important; line-height: 1.55; }
+  .design-main .adult-purchase-notice strong { font-size: 14px !important; }
+  .design-main .product-spec-table :is(dt, dd) { font-size: 13.5px !important; padding: 12px 14px !important; }
+}
+
+/* ---------- 상품 상세: 세로 간격 고정 ---------- */
+@media (max-width: 699px) {
+  .design-main .product-detail > .info-panel { row-gap: 0 !important; }
+  .design-main .product-detail .info-panel .price { margin: 14px 0 14px !important; line-height: 1.2 !important; }
+  .design-main .product-detail .info-panel .quantity-control { margin: 0 !important; }
+  .design-main .product-detail .info-panel .product-order-total { margin-top: 18px !important; padding: 14px 0 0 !important; min-height: 0 !important; }
+  .design-main .product-detail .info-panel .product-conversion-actions { margin-top: 18px !important; }
+}
+
+/* ---------- 로그인 창 글자 크기 ---------- */
+@media (max-width: 699px) {
+  .auth-modal .auth-form label { font-size: 12.5px !important; font-weight: 600; }
+  .auth-modal .auth-tab { font-size: 14px !important; }
+  .auth-modal :is(.auth-submit, .auth-kakao-btn) { min-height: 48px; font-size: 15px !important; font-weight: 600; border-radius: var(--mp-radius, 10px) !important; }
+  .auth-modal :is(.auth-helper-text, .auth-session-note, .auth-message) { font-size: 12.5px !important; }
+}
+
+/* ---------- 마이페이지: 메뉴를 카드로 나누기 ---------- */
+@media (max-width: 699px) {
+  .design-main #mypage .view-title { display: flex !important; align-items: center; justify-content: space-between; gap: 12px; padding: 20px 0 18px !important; }
+  .design-main #mypage .view-title h1 { margin: 0; font-size: 26px !important; }
+  .design-main #mypage .mypage-logout-btn { min-height: 38px !important; padding: 0 12px !important; font-size: 13px !important; border-radius: var(--mp-radius) !important; background: #fff !important; border: 1px solid var(--mp-line-strong) !important; color: var(--mp-text) !important; gap: 5px; }
+  .design-main #mypage .mypage-logout-btn svg { width: 15px; height: 15px; }
+  .design-main .mypage-hub { display: grid !important; grid-template-columns: 1fr !important; gap: 10px !important; }
+  .design-main .mypage-hub .mypage-menu-card { display: grid !important; grid-template-columns: 44px minmax(0, 1fr) 16px; grid-template-rows: auto auto; column-gap: 14px; row-gap: 3px; align-items: center; align-content: center; min-height: 0 !important; width: 100%; margin: 0; padding: 16px !important; border: 1px solid var(--mp-line) !important; border-radius: 14px !important; background: #fff !important; box-shadow: none !important; text-align: left; position: relative; }
+  .design-main .mypage-hub .mypage-menu-card > svg { grid-row: 1 / span 2; width: 44px !important; height: 44px !important; padding: 11px; border-radius: 12px; background: var(--mp-chip-bg); color: var(--mp-olive); stroke-width: 1.8; box-sizing: border-box; }
+  .design-main .mypage-hub .mypage-menu-card strong { grid-column: 2; font-size: 16px !important; font-weight: 700; color: var(--mp-ink); line-height: 1.35; }
+  .design-main .mypage-hub .mypage-menu-card span { grid-column: 2; font-size: 12.5px !important; color: var(--mp-sub) !important; line-height: 1.45; }
+  .design-main .mypage-hub .mypage-menu-card::after { content: ""; grid-column: 3; grid-row: 1 / span 2; width: 8px; height: 8px; border-top: 2px solid #9aa58f; border-right: 2px solid #9aa58f; transform: rotate(45deg); }
+  .design-main .mypage-hub .mypage-menu-card:active { background: #f8faf5 !important; }
+
+  /* 마이페이지 하위 화면 공통 */
+  .design-main .back-btn { min-height: 36px !important; padding: 0 !important; font-size: 13.5px !important; color: var(--mp-sub) !important; background: none !important; border: 0 !important; }
+  .design-main .mypage-subpage-title { display: grid !important; gap: 12px; padding: 8px 0 18px !important; }
+  .design-main .mypage-subpage-title h1 { font-size: 24px !important; line-height: 1.3; margin: 0; }
+  .design-main .mypage-subpage-title .button-row { display: grid !important; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .design-main .mypage-subpage-title .button-row > button { min-height: 44px; font-size: 13.5px !important; border-radius: var(--mp-radius) !important; }
+  .design-main .mypage-grid > section { padding-top: 22px; margin-top: 22px; border-top: 1px solid var(--mp-line); }
+  .design-main .mypage-grid > section > h2 { font-size: 19px; margin: 0 0 12px; }
+  .design-main .usage-period-filter { display: grid !important; grid-template-columns: 1fr 1fr; gap: 10px !important; }
+  .design-main .usage-period-filter label { display: grid; gap: 6px; font-size: 12.5px; font-weight: 600; min-width: 0; }
+  .design-main .usage-period-filter input { height: 44px; padding: 0 10px; border: 1px solid var(--mp-field); border-radius: var(--mp-radius); }
+  .design-main .usage-period-filter button { min-height: 44px; font-size: 13.5px !important; border-radius: var(--mp-radius) !important; }
+}
+
+/* ---------- 내 MT ---------- */
+@media (max-width: 699px) {
+  .design-main .mt-directory-head { display: grid !important; grid-template-columns: 1fr; gap: 16px !important; padding: 22px 0 20px !important; }
+  .design-main .mt-directory-head h1 { margin: 0 0 6px !important; font-size: 26px !important; font-weight: 700; line-height: 1.25; }
+  .design-main .mt-directory-head p:last-child { margin: 0 !important; font-size: 13.5px !important; line-height: 1.5; color: var(--mp-sub) !important; }
+  .design-main .mt-directory-head > .primary-btn { width: 100% !important; min-height: 48px; justify-content: center; font-size: 15px !important; font-weight: 600; border-radius: var(--mp-radius) !important; gap: 6px; }
+  .design-main .mt-directory-tools { display: flex !important; flex-wrap: nowrap !important; align-items: center !important; justify-content: space-between; gap: 12px !important; border-bottom: 1px solid var(--mp-line); }
+  .design-main .mt-directory-tabs { flex: 1 1 auto !important; gap: 20px !important; }
+  .design-main .mt-directory-tabs button { font-size: 14.5px !important; padding: 12px 0 11px !important; margin-bottom: -1px; }
+  .design-main .mt-directory-tools > .secondary-btn { flex: none; min-height: 34px !important; padding: 0 10px !important; font-size: 12.5px !important; border-radius: 8px !important; gap: 4px; margin-bottom: 6px; }
+  .design-main .mt-directory-tools > .secondary-btn svg { width: 14px; height: 14px; }
+  .design-main .mt-project-cards { gap: 12px !important; padding-top: 18px !important; }
+  .design-main .mt-project-card.mt-directory-item { border-radius: 14px !important; padding: 16px !important; column-gap: 14px !important; }
+  .design-main .mt-project-card-icon { width: 44px !important; height: 44px !important; border-radius: 12px !important; }
+  .design-main .mt-project-card-copy > strong { font-size: 17px !important; font-weight: 700 !important; color: var(--mp-ink); }
+  .design-main .mt-project-card-copy :is(small, span) { font-size: 12.5px !important; color: var(--mp-sub) !important; line-height: 1.5 !important; }
+  .design-main .mt-project-card-budget { margin-top: 4px; padding-top: 12px !important; border-top-color: var(--mp-line) !important; }
+  .design-main .mt-project-card-budget strong { font-size: 16px !important; font-weight: 700 !important; }
+  .design-main .mt-project-card-budget :is(small, span) { font-size: 12px !important; color: var(--mp-sub) !important; }
+
+  /* 프로젝트 안 */
+  .design-main .mt-directory-back { min-height: 36px; margin-top: 8px; font-size: 13.5px !important; color: var(--mp-sub) !important; gap: 4px; }
+  .design-main #mtProjectWorkspace .mt-project-hero { display: grid !important; gap: 14px !important; padding: 8px 0 18px !important; }
+  .design-main #mtProjectWorkspace .mt-project-hero .eyebrow { font-size: 12.5px !important; color: var(--mp-sub) !important; margin: 0; }
+  .design-main #mtProjectWorkspace .mt-project-hero h1 { margin: 2px 0 6px !important; font-size: 26px !important; font-weight: 700; line-height: 1.25; }
+  .design-main #mtProjectWorkspace .mt-project-meta { font-size: 13px !important; color: var(--mp-sub) !important; margin: 0; }
+  .design-main #mtProjectWorkspace .mt-project-hero .button-row { gap: 8px !important; }
+  .design-main #mtProjectWorkspace .mt-project-hero .button-row > button { min-height: 42px !important; font-size: 13px !important; border-radius: var(--mp-radius) !important; background: #fff !important; border: 1px solid var(--mp-line-strong) !important; color: var(--mp-ink) !important; gap: 5px; }
+  .design-main #mtProjectWorkspace .mt-project-hero .button-row svg { width: 15px; height: 15px; }
+  .design-main .mt-budget-panel { margin: 4px 0 26px !important; padding: 18px 16px !important; gap: 14px !important; border: 1px solid var(--mp-line) !important; border-radius: 14px !important; background: #fff !important; }
+  .design-main .mt-budget-copy > span, .design-main .mt-budget-numbers > span { font-size: 12.5px !important; color: var(--mp-sub) !important; }
+  .design-main .mt-budget-copy > strong { font-size: 24px !important; font-weight: 700 !important; }
+  .design-main .mt-budget-numbers strong { font-size: 17px !important; font-weight: 700 !important; display: block; color: var(--mp-ink); }
+  .design-main .mt-budget-panel > p { font-size: 12.5px !important; color: var(--mp-sub) !important; }
+  .design-main #mtProjectWorkspace .section-toolbar { display: flex !important; align-items: flex-end; justify-content: space-between; gap: 10px; margin: 0 0 12px !important; }
+  .design-main #mtProjectWorkspace .section-toolbar .eyebrow { font-size: 12.5px !important; color: var(--mp-olive) !important; font-weight: 700; margin: 0 0 3px; }
+  .design-main #mtProjectWorkspace .section-toolbar h2 { font-size: 18px !important; line-height: 1.35; margin: 0; }
+  .design-main #mtProjectWorkspace .section-toolbar .text-link { flex: none; font-size: 13px !important; }
+  .design-main #mtProjectWorkspace .mt-section-heading { margin-top: 30px !important; padding-top: 24px; border-top: 1px solid var(--mp-line); }
+  .design-main #mtProjectWorkspace .mt-project-side { margin-top: 30px; }
+  .design-main #mtProjectWorkspace .mt-side-section { padding: 22px 0 0 !important; margin: 0 0 22px !important; border-top: 1px solid var(--mp-line); }
+  .design-main #mtProjectWorkspace .mt-side-section h2 { font-size: 18px !important; }
+  .design-main .mt-side-links { display: grid; gap: 8px; }
+  .design-main .mt-side-links > button { padding: 14px 16px !important; border: 1px solid var(--mp-line) !important; border-radius: 12px !important; background: #fff !important; }
+  .design-main .mt-side-links strong { font-size: 14.5px !important; }
+  .design-main .mt-side-links small { font-size: 12px !important; color: var(--mp-sub) !important; }
+}
+
+/* ---------- 선택칸(아래 화살표 눌러 고르는 칸) 통일 ---------- */
+@media (max-width: 699px) {
+  .design-main select:not([multiple]):not([size]),
+  .auth-modal select {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    width: 100%;
+    min-width: 0;
+    height: 46px !important;
+    min-height: 46px;
+    padding: 0 38px 0 12px !important;
+    border: 1px solid var(--mp-field, #cfd6c4) !important;
+    border-radius: var(--mp-radius, 10px) !important;
+    background-color: #fff !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23465739' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 12px center !important;
+    background-size: 16px 16px !important;
+    color: var(--mp-ink, #232820) !important;
+    font-weight: 500;
+    line-height: 1.2;
+    box-shadow: none !important;
+    text-overflow: ellipsis;
+  }
+  .design-main select:not([multiple]):not([size]):focus { outline: none; border-color: var(--mp-olive, #465739) !important; box-shadow: 0 0 0 3px rgba(70, 87, 57, .15) !important; }
+  .design-main select:disabled { background-color: #f4f6f1 !important; color: #9aa190 !important; }
+  .design-main label:has(> select) { display: grid; gap: 6px; min-width: 0; }
+}
+
+/* ---------- 뒤로가기 버튼 (모바일에서만 보임) ---------- */
+.mp-back { display: none; }
+@media (max-width: 699px) {
+  .design-main .mp-back { display: inline-flex; align-items: center; gap: 2px; min-height: 40px; margin: 6px 0 4px -6px; padding: 0 8px 0 2px; border: 0; background: none; color: var(--mp-sub); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .design-main .mp-back svg { width: 22px; height: 22px; stroke-width: 2; }
+  .design-main .mp-back:active { color: var(--mp-ink); }
+}
+
+/* ---------- 우리 단체 ---------- */
+@media (max-width: 699px) {
+  .design-main .organization-page .page-heading { padding-top: 4px !important; }
+  .design-main .organization-page .page-heading .primary { min-height: 40px; padding: 0 14px !important; font-size: 13.5px !important; border-radius: var(--mp-radius) !important; }
+  .design-main .organization-page .page-description { font-size: 13px !important; color: var(--mp-sub) !important; }
+  .design-main .organization-page .group-directory { width: 100%; }
+  .design-main .organization-page .group-directory > button { width: 100%; padding: 14px 16px !important; border-radius: 12px !important; }
+  .design-main .organization-page .group-directory small { font-size: 12px !important; }
+  .design-main .organization-page .group-overview .secondary { min-height: 40px; padding: 0 14px !important; font-size: 13px !important; border: 1px solid var(--mp-line-strong) !important; border-radius: var(--mp-radius) !important; background: #fff !important; box-shadow: none !important; }
+  .design-main .organization-page .group-tabs button { font-size: 14.5px !important; }
+  .design-main .organization-page .text-button { font-size: 13px !important; }
+  .design-main .organization-page .group-info-note { font-size: 12.5px !important; line-height: 1.5; color: var(--mp-sub) !important; }
+}
+
+/* ---------- 팝업 안 입력 양식: 이중 여백 제거 ---------- */
+@media (max-width: 699px) {
+  .design-main dialog.motf-dialog > form { padding: 0 !important; }
+  .design-main dialog.motf-dialog form { display: grid; gap: 14px; }
+  .design-main dialog.motf-dialog form .form-grid { gap: 14px 10px !important; }
+  .design-main dialog.motf-dialog form fieldset { margin: 4px 0 0 !important; padding: 14px 0 0 !important; border: 0 !important; border-top: 1px solid var(--mp-line) !important; }
+  .design-main dialog.motf-dialog form legend { padding: 0 !important; margin-bottom: 10px; font-size: 14px; font-weight: 700; color: var(--mp-ink); }
+  .design-main dialog.motf-dialog form label { font-size: 12.5px; font-weight: 600; color: var(--mp-text); }
+  .design-main dialog.motf-dialog form :is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="range"]), textarea) { width: 100%; min-width: 0; border: 1px solid var(--mp-field) !important; border-radius: var(--mp-radius) !important; background: #fff !important; box-shadow: none !important; }
+  .design-main dialog.motf-dialog form input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="range"]) { height: 46px; padding: 0 12px !important; }
+  .design-main dialog.motf-dialog form textarea { padding: 10px 12px !important; }
+  .design-main dialog.motf-dialog form label:has(> input[type="checkbox"]) { display: grid !important; grid-template-columns: 20px minmax(0, 1fr); gap: 8px; align-items: start; font-weight: 500; line-height: 1.5; }
+  .design-main dialog.motf-dialog form input[type="checkbox"] { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--mp-olive); }
+  .design-main dialog.motf-dialog form :is(.primary, .primary-btn, button[type="submit"]) { min-height: 48px; border-radius: var(--mp-radius) !important; font-size: 15px !important; }
+}
+
+/* ---------- 내 MT: 탭 줄 · 빈 화면 · 준비 범위 버튼 ---------- */
+@media (max-width: 699px) {
+  .design-main #myMt .mt-directory-tools { flex-direction: row !important; align-items: flex-end !important; }
+  .design-main #myMt .mt-directory-tabs { justify-content: flex-start !important; border: 0 !important; }
+  .design-main #myMt .mt-directory-tabs button { flex: none; }
+  .design-main #myMt #mtProjectCards { border-top: 0 !important; margin-top: 0 !important; }
+  .design-main #myMt .mt-directory-empty .primary-btn, .design-main #myMt .mt-directory-empty button { min-height: 44px; padding: 0 18px !important; font-size: 14px !important; border-radius: var(--mp-radius) !important; }
+  .design-main #myMt .mt-directory-empty { border: 0 !important; padding: 56px 16px 40px !important; gap: 12px !important; }
+  .design-main #myMt .mt-directory-empty h2 { font-size: 19px !important; }
+  .design-main #myMt .mt-directory-empty p { font-size: 13px !important; color: var(--mp-sub) !important; }
+  .design-main .preparation-context { margin: 12px 0 0 !important; }
+  .design-main .preparation-context .context-switch { min-height: 40px; padding: 0 12px !important; gap: 6px; border: 1px solid var(--mp-line-strong) !important; border-radius: var(--mp-radius) !important; background: #fff !important; color: var(--mp-ink) !important; font-size: 13.5px !important; font-weight: 600; box-shadow: none !important; }
+  .design-main .preparation-context .context-switch svg { width: 16px; height: 16px; color: var(--mp-olive); }
+}
+
+/* ---------- 홈·커뮤니티·이벤트·리뷰·채팅: 작은 글자 키우기 ---------- */
+@media (max-width: 699px) {
+  /* 홈 */
+  .design-main .home-search-intro p { font-size: 12.5px !important; }
+  .design-main .home-mobile-search small, .design-main .home-mobile-search small span { font-size: 12px !important; }
+  .design-main .home-promo-copy p { font-size: 11.5px !important; }
+  .design-main .home-promo-copy span { font-size: 12.5px !important; }
+  .design-main .home-promo-controls span { font-size: 11px !important; }
+  .design-main .home-stay-image span { font-size: 11px !important; padding: 3px 7px !important; }
+  .design-main .home-card-meta span { font-size: 11.5px !important; }
+  .design-main .home-stay-body p { font-size: 12px !important; }
+  .design-main .home-stay-body .home-per-person { font-size: 11.5px !important; }
+  .design-main .home-price small { font-size: 12px !important; }
+  .design-main .home-product-card .home-card-title { font-size: 13.5px !important; }
+  .design-main .calculator-mobile-tabs button { font-size: 13px !important; }
+  .design-main .kit-screen .screen-label, .design-main .screen-detail span { font-size: 12px !important; }
+  .design-main .budget-part :is(span, strong) { font-size: 12px !important; }
+  .design-main .budget-part small { font-size: 11px !important; }
+  .design-main .budget-basis { font-size: 11px !important; }
+  .design-main .budget-unit-tabs button { font-size: 12px !important; }
+  .design-main .home-calculator-band label > span, .design-main .calculator-foot span { font-size: 12px !important; }
+  .design-main .expense-toggle { font-size: 13px !important; }
+  .design-main .expense-sum, .design-main .expense-sum span { font-size: 12px !important; }
+  .design-main .home-play-guide p { font-size: 11.5px !important; }
+  /* 커뮤니티·이벤트 */
+  .design-main .community-panel-caption, .design-main .view .page-description { font-size: 13px !important; color: var(--mp-sub) !important; }
+  .design-main .community-segments button, .design-main .event-status-tabs button { font-size: 14px !important; }
+  /* 리뷰 */
+  .design-main .review-form label, .design-main .structured-review-grid label, .design-main .structured-score-list label { font-size: 13px !important; }
+  .design-main .review-eligibility-note { font-size: 12.5px !important; }
+  /* 이용내역 */
+  .design-main .usage-select span, .design-main .listing-body p { font-size: 12.5px !important; }
+  /* 채팅 */
+  .design-main .chat-thread-copy span, .design-main .read-status { font-size: 11.5px !important; }
+  .design-main .chat-contact-consent, .design-main .chat-contact-consent span, .design-main .chat-contact-consent strong { font-size: 12.5px !important; }
+  /* 장보기 공판장 정보 링크 */
+  .design-main #marketIntro .market-mobile-details { font-size: 12.5px !important; }
+  .design-main .market-intro-body > .eyebrow { font-size: 11.5px !important; }
+}
+
+/* ---------- 달력(날짜 고르기): 아래에서 올라오는 시트 ---------- */
+@media (max-width: 699px) {
+  body:has(.flatpickr-calendar.open)::after { content: ""; position: fixed; inset: 0; z-index: 9998; background: rgba(20, 26, 17, .42); }
+  .flatpickr-calendar.open,
+  .design-main :is(.local-search-dialog, .local-filter-dialog) .flatpickr-calendar.open {
+    position: fixed !important;
+    top: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    transform: none !important;
+    z-index: 9999 !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 10px 14px calc(18px + env(safe-area-inset-bottom, 0px)) !important;
+    border: 0 !important;
+    border-radius: 20px 20px 0 0 !important;
+    background: #fff !important;
+    box-shadow: 0 -12px 40px rgba(20, 26, 17, .18) !important;
+    font-family: inherit !important;
+    animation: mpSheetUp .2s ease-out !important;
+  }
+  .flatpickr-calendar.open::before { content: "" !important; display: block !important; position: static !important; width: 40px !important; height: 4px !important; margin: 0 auto 10px !important; border: 0 !important; border-radius: 99px; background: #d5dbcd !important; }
+  .flatpickr-calendar.open::after { display: none !important; }
+  .flatpickr-calendar.open .flatpickr-months { position: relative; height: 48px; align-items: center; }
+  .flatpickr-calendar.open .flatpickr-months .flatpickr-month { height: 48px !important; color: var(--mp-ink, #232820) !important; fill: currentColor; }
+  .flatpickr-calendar.open .flatpickr-current-month { position: static !important; width: 100% !important; left: 0 !important; height: 48px !important; padding: 0 !important; display: flex !important; align-items: center; justify-content: center; gap: 6px; font-size: 17px !important; font-weight: 700 !important; }
+  .flatpickr-calendar.open .flatpickr-current-month .cur-month { margin: 0 !important; font-weight: 700 !important; }
+  .flatpickr-calendar.open .flatpickr-current-month .numInputWrapper { width: 5.2ch !important; }
+  .flatpickr-calendar.open .flatpickr-current-month input.cur-year { font-size: 17px !important; font-weight: 700 !important; color: var(--mp-ink, #232820) !important; padding: 0 !important; height: auto !important; border: 0 !important; background: none !important; pointer-events: none; }
+  .flatpickr-calendar.open .numInputWrapper span { display: none !important; }
+  .flatpickr-calendar.open :is(.flatpickr-prev-month, .flatpickr-next-month) { top: 4px !important; width: 40px; height: 40px; padding: 11px !important; border-radius: 50%; color: var(--mp-olive, #465739) !important; fill: var(--mp-olive, #465739) !important; display: grid; place-items: center; }
+  .flatpickr-calendar.open .flatpickr-prev-month { left: 4px !important; }
+  .flatpickr-calendar.open .flatpickr-next-month { right: 4px !important; }
+  .flatpickr-calendar.open :is(.flatpickr-prev-month, .flatpickr-next-month) svg { width: 16px; height: 16px; }
+  .flatpickr-calendar.open :is(.flatpickr-prev-month, .flatpickr-next-month).flatpickr-disabled { opacity: .25; }
+  .flatpickr-calendar.open :is(.flatpickr-innerContainer, .flatpickr-rContainer, .flatpickr-days, .dayContainer, .flatpickr-weekdays) { width: 100% !important; min-width: 0 !important; max-width: none !important; }
+  .flatpickr-calendar.open .flatpickr-weekdays { height: 34px; margin-top: 4px; }
+  .flatpickr-calendar.open span.flatpickr-weekday { font-size: 12.5px !important; font-weight: 600 !important; color: var(--mp-sub, #646b5d) !important; }
+  .flatpickr-calendar.open span.flatpickr-weekday:first-child { color: #b5483d !important; }
+  .flatpickr-calendar.open .dayContainer { display: grid !important; grid-template-columns: repeat(7, 1fr); row-gap: 4px; padding: 2px 0 0 !important; }
+  .flatpickr-calendar.open .flatpickr-day { width: auto !important; max-width: none !important; height: 44px !important; line-height: 44px !important; margin: 0 auto !important; aspect-ratio: auto; flex-basis: auto !important; border: 0 !important; border-radius: 12px !important; font-size: 15px !important; font-weight: 500; color: var(--mp-ink, #232820) !important; }
+  .flatpickr-calendar.open .flatpickr-day { width: 44px !important; }
+  .flatpickr-calendar.open .flatpickr-day:hover { background: #f1f3ee !important; }
+  .flatpickr-calendar.open .flatpickr-day.today:not(.selected) { box-shadow: inset 0 0 0 1.5px var(--mp-line-strong, #c2cbb5) !important; }
+  .flatpickr-calendar.open .flatpickr-day:is(.selected, .startRange, .endRange) { background: var(--mp-olive, #465739) !important; color: #fff !important; font-weight: 700; }
+  .flatpickr-calendar.open .flatpickr-day.inRange { background: #e8eddf !important; box-shadow: none !important; border-radius: 0 !important; }
+  .flatpickr-calendar.open .flatpickr-day:is(.flatpickr-disabled, .prevMonthDay, .nextMonthDay) { color: #c9cec2 !important; background: none !important; }
+  .flatpickr-calendar.open .flatpickr-day:is(.prevMonthDay, .nextMonthDay) { visibility: hidden; }
+  @keyframes mpSheetUp { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+}
+
+/* ---------- 선택 목록 시트 (mobile-polish.js) ---------- */
+.mp-select-sheet { display: none; }
+@media (max-width: 699px) {
+  .mp-select-sheet { display: block; position: fixed; inset: 0; z-index: 2147483000; }
+  .mp-select-sheet[hidden] { display: none; }
+  .mp-select-sheet .mp-ss-backdrop { position: absolute; inset: 0; background: rgba(20, 26, 17, .42); border: 0; padding: 0; width: 100%; cursor: default; }
+  .mp-select-sheet .mp-ss-panel { position: absolute; left: 0; right: 0; bottom: 0; max-height: 72dvh; display: grid; grid-template-rows: auto auto minmax(0, 1fr); padding: 10px 0 calc(12px + env(safe-area-inset-bottom, 0px)); border-radius: 20px 20px 0 0; background: #fff; box-shadow: 0 -12px 40px rgba(20, 26, 17, .18); animation: mpSheetUp .2s ease-out; font-family: inherit; }
+  .mp-select-sheet .mp-ss-grip { width: 40px; height: 4px; margin: 0 auto 8px; border-radius: 99px; background: #d5dbcd; }
+  .mp-select-sheet .mp-ss-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 20px 10px; border-bottom: 1px solid #e6eadf; }
+  .mp-select-sheet .mp-ss-head strong { font-size: 17px; font-weight: 700; color: #232820; }
+  .mp-select-sheet .mp-ss-close { width: 36px; height: 36px; border: 0; border-radius: 50%; background: #f1f3ee; color: #232820; display: grid; place-items: center; padding: 0; }
+  .mp-select-sheet .mp-ss-list { overflow-y: auto; overscroll-behavior: contain; padding: 6px 10px 4px; -webkit-overflow-scrolling: touch; }
+  .mp-select-sheet .mp-ss-group { padding: 14px 12px 6px; font-size: 12.5px; font-weight: 700; color: #646b5d; }
+  .mp-select-sheet .mp-ss-option { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 50px; padding: 0 12px; border: 0; border-radius: 12px; background: none; color: #232820; font: inherit; font-size: 15.5px; font-weight: 500; text-align: left; cursor: pointer; }
+  .mp-select-sheet .mp-ss-option + .mp-ss-option { margin-top: 2px; }
+  .mp-select-sheet .mp-ss-option:active { background: #f1f3ee; }
+  .mp-select-sheet :is(.mp-ss-option, .mp-ss-close):focus { outline: none; }
+  .mp-select-sheet :is(.mp-ss-option, .mp-ss-close):focus-visible { box-shadow: inset 0 0 0 2px #c2cbb5; }
+  .mp-select-sheet .mp-ss-option[aria-selected="true"] { background: #eef2e8; color: #465739; font-weight: 700; }
+  .mp-select-sheet .mp-ss-option svg { flex: none; width: 20px; height: 20px; color: #465739; visibility: hidden; }
+  .mp-select-sheet .mp-ss-option[aria-selected="true"] svg { visibility: visible; }
+  .mp-select-sheet .mp-ss-option:disabled { color: #b5bbad; }
+  .mp-select-sheet .mp-ss-option.is-placeholder { color: #8a9180; }
+}
+
+/* ---------- 기존 styles.css(@layer operational)의 !important를 이기기 위한 레이어 ----------
+   index.html <head> 맨 앞의 `@layer mp-mobile, operational;` 선언 덕분에
+   이 레이어의 !important가 operational 레이어의 !important보다 우선합니다. */
+@layer mp-mobile {
+  @media (max-width: 699px) {
+    .flatpickr-calendar.open {
+      width: 100% !important;
+      max-width: none !important;
+      border: 0 !important;
+      border-radius: 20px 20px 0 0 !important;
+      box-shadow: 0 -12px 40px rgba(20, 26, 17, .18) !important;
+      z-index: 9999 !important;
+    }
+    .flatpickr-calendar.open .flatpickr-months .flatpickr-prev-month { left: 4px !important; }
+    .flatpickr-calendar.open .flatpickr-months .flatpickr-next-month { right: 4px !important; }
+    .flatpickr-calendar.open .flatpickr-current-month .cur-month { font-weight: 700 !important; }
+    .flatpickr-calendar.open .flatpickr-day:is(.selected, .startRange, .endRange) { background: var(--mp-olive, #465739) !important; border-color: var(--mp-olive, #465739) !important; }
+  }
+}
+
+/* ---------- 숙소 상세: 객실 예약 달력 ---------- */
+@media (max-width: 699px) {
+  .design-main .public-availability-section { background: #fff !important; border-radius: 14px !important; padding: 18px 16px !important; }
+  .design-main .public-availability-section .section-toolbar { display: grid !important; grid-template-columns: 1fr; justify-items: stretch !important; gap: 14px !important; }
+  .design-main .public-availability-section .section-toolbar > div { width: 100%; margin: 0 !important; text-align: left; }
+  .design-main .public-availability-section .section-toolbar h2 { font-size: 19px !important; margin: 2px 0 4px !important; }
+  .design-main .public-availability-section .section-toolbar span { font-size: 13px !important; color: var(--mp-sub) !important; }
+  .design-main .public-availability-section .section-toolbar > button { width: 100%; }
+  .design-main .availability-month h3 { font-size: 16px !important; font-weight: 700; }
+  .design-main .availability-month .calendar-weekdays span { font-size: 12px !important; font-weight: 600; color: var(--mp-sub) !important; }
+  .design-main .availability-month .calendar-weekdays span:first-child { color: #b5483d !important; }
+  .design-main .availability-month .calendar-date { font-size: 14.5px !important; border-radius: 10px !important; }
+}
