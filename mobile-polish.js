@@ -358,12 +358,8 @@
     const move = (y, event) => {
       if (!drag) return;
       const dy = y - drag.startY;
-      if (!drag.fromHandle) {
-        // 목록 내용에서 시작한 끌기: 맨 위에서 아래로 당기거나, 시트가 덜 올라온 상태에서 위로 밀 때만 시트를 움직임
-        const pullDown = dy > 0 && section.scrollTop <= 0;
-        const pushUp = dy < 0 && sheet.state !== 'full' && drag.startOffset > 0;
-        if (!drag.moved && !pullDown && !pushUp) { drag = null; return; }
-      }
+      // 목록 내용을 잡고 움직이면 목록만 스크롤하고, 시트는 위쪽 손잡이(가로바)로만 올리고 내림
+      if (!drag.fromHandle) { drag = null; return; }
       if (Math.abs(dy) > 4) drag.moved = true;
       if (!drag.moved) return;
       event?.cancelable && event.preventDefault();
@@ -560,7 +556,7 @@
       const top = basePeople && maxPeople > basePeople && extraFee ? base + (maxPeople - basePeople) * extraFee : base;
       const priceText = top > base ? `${esc(M()?.won(base))} ~ ${esc(M()?.won(top))}` : esc(M()?.won(base) || base);
       const peopleText = basePeople && maxPeople > basePeople ? `기준 ${basePeople}명 · 최대 ${maxPeople}명` : (room.capacity || '인원 확인 필요');
-      info.innerHTML = `<p>${M()?.svg.user || ''}<span>${esc(peopleText)}</span></p>${features.length ? `<p><span>${features.map(esc).join(' · ')}</span></p>` : ''}<div class="mp-room-price"><small>${top > base ? '기준~최대 인원' : '숙박'}</small><strong>${priceText}</strong></div>${top > base ? `<p class="mp-room-price-note">기준 인원 초과 시 1인당 ${esc(M()?.won(extraFee))} 추가</p>` : ''}`;
+      info.innerHTML = `<p>${M()?.svg.user || ''}<span>${esc(peopleText)}</span></p>${features.length ? `<p><span>${features.map(esc).join(' · ')}</span></p>` : ''}<div class="mp-room-price">${top > base ? '' : '<small>숙박</small>'}<strong>${priceText}</strong></div>${top > base ? `<p class="mp-room-price-note">기준 인원 초과 시 1인당 ${esc(M()?.won(extraFee))} 추가</p>` : ''}`;
       head?.after(info);
     });
   }
@@ -575,8 +571,7 @@
     const near = [];
     if (Number(stay.stationDistanceM) > 0) near.push(`가까운 역까지 ${Number(stay.stationDistanceM) >= 1000 ? `${(Number(stay.stationDistanceM) / 1000).toFixed(1)}km` : `${Number(stay.stationDistanceM)}m`}`);
     if (Number(stay.convenienceDistanceM) > 0) near.push(`편의점까지 ${Number(stay.convenienceDistanceM)}m`);
-    const mapUrl = `https://map.naver.com/p/search/${encodeURIComponent(address || stay.name || '')}`;
-    section.innerHTML = `<h2>위치</h2><div class="mp-loc-map" role="img" aria-label="${esc(stay.name)} 위치 지도"></div><p class="mp-loc-address">${esc(address || stay.region || '')}</p>${near.length ? `<p class="mp-loc-near">${near.map(esc).join(' · ')}</p>` : ''}<div class="mp-loc-actions">${address ? '<button type="button" class="mp-loc-copy">주소 복사</button>' : ''}<a class="mp-loc-open" href="${esc(mapUrl)}" target="_blank" rel="noopener">네이버 지도에서 보기</a></div>`;
+    section.innerHTML = `<h2>위치</h2><div class="mp-loc-map" role="img" aria-label="${esc(stay.name)} 위치 지도"></div><p class="mp-loc-address">${esc(address || stay.region || '')}</p>${near.length ? `<p class="mp-loc-near">${near.map(esc).join(' · ')}</p>` : ''}<div class="mp-loc-actions">${address ? '<button type="button" class="mp-loc-copy">주소 복사</button>' : ''}<button type="button" class="mp-loc-open">지도 크게 보기</button></div>`;
     const anchor = $('.stay-facility-showcase', root);
     if (anchor) anchor.after(section); else root.append(section);
     $('.mp-loc-copy', section)?.addEventListener('click', event => {
@@ -584,7 +579,10 @@
       const done = () => { button.textContent = '복사했어요'; setTimeout(() => { button.textContent = '주소 복사'; }, 1600); };
       try { navigator.clipboard.writeText(address).then(done, done); } catch (error) { done(); }
     });
+    // 지도를 누르거나 '지도 크게 보기' → 모티프 안에서 전체 화면 지도 (확대·이동 가능)
+    $('.mp-loc-open', section).addEventListener('click', () => openFullMap(stay));
     const box = $('.mp-loc-map', section);
+    box.addEventListener('click', () => openFullMap(stay));
     const draw = maps => {
       if (!box.isConnected) return;
       const position = new maps.LatLng(Number(loc.lat), Number(loc.lng));
@@ -598,6 +596,41 @@
       box.textContent = '지도를 불러오지 못했어요';
     }
   }
+
+  let fullMap = null;
+  function openFullMap(stay) {
+    const loc = stay?.location;
+    if (!loc || typeof loadNaverMaps !== 'function') return;
+    if (!fullMap) {
+      fullMap = document.createElement('div');
+      fullMap.className = 'mp-map-full';
+      fullMap.hidden = true;
+      fullMap.innerHTML = `<header class="mp-mf-head"><button type="button" class="mp-mf-close" aria-label="닫기">${M().svg.close}</button><div><strong></strong><span></span></div></header><div class="mp-mf-canvas"></div>`;
+      fullMap.querySelector('.mp-mf-close').addEventListener('click', closeFullMap);
+      fullMap.addEventListener('keydown', event => { if (event.key === 'Escape') closeFullMap(); });
+      document.body.append(fullMap);
+    }
+    fullMap.querySelector('.mp-mf-head strong').textContent = stay.name || '숙소 위치';
+    fullMap.querySelector('.mp-mf-head span').textContent = String(stay.distance || stay.region || '');
+    fullMap.hidden = false;
+    document.body.classList.add('mp-map-full-open');
+    const canvas = fullMap.querySelector('.mp-mf-canvas');
+    canvas.innerHTML = '';
+    loadNaverMaps().then(maps => {
+      if (fullMap.hidden) return;
+      const position = new maps.LatLng(Number(loc.lat), Number(loc.lng));
+      const map = new maps.Map(canvas, { center: position, zoom: 16, zoomControl: true, zoomControlOptions: { position: maps.Position.RIGHT_CENTER }, mapDataControl: false, scaleControl: false });
+      new maps.Marker({ position, map, title: stay.name, icon: { content: `<div class="mp-mf-pin">${esc(stay.name)}</div>`, size: new maps.Size(122, 40), anchor: new maps.Point(61, 40) } });
+    }).catch(() => { canvas.textContent = '지도를 불러오지 못했어요'; });
+    fullMap.querySelector('.mp-mf-close').focus({ preventScroll: true });
+  }
+  function closeFullMap() {
+    if (!fullMap || fullMap.hidden) return;
+    fullMap.hidden = true;
+    document.body.classList.remove('mp-map-full-open');
+    fullMap.querySelector('.mp-mf-canvas').innerHTML = '';
+  }
+  window.addEventListener('motf:routechange', closeFullMap);
 
   function minPrice(stay) {
     const prices = (stay.rooms || []).filter(room => !(typeof isRoomUnavailable === 'function' && isRoomUnavailable(room))).map(room => Number(room.price) || 0).filter(Boolean);
@@ -630,7 +663,49 @@
 
   /* 날짜·인원 시트 */
   let dateSheet = null;
-  let picker = null;
+  const range = { a: '', b: '' };
+  const MONTHS_AHEAD = 4;
+  const pad = n => String(n).padStart(2, '0');
+  const ymd = date => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  const todayYmd = () => ymd(new Date());
+  const maxYmd = () => { const d = new Date(); d.setDate(d.getDate() + 90); return ymd(d); };
+
+  /* 에어비앤비식 달력: 여러 달을 세로로 이어 보여주고, 동그란 날짜 + 기간 띠 */
+  function renderMonths(holder) {
+    const first = new Date(); first.setDate(1);
+    const today = todayYmd();
+    const max = maxYmd();
+    let html = '';
+    for (let m = 0; m < MONTHS_AHEAD; m += 1) {
+      const month = new Date(first.getFullYear(), first.getMonth() + m, 1);
+      const days = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+      let cells = '';
+      for (let i = 0; i < month.getDay(); i += 1) cells += '<span class="mp-cal-blank"></span>';
+      for (let d = 1; d <= days; d += 1) {
+        const key = ymd(new Date(month.getFullYear(), month.getMonth(), d));
+        const off = key < today || key > max;
+        cells += `<button type="button" class="mp-cal-day${key === today ? ' is-today' : ''}" data-date="${key}" ${off ? 'disabled' : ''}><span>${d}</span></button>`;
+      }
+      html += `<section class="mp-cal-month" data-month="${month.getFullYear()}-${pad(month.getMonth() + 1)}"><h3>${month.getFullYear()}년 ${month.getMonth() + 1}월</h3><div class="mp-cal-grid">${cells}</div></section>`;
+    }
+    holder.innerHTML = html;
+  }
+  function paintRange() {
+    if (!dateSheet) return;
+    $$('.mp-cal-day', dateSheet).forEach(day => {
+      const key = day.dataset.date;
+      day.classList.toggle('is-start', key === range.a);
+      day.classList.toggle('is-end', !!range.b && key === range.b);
+      day.classList.toggle('is-in', !!range.b && key > range.a && key < range.b);
+      day.classList.toggle('has-range', !!range.b && range.a !== range.b);
+    });
+    updateRange();
+  }
+  function pick(key) {
+    if (!range.a || range.b || key <= range.a) { range.a = key; range.b = ''; }
+    else range.b = key;
+    paintRange();
+  }
   function openDateSheet() {
     const v = M()?.values();
     if (!v) return;
@@ -638,64 +713,54 @@
       dateSheet = document.createElement('div');
       dateSheet.className = 'mp-date-sheet';
       dateSheet.hidden = true;
-      dateSheet.innerHTML = `<button type="button" class="mp-ds-backdrop" aria-label="닫기" tabindex="-1"></button><section class="mp-ds-panel" role="dialog" aria-modal="true" aria-label="날짜, 인원 선택"><div class="mp-ds-grip"></div><header class="mp-ds-head"><h2>날짜, 인원 선택</h2><button type="button" class="mp-ds-close" aria-label="닫기">${M().svg.close}</button></header><div class="mp-ds-body"><div class="mp-ds-card"><p class="mp-ds-range">${M().svg.calendar}<strong></strong></p><div class="mp-ds-calendar"></div></div><div class="mp-ds-people"><span>${M().svg.users}<strong>인원</strong></span><div class="mp-ds-stepper"><button type="button" data-step="-1" aria-label="인원 줄이기">${M().svg.minus}</button><input type="number" inputmode="numeric" min="10" max="120" aria-label="인원"><button type="button" data-step="1" aria-label="인원 늘리기">${M().svg.plus}</button></div></div><p class="mp-ds-note">단체 숙소라 10명부터 예약할 수 있어요.</p></div><footer class="mp-ds-foot"><button type="button" class="mp-ds-apply">적용하기</button></footer></section>`;
-      document.body.append(dateSheet);
+      dateSheet.innerHTML = `<button type="button" class="mp-ds-backdrop" aria-label="닫기" tabindex="-1"></button><section class="mp-ds-panel" role="dialog" aria-modal="true" aria-label="날짜, 인원 선택"><div class="mp-ds-grip"></div><header class="mp-ds-head"><h2>날짜, 인원 선택</h2><button type="button" class="mp-ds-close" aria-label="닫기">${M().svg.close}</button></header><div class="mp-ds-body"><p class="mp-ds-range"><strong></strong></p><div class="mp-cal-week"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div><div class="mp-ds-calendar"></div><div class="mp-ds-people"><span>${M().svg.users}<strong>인원</strong><small>10명부터 예약할 수 있어요</small></span><div class="mp-ds-stepper"><button type="button" data-step="-1" aria-label="인원 줄이기">${M().svg.minus}</button><input type="number" inputmode="numeric" min="10" max="120" aria-label="인원"><button type="button" data-step="1" aria-label="인원 늘리기">${M().svg.plus}</button></div></div></div><footer class="mp-ds-foot"><button type="button" class="mp-ds-reset">재설정</button><button type="button" class="mp-ds-apply">적용하기</button></footer></section>`;
       dateSheet.addEventListener('click', event => {
-        if (event.target.closest('.mp-ds-backdrop, .mp-ds-close')) closeDateSheet();
+        if (event.target.closest('.mp-ds-backdrop, .mp-ds-close')) { closeDateSheet(); return; }
+        const day = event.target.closest('.mp-cal-day');
+        if (day && !day.disabled) { pick(day.dataset.date); return; }
         const step = event.target.closest('[data-step]');
         if (step) {
           const input = $('.mp-ds-stepper input', dateSheet);
           input.value = Math.min(120, Math.max(10, Number(input.value || 10) + Number(step.dataset.step)));
           updateRange();
         }
+        if (event.target.closest('.mp-ds-reset')) { range.a = ''; range.b = ''; paintRange(); }
         if (event.target.closest('.mp-ds-apply')) applyDateSheet();
       });
       $('.mp-ds-stepper input', dateSheet).addEventListener('input', updateRange);
       dateSheet.addEventListener('keydown', event => { if (event.key === 'Escape') closeDateSheet(); });
     }
+    // 팝업(dialog) 위에서 열면 그 팝업 안에 붙여야 위에 보임
+    (document.querySelector('dialog[open]') || document.body).append(dateSheet);
     $('.mp-ds-stepper input', dateSheet).value = v.people;
     const holder = $('.mp-ds-calendar', dateSheet);
-    holder.innerHTML = '';
-    if (window.flatpickr) {
-      picker = window.flatpickr(holder, {
-        inline: true,
-        mode: 'range',
-        minDate: 'today',
-        maxDate: new Date().fp_incr(90),
-        defaultDate: [v.checkIn, v.checkOut].filter(Boolean),
-        dateFormat: 'Y-m-d',
-        locale: window.flatpickr.l10ns?.ko || 'default',
-        monthSelectorType: 'static',
-        disableMobile: true,
-        onChange: updateRange,
-      });
-    }
+    renderMonths(holder);
+    range.a = v.checkIn && v.checkIn >= todayYmd() ? v.checkIn : '';
+    range.b = range.a && v.checkOut > range.a ? v.checkOut : '';
     dateSheet.hidden = false;
     document.body.classList.add('mp-date-open');
-    updateRange();
+    paintRange();
+    const target = range.a ? $(`.mp-cal-month[data-month="${range.a.slice(0, 7)}"]`, holder) : null;
+    holder.scrollTop = target ? target.offsetTop - holder.offsetTop : 0;
     $('.mp-ds-apply', dateSheet).focus({ preventScroll: true });
   }
   function selectedRange() {
-    const dates = picker?.selectedDates || [];
-    const fmt = date => (window.flatpickr ? window.flatpickr.formatDate(date, 'Y-m-d') : '');
-    return dates.length ? [fmt(dates[0]), dates[1] ? fmt(dates[1]) : ''] : ['', ''];
+    return [range.a, range.b];
   }
   function updateRange() {
     if (!dateSheet) return;
     const [a, b] = selectedRange();
     const people = Number($('.mp-ds-stepper input', dateSheet).value || 10);
     const n = M().nights(a, b);
-    $('.mp-ds-range strong', dateSheet).textContent = a ? (b ? `${M().short(a)} ~ ${M().short(b)} · ${n}박` : `${M().short(a)} ~ 체크아웃 날짜 선택`) : '체크인 날짜를 골라주세요';
+    $('.mp-ds-range strong', dateSheet).textContent = a ? (b ? `${M().short(a)} ~ ${M().short(b)} · ${n}박` : `${M().short(a)} ~ 체크아웃 날짜를 골라주세요`) : '체크인 날짜를 골라주세요';
     const apply = $('.mp-ds-apply', dateSheet);
     apply.disabled = !(a && b && n > 0);
-    apply.textContent = apply.disabled ? '체크아웃 날짜를 골라주세요' : `${n}박 · ${Math.min(120, Math.max(10, people))}명 적용하기`;
+    apply.textContent = apply.disabled ? '날짜를 골라주세요' : `${n}박 · ${Math.min(120, Math.max(10, people))}명 적용`;
   }
   function closeDateSheet() {
     if (!dateSheet || dateSheet.hidden) return;
     dateSheet.hidden = true;
     document.body.classList.remove('mp-date-open');
-    try { picker?.destroy(); } catch (error) { /* 무시 */ }
-    picker = null;
   }
   function applyDateSheet() {
     const [a, b] = selectedRange();
@@ -713,7 +778,43 @@
       if (current === 'roomDetail' && typeof renderRoomDetail === 'function') renderRoomDetail();
     }
     enhance();
+    filterDialogRow();
+    M()?.refreshStays?.();
   }
+
+  /* 숙소 목록의 검색 팝업: 체크인·체크아웃·인원 칸 대신 한 줄 버튼 → 위 날짜·인원 시트 */
+  function filterDialogRow() {
+    if (!mobile.matches) return;
+    const form = $('#stayFilters');
+    if (!form) return;
+    let row = $('.mp-filter-when', form);
+    if (!row) {
+      row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'mp-filter-when';
+      row.dataset.mpDateOpen = '';
+      form.prepend(row);
+    }
+    const v = M()?.values();
+    if (!v) return;
+    const n = M().nights(v.checkIn, v.checkOut);
+    const html = `${M().svg.calendar}<span><small>${n ? `${n}박 · ` : ''}${v.people}명</small><strong>${M().short(v.checkIn)} ~ ${M().short(v.checkOut)}</strong></span>${M().svg.chevronDown}`;
+    if (row.dataset.html !== html) { row.dataset.html = html; row.innerHTML = html; }
+  }
+  // 범위 막대(총예산): 채워진 부분 색을 값에 맞춤
+  function paintRangeInputs(root = document) {
+    $$('#stayFilters input[type="range"]', root).forEach(input => {
+      const min = Number(input.min || 0), max = Number(input.max || 100);
+      const p = max > min ? ((Number(input.value) - min) / (max - min)) * 100 : 0;
+      input.style.setProperty('--mp-fill', `${p}%`);
+    });
+  }
+  document.addEventListener('input', event => { if (event.target.matches?.('#stayFilters input[type="range"]')) paintRangeInputs(); });
+  document.addEventListener('click', event => {
+    if (!mobile.matches) return;
+    if (event.target.closest('[data-local-filter-open]')) setTimeout(() => { filterDialogRow(); paintRangeInputs(); }, 0);
+  }, true);
+
   document.addEventListener('click', event => {
     if (!mobile.matches) return;
     if (event.target.closest('[data-mp-date-open]')) { event.preventDefault(); openDateSheet(); }

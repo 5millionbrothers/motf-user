@@ -1331,3 +1331,83 @@
   .mp-rooms .mp-room-price strong { font-size: 18px; }
   .mp-rooms .mp-room-info .mp-room-price-note { display: block !important; margin: 2px 0 0 !important; text-align: right; font-size: 12px !important; color: var(--mp-sub) !important; }
 }
+@media (max-width: 699px) {
+  body.mp-sheet-on #stays .mp-sheet-handle { -webkit-user-select: none; user-select: none; }
+  /* 시트가 중간에 있을 때도 목록 끝까지 스크롤되도록 (화면 아래로 밀려난 만큼 여백) */
+  body.mp-sheet-on #stays .split-layout > section { padding-bottom: calc(24px + var(--mp-sheet-y, 0px)) !important; }
+  /* 큰 사진 카드: 은은한 테두리의 둥근 상자로 숙소끼리 구분 */
+  body.mp-sheet-on #stays .split-layout > section:not(.mp-compact) #stayList { gap: 16px !important; padding-top: 2px; }
+  body.mp-sheet-on #stays .split-layout > section:not(.mp-compact) #stayList .catalog-stay { padding: 0 0 16px !important; border: 1px solid #e6e9e1 !important; border-radius: 18px !important; background: #fff !important; box-shadow: 0 2px 12px rgba(30, 40, 25, .06) !important; overflow: hidden; }
+  body.mp-sheet-on #stays .split-layout > section:not(.mp-compact) #stayList .catalog-stay-photo { border-radius: 0 !important; aspect-ratio: 16 / 10; }
+  body.mp-sheet-on #stays .split-layout > section:not(.mp-compact) #stayList .retained-stay-copy { padding: 14px 16px 0 !important; }
+  body.mp-sheet-on #stays .split-layout > section:not(.mp-compact) #stayList .catalog-stay-bottom { margin: 10px 16px 0 !important; }
+}
+@media (max-width: 699px) {
+  /* 날짜·인원 시트: 에어비앤비식 (여러 달 세로 스크롤, 동그란 날짜, 기간 띠) */
+  .mp-date-sheet .mp-ds-panel { height: 90dvh; max-height: 90dvh; grid-template-rows: auto auto minmax(0, 1fr) auto; }
+  .mp-date-sheet .mp-ds-body { display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; gap: 0; padding: 0; overflow: hidden; }
+  .mp-date-sheet .mp-ds-range { justify-content: center; padding: 2px 16px 12px; border: 0; font-size: 14.5px; color: var(--mp-sub); }
+  .mp-date-sheet .mp-ds-range strong { font-weight: 600; color: var(--mp-ink); }
+  .mp-date-sheet .mp-cal-week { display: grid; grid-template-columns: repeat(7, 1fr); padding: 8px 16px; border-top: 1px solid #eef1ea; border-bottom: 1px solid #eef1ea; text-align: center; font-size: 12px; font-weight: 600; color: var(--mp-sub); }
+  .mp-date-sheet .mp-ds-calendar { overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 0 16px 16px; }
+  .mp-date-sheet .mp-cal-month h3 { margin: 22px 4px 10px; font-size: 16px; font-weight: 700; color: var(--mp-ink); }
+  .mp-date-sheet .mp-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 4px; }
+  .mp-date-sheet .mp-cal-day { position: relative; display: grid; place-items: center; height: 46px; padding: 0; border: 0; background: none; color: var(--mp-ink); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .mp-date-sheet .mp-cal-day span { position: relative; z-index: 1; display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; transition: background .12s; }
+  .mp-date-sheet .mp-cal-day:disabled { color: #c3c8bb; font-weight: 500; cursor: default; }
+  .mp-date-sheet .mp-cal-day:disabled span { text-decoration: line-through; }
+  .mp-date-sheet .mp-cal-day.is-today:not(.is-start):not(.is-end) span { box-shadow: inset 0 0 0 1.5px #c9d0bf; }
+  .mp-date-sheet .mp-cal-day:not(:disabled):active span { background: #eef1ea; }
+  /* 기간 띠 */
+  .mp-date-sheet .mp-cal-day.is-in { background: #eef1ea; }
+  .mp-date-sheet .mp-cal-day.has-range.is-start::before,
+  .mp-date-sheet .mp-cal-day.has-range.is-end::before { content: ""; position: absolute; top: 2px; bottom: 2px; background: #eef1ea; }
+  .mp-date-sheet .mp-cal-day.is-in { box-shadow: inset 0 2px 0 #fff, inset 0 -2px 0 #fff; }
+  .mp-date-sheet .mp-cal-day.has-range.is-start::before { left: 50%; right: 0; }
+  .mp-date-sheet .mp-cal-day.has-range.is-end::before { left: 0; right: 50%; }
+  .mp-date-sheet .mp-cal-day:is(.is-start, .is-end) span { background: var(--mp-ink, #232820); color: #fff; }
+  /* 인원 + 하단 */
+  .mp-date-sheet .mp-ds-people { margin: 0; padding: 12px 16px; border: 0; border-top: 1px solid #eef1ea; border-radius: 0; }
+  .mp-date-sheet .mp-ds-people > span { display: grid; grid-template-columns: auto auto; column-gap: 8px; align-items: center; }
+  .mp-date-sheet .mp-ds-people > span small { grid-column: 2; font-size: 12px; color: var(--mp-sub); }
+  .mp-date-sheet .mp-ds-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .mp-date-sheet .mp-ds-reset { padding: 8px 4px; border: 0; background: none; color: var(--mp-ink); font: inherit; font-size: 15px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+  .mp-date-sheet .mp-ds-apply { width: auto; min-width: 170px; padding: 0 22px; }
+
+  /* 숙소 검색 팝업: 날짜·인원은 한 줄 버튼으로 (누르면 위 시트) */
+  #stayFilters > label:has(#stayCheckInDate),
+  #stayFilters > label:has(#stayCheckOutDate),
+  #stayFilters > label:has(#stayPeople) { display: none !important; }
+  #stayFilters .mp-filter-when { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; width: 100%; min-height: 60px; padding: 10px 14px; border: 1px solid var(--mp-line-strong, #c2cbb5); border-radius: 12px; background: #fff; color: var(--mp-ink); font: inherit; text-align: left; }
+  #stayFilters .mp-filter-when svg { flex: none; width: 20px; height: 20px; color: var(--mp-olive); }
+  #stayFilters .mp-filter-when > span { display: grid; gap: 2px; flex: 1 1 auto; min-width: 0; }
+  #stayFilters .mp-filter-when small { font-size: 12px; color: var(--mp-sub); }
+  #stayFilters .mp-filter-when strong { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #stayFilters .mp-filter-when > svg:last-child { width: 18px; height: 18px; color: var(--mp-sub); transform: rotate(-90deg); }
+  #stayFilters .mp-filter-when em { flex: none; font-style: normal; font-size: 13px; font-weight: 600; color: var(--mp-olive); text-decoration: underline; text-underline-offset: 3px; }
+
+  /* 총예산 막대: 막대가 동그라미 밖으로 삐져나오지 않게 */
+  #stayFilters input[type="range"] { -webkit-appearance: none !important; appearance: none !important; display: block; width: 100% !important; height: 28px !important; margin: 6px 0 0 !important; padding: 0 !important; border: 0 !important; background: transparent !important; box-shadow: none !important; }
+  #stayFilters input[type="range"]::-webkit-slider-runnable-track { height: 6px; border-radius: 99px; background: linear-gradient(to right, var(--mp-olive, #465739) var(--mp-fill, 100%), #e3e7dc var(--mp-fill, 100%)); }
+  #stayFilters input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px; margin-top: -10px; border: 2px solid var(--mp-olive, #465739); border-radius: 50%; background: #fff; box-shadow: 0 1px 5px rgba(0, 0, 0, .2); }
+  #stayFilters input[type="range"]::-moz-range-track { height: 6px; border-radius: 99px; background: #e3e7dc; }
+  #stayFilters input[type="range"]::-moz-range-progress { height: 6px; border-radius: 99px; background: var(--mp-olive, #465739); }
+  #stayFilters input[type="range"]::-moz-range-thumb { width: 22px; height: 22px; border: 2px solid var(--mp-olive, #465739); border-radius: 50%; background: #fff; }
+}
+@media (max-width: 699px) {
+  /* 숙소 위치: 지도를 누르면 모티프 안에서 전체 화면 지도 */
+  #stayDetailContent .mp-loc-map { cursor: pointer; }
+  body > .mp-map-full { position: fixed; inset: 0; z-index: 2147482500; display: grid; grid-template-rows: auto minmax(0, 1fr); background: #fff; animation: mpSheetUp .2s ease-out; }
+  .mp-map-full[hidden] { display: none; }
+  body.mp-map-full-open { overflow: hidden; }
+  .mp-map-full .mp-mf-head { display: flex; align-items: center; gap: 10px; padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 10px; border-bottom: 1px solid #eef1ea; }
+  .mp-map-full .mp-mf-close { flex: none; width: 40px; height: 40px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: #f1f3ee; color: var(--mp-ink); }
+  .mp-map-full .mp-mf-close svg { width: 20px; height: 20px; }
+  .mp-map-full .mp-mf-head > div { display: grid; min-width: 0; }
+  .mp-map-full .mp-mf-head strong { font-size: 16px; font-weight: 700; color: var(--mp-ink); }
+  .mp-map-full .mp-mf-head span { font-size: 12.5px; color: var(--mp-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mp-map-full .mp-mf-canvas { position: relative; width: 100%; height: 100%; }
+  .mp-mf-pin { position: absolute; left: 61px; top: 40px; transform: translate(-50%, calc(-100% - 6px)); padding: 5px 10px; border-radius: 8px; background: var(--mp-olive, #465739); color: #fff; font-size: 13px; font-weight: 700; white-space: nowrap; box-shadow: 0 2px 8px rgba(0, 0, 0, .3); }
+  .mp-mf-pin::after { content: ""; position: absolute; left: 50%; bottom: -4px; width: 8px; height: 8px; background: inherit; transform: translateX(-50%) rotate(45deg); }
+}
+.mp-map-full { display: none; }
