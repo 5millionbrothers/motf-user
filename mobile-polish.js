@@ -102,7 +102,7 @@
         select.dispatchEvent(new Event('change', { bubbles: true }));
       }
     });
-    sheet.addEventListener('keydown', event => { if (event.key === 'Escape') hide(); });
+    sheet.addEventListener('keydown', event => { if (event.key === 'Escape') hide(true); });
   }
 
   function host(select) {
@@ -162,12 +162,14 @@
     (selected || list.querySelector('.mp-ss-option:not(:disabled)'))?.focus({ preventScroll: true });
   }
 
-  function hide() {
+  function hide(refocus = false) {
     if (!sheet || sheet.hidden) return;
     sheet.hidden = true;
     const select = current;
     current = null;
-    select?.focus({ preventScroll: true });
+    // 아이폰은 고른 뒤 선택칸에 다시 초점을 주면 휴대폰 기본 선택 창이 한 번 더 떠서, 키보드로 닫을 때만 초점을 돌려줌
+    if (refocus) select?.focus({ preventScroll: true });
+    else if (document.activeElement && sheet.contains(document.activeElement)) document.activeElement.blur();
   }
 
   let touch = null;
@@ -199,9 +201,9 @@
       show(select);
     }
   }, true);
-  window.addEventListener('motf:routechange', hide);
+  window.addEventListener('motf:routechange', () => hide());
   window.addEventListener('scroll', () => { if (sheet && !sheet.hidden && Date.now() - lastOpen > 300) hide(); }, true);
-  window.addEventListener('resize', hide);
+  window.addEventListener('resize', () => hide());
 })();
 
 /* 화면이 다시 그려진 뒤 새로 생긴 날짜칸(input[type=date])에도 사이트 달력(flatpickr)을 붙입니다.
@@ -298,6 +300,7 @@
   }
   function setSheet(state, animate = true) {
     if (!sheet.el) return;
+    if (state !== 'peek') hideMapCard();
     sheet.state = state;
     sheet.y = sheetSnaps()[state];
     sheet.el.classList.toggle('mp-dragging', !animate);
@@ -432,8 +435,70 @@
       zoomBoundMap = map;
       window.naver.maps.Event.addListener(map, 'zoom_changed', apply);
     }
+    if (clickBoundMap !== map && window.naver?.maps?.Event) {
+      clickBoundMap = map;
+      window.naver.maps.Event.addListener(map, 'click', hideMapCard);
+    }
     apply();
   }
+
+  /* ---------- 숙소 목록: 지도 말풍선을 누르면 바로 넘어가지 않고 아래에 숙소 카드 ---------- */
+  let mapCard = null;
+  let clickBoundMap = null;
+  const findStay = id => (typeof stays !== 'undefined' ? stays.find(stay => stay.id === id) : null);
+  const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  const originalOpenListing = typeof openListingFromMap === 'function' ? openListingFromMap : null;
+  function hideMapCard() {
+    if (!mapCard || mapCard.hidden) return;
+    mapCard.hidden = true;
+    document.body.classList.remove('mp-mapcard-on');
+    $$('#stays .naver-map-marker.is-active').forEach(marker => marker.classList.remove('is-active'));
+  }
+  function showMapCard(id) {
+    const stay = findStay(id);
+    if (!stay) return;
+    try { mapState?.stays?.infoWindow?.close(); } catch (error) { /* 무시 */ }
+    if (!mapCard) {
+      mapCard = document.createElement('div');
+      mapCard.className = 'mp-map-card';
+      mapCard.hidden = true;
+      mapCard.addEventListener('click', event => {
+        if (event.target.closest('.mp-mc-close')) { hideMapCard(); return; }
+        const target = mapCard.dataset.stayId;
+        hideMapCard();
+        if (target && originalOpenListing) originalOpenListing('stays', target);
+      });
+      $('#stays')?.append(mapCard);
+    }
+    const listPrice = $(`#stayList [data-stay-card-id="${CSS.escape(id)}"] .catalog-stay-bottom > strong`);
+    const textOf = el => (el ? [...el.childNodes].filter(node => node.nodeType === 3).map(node => node.textContent).join('').trim() : '');
+    const markerEl = $$('#stays .naver-map-marker').find(marker => marker.closest('[title]')?.getAttribute('title') === stay.name);
+    const price = textOf(markerEl) || textOf(listPrice) || won(stay.price);
+    const note = listPrice?.querySelector('span')?.textContent?.trim() || '';
+    const rating = Number(stay.rating || 0);
+    mapCard.dataset.stayId = id;
+    mapCard.innerHTML = `<button type="button" class="mp-mc-close" aria-label="닫기">${svg.close}</button><img src="${esc(stay.image || stay.images?.[0] || '')}" alt=""><div class="mp-mc-body"><p class="mp-mc-meta">${esc([stay.region, stay.maxPeople ? `최대 ${stay.maxPeople}명` : ''].filter(Boolean).join(' · '))}</p><strong>${esc(stay.name)}</strong><p class="mp-mc-rating">★ ${rating.toFixed(1)} <span>(${Number(stay.reviews || 0)})</span></p><p class="mp-mc-price"><b>${esc(price)}</b>${note ? ` <small>${esc(note)}</small>` : ''}</p></div>`;
+    mapCard.hidden = false;
+    document.body.classList.add('mp-mapcard-on');
+    if (sheet.state !== 'peek') setSheet('peek');
+    $$('#stays .naver-map-marker').forEach(marker => marker.classList.toggle('is-active', marker.closest('[title]')?.getAttribute('title') === stay.name));
+  }
+  if (originalOpenListing) {
+    window.openListingFromMap = function (kind, itemId) {
+      if (mobile.matches && kind === 'stays' && route() === 'stays') { showMapCard(itemId); return; }
+      return originalOpenListing.apply(this, arguments);
+    };
+  }
+  // 말풍선을 누르는 즉시 카드 (사이트 기본 동작은 0.45초 뒤에 이동)
+  document.addEventListener('click', event => {
+    if (!mobile.matches || route() !== 'stays') return;
+    const marker = event.target.closest?.('#stays .naver-map-marker');
+    if (!marker) return;
+    const name = marker.closest('[title]')?.getAttribute('title');
+    const stay = typeof stays !== 'undefined' ? stays.find(item => item.name === name) : null;
+    if (stay) showMapCard(stay.id);
+  }, true);
+  window.addEventListener('motf:routechange', hideMapCard);
 
   function refreshStays() {
     if (!mobile.matches) { document.body.classList.remove('mp-sheet-on'); return; }
@@ -785,18 +850,21 @@
   /* 숙소 목록의 검색 팝업: 체크인·체크아웃·인원 칸 대신 한 줄 버튼 → 위 날짜·인원 시트 */
   function filterDialogRow() {
     if (!mobile.matches) return;
-    const form = $('#stayFilters');
-    if (!form) return;
+    const v = M()?.values();
+    if (!v) return;
+    // 숙소 목록의 검색 팝업(#stayFilters)과 홈의 '숙소부터 찾아보기' 팝업 둘 다
+    $$('#stayFilters, form[data-home-stay-search]').forEach(form => filterRow(form, v));
+  }
+  function filterRow(form, v) {
     let row = $('.mp-filter-when', form);
     if (!row) {
       row = document.createElement('button');
       row.type = 'button';
       row.className = 'mp-filter-when';
       row.dataset.mpDateOpen = '';
-      form.prepend(row);
+      const region = form.matches('[data-home-stay-search]') ? $('[data-stay-search-field="region"]', form)?.closest('.starter-field') : null;
+      if (region) region.after(row); else form.prepend(row);
     }
-    const v = M()?.values();
-    if (!v) return;
     const n = M().nights(v.checkIn, v.checkOut);
     const html = `${M().svg.calendar}<span><small>${n ? `${n}박 · ` : ''}${v.people}명</small><strong>${M().short(v.checkIn)} ~ ${M().short(v.checkOut)}</strong></span>${M().svg.chevronDown}`;
     if (row.dataset.html !== html) { row.dataset.html = html; row.innerHTML = html; }
@@ -812,7 +880,8 @@
   document.addEventListener('input', event => { if (event.target.matches?.('#stayFilters input[type="range"]')) paintRangeInputs(); });
   document.addEventListener('click', event => {
     if (!mobile.matches) return;
-    if (event.target.closest('[data-local-filter-open]')) setTimeout(() => { filterDialogRow(); paintRangeInputs(); }, 0);
+    // 팝업을 열 때 팝업 안 칸들을 현재 검색 조건(날짜·인원)과 맞춘 뒤 한 줄 버튼을 그림
+    if (event.target.closest('[data-local-filter-open], [data-action="search"]')) setTimeout(() => { try { if (typeof syncStaySearchPanel === 'function') syncStaySearchPanel(); } catch (error) { /* 무시 */ } filterDialogRow(); paintRangeInputs(); }, 0);
   }, true);
 
   document.addEventListener('click', event => {

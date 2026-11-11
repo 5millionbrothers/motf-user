@@ -1411,3 +1411,34 @@
   .mp-mf-pin::after { content: ""; position: absolute; left: 50%; bottom: -4px; width: 8px; height: 8px; background: inherit; transform: translateX(-50%) rotate(45deg); }
 }
 .mp-map-full { display: none; }
+@media (max-width: 699px) {
+  /* 지도 말풍선을 눌렀을 때: 지도 아래쪽 숙소 카드 (누르면 상세로) */
+  #stays .mp-map-card { position: fixed; z-index: 46; left: 12px; right: 12px; bottom: calc(var(--mp-bottom, 81px) + 104px); display: grid; grid-template-columns: 104px minmax(0, 1fr); min-height: 104px; border-radius: 16px; background: #fff; box-shadow: 0 8px 28px rgba(20, 26, 17, .24); overflow: hidden; cursor: pointer; animation: mpSheetUp .18s ease-out; }
+  #stays .mp-map-card[hidden] { display: none; }
+  #stays .mp-map-card img { width: 104px; height: 100%; min-height: 104px; object-fit: cover; }
+  #stays .mp-map-card .mp-mc-body { display: grid; align-content: center; gap: 2px; padding: 10px 40px 10px 12px; min-width: 0; }
+  #stays .mp-map-card .mp-mc-meta { margin: 0; font-size: 12px; color: var(--mp-sub); }
+  #stays .mp-map-card strong { font-size: 15.5px; font-weight: 700; color: var(--mp-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #stays .mp-map-card .mp-mc-rating { margin: 0; font-size: 12.5px; font-weight: 600; color: var(--mp-ink); }
+  #stays .mp-map-card .mp-mc-rating span { font-weight: 400; color: var(--mp-sub); }
+  #stays .mp-map-card .mp-mc-price { margin: 2px 0 0; font-size: 12px; color: var(--mp-sub); }
+  #stays .mp-map-card .mp-mc-price b { font-size: 16px; font-weight: 800; color: var(--mp-ink); }
+  #stays .mp-map-card .mp-mc-close { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: #f1f3ee; color: var(--mp-ink); }
+  #stays .mp-map-card .mp-mc-close svg { width: 15px; height: 15px; }
+  body.mp-mapcard-on #stays .mp-map-toggle { display: none !important; }
+  #stays .map-panel .naver-map-marker.is-active { background: var(--mp-ink, #232820) !important; transform: translate(-50%, calc(-100% - 6px)) scale(1.08); }
+  #stays .map-panel .naver-map-info { display: none !important; }
+
+  /* 홈 '숙소부터 찾아보기' 팝업: 날짜·인원은 한 줄 버튼으로 */
+  form[data-home-stay-search] .starter-field:has([data-stay-search-field="checkIn"]),
+  form[data-home-stay-search] .starter-field:has([data-stay-search-field="checkOut"]),
+  form[data-home-stay-search] .starter-field:has([data-stay-search-field="people"]) { display: none !important; }
+  form[data-home-stay-search] .mp-filter-when { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; width: 100%; min-height: 60px; padding: 10px 14px; border: 1px solid var(--mp-line-strong, #c2cbb5); border-radius: 12px; background: #fff; color: var(--mp-ink); font: inherit; text-align: left; }
+  form[data-home-stay-search] .mp-filter-when svg { flex: none; width: 20px; height: 20px; color: var(--mp-olive); }
+  form[data-home-stay-search] .mp-filter-when > svg:last-child { width: 18px; height: 18px; color: var(--mp-sub); transform: rotate(-90deg); }
+  form[data-home-stay-search] .mp-filter-when > span { display: grid; gap: 2px; flex: 1 1 auto; min-width: 0; }
+  form[data-home-stay-search] .mp-filter-when small { font-size: 12px; color: var(--mp-sub); }
+  form[data-home-stay-search] .mp-filter-when strong { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  form[data-home-stay-search] .starter-field:has([data-stay-search-field="region"]) { grid-column: 1 / -1; }
+}
+.mp-map-card { display: none; }
