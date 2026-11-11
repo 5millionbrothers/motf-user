@@ -1275,3 +1275,59 @@
   #productDetailContent .quantity-control button:disabled::before { opacity: .3; }
   .mp-cart-modal .mp-cm-stepper button svg { width: 16px; height: 16px; stroke-width: 2.2; }
 }
+@media (max-width: 699px) {
+  /* 숙소 지도 말풍선: 여백을 줄인 작은 말풍선 (꼬리 끝이 숙소 위치에 오도록 고정) */
+  #stays .map-panel .naver-map-marker { position: absolute !important; left: 61px; top: 58px; transform: translate(-50%, calc(-100% - 6px)); display: grid !important; justify-items: center; gap: 0 !important; min-width: 0 !important; padding: 3px 7px 4px !important; border-radius: 7px !important; box-shadow: 0 2px 6px rgba(20, 26, 17, .28) !important; font-size: 12px !important; font-weight: 700 !important; line-height: 1.2 !important; white-space: nowrap; }
+  #stays .map-panel .naver-map-marker span { max-width: 84px !important; font-size: 10.5px !important; font-weight: 500 !important; line-height: 1.2; }
+  #stays .map-panel .naver-map-marker::after { bottom: -4px !important; width: 8px !important; height: 8px !important; border-radius: 1px !important; }
+  /* 많이 축소하면 숙소명 없이 가격만 (겹쳐도 조금씩 보이게) */
+  #stays .map-panel.mp-map-compact .naver-map-marker { padding: 2px 6px !important; font-size: 0 !important; opacity: .96; }
+  #stays .map-panel.mp-map-compact .naver-map-marker span { display: none !important; }
+  #stays .map-panel.mp-map-compact .naver-map-marker::before { content: attr(data-short); font-size: 11.5px; font-weight: 700; line-height: 1.25; }
+
+  /* 목록을 끝까지 올렸을 때: 사진 왼쪽 + 정보 오른쪽의 촘촘한 목록 */
+  body.mp-sheet-on #stays .split-layout > section.mp-compact #stayList { gap: 0 !important; }
+  body.mp-sheet-on #stays .split-layout > section.mp-compact #stayList .catalog-stay { display: grid !important; grid-template-columns: 104px minmax(0, 1fr); grid-template-rows: auto 1fr; column-gap: 12px; padding: 14px 0 !important; border-bottom: 1px solid #eef1ea !important; }
+  body.mp-sheet-on #stays .split-layout > section.mp-compact #stayList .catalog-stay:last-child { border-bottom: 0 !important; }
+  body.mp-sheet-on #stays .split-layout > section.mp-compact #stayList .catalog-stay-photo { grid-column: 1; grid-row: 1 / span 2; width: 104px !important; height: 104px !important; aspect-ratio: auto; border-radius: 12px !important; }
+  body.mp-sheet-on #stays .split-layout > section.mp-compact #stayList .retained-stay-copy { grid-column: 2; grid-row: 1; row-gap: 2px; padding: 0 !important; }
+  body.mp-sheet-on #stays .split-layout > section.mp-compact #stayList .catalog-stay-name { font-size: 15.5px !important; }
+  body.mp-sheet-on #stays .split-layout > section.mp-compact #stayList .stay-review-chip { font-size: 12px !important; }
+  body.mp-sheet-on #stays .split-layout > section.mp-compact #stayList .stay-card-intro { font-size: 12.5px !important; }
+  body.mp-sheet-on #stays .split-layout > section.mp-compact #stayList .retained-stay-copy > .catalog-tags:nth-child(4) { display: none !important; }
+  body.mp-sheet-on #stays .split-layout > section.mp-compact #stayList .catalog-stay-bottom { grid-column: 2; grid-row: 2; align-self: end; margin: 6px 0 0 !important; }
+  body.mp-sheet-on #stays .split-layout > section.mp-compact #stayList .catalog-stay-bottom > strong { font-size: 15.5px !important; }
+  body.mp-sheet-on #stays .split-layout > section.mp-compact #stayList .catalog-stay-bottom .text-button { min-height: 32px; padding: 0 10px !important; font-size: 12.5px !important; }
+  body.mp-sheet-on #stays .split-layout > section.mp-compact #stayList .catalog-stay .candidate-button { top: 20px; right: auto; left: 70px; width: 28px; min-height: 28px !important; height: 28px; padding: 0 !important; justify-content: center; font-size: 0 !important; }
+  body.mp-sheet-on #stays .split-layout > section.mp-compact #stayList .catalog-stay .candidate-button svg { width: 15px; height: 15px; margin: 0; }
+
+  /* 숙소 상세: 위치 (단체 이용 시설 바로 아래) */
+  #stayDetailContent > .mp-location { order: 5; margin: 26px -18px 0; padding: 26px 18px 0; border-top: 8px solid #f3f5f0; }
+  #stayDetailContent > .mp-location h2 { margin: 0 0 14px; font-size: 19px; font-weight: 700; color: var(--mp-ink); }
+  #stayDetailContent .mp-loc-map { position: relative; height: 180px; border-radius: 14px; overflow: hidden; background: #eef1ea; }
+  #stayDetailContent .mp-loc-map.mp-loc-fallback { display: grid; place-items: center; font-size: 13px; color: var(--mp-sub); }
+  #stayDetailContent .mp-loc-pin { width: 24px; height: 24px; border: 3px solid #fff; border-radius: 50%; background: var(--mp-olive, #465739); box-shadow: 0 2px 8px rgba(0, 0, 0, .3); box-sizing: border-box; }
+  #stayDetailContent .mp-loc-pin span { display: none; }
+  #stayDetailContent .mp-loc-address { margin: 12px 0 0; font-size: 14.5px; font-weight: 600; color: var(--mp-ink); }
+  #stayDetailContent .mp-loc-near { margin: 4px 0 0; font-size: 13px; color: var(--mp-sub); }
+  #stayDetailContent .mp-loc-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+  #stayDetailContent .mp-loc-actions > :only-child { grid-column: 1 / -1; }
+  #stayDetailContent .mp-loc-actions > * { display: flex; align-items: center; justify-content: center; height: 42px; padding: 0 12px; border: 1px solid var(--mp-line-strong, #c2cbb5); border-radius: 10px; background: #fff; color: var(--mp-ink); font: inherit; font-size: 14px; font-weight: 600; text-decoration: none; }
+}
+.mp-location { display: none; }
+@media (max-width: 699px) { .mp-location { display: block; } }
+@media (max-width: 699px) {
+  /* 숙소 목록: 바로 예약·내 MT·문의 버튼은 목록에서 빼고, 카드를 누르면 상세로 */
+  .design-main #stayList .catalog-stay { cursor: pointer; }
+  .design-main #stayList .catalog-stay-bottom > div,
+  .design-main #stayList .catalog-stay .candidate-button { display: none !important; }
+  /* 촘촘한 목록: 사진 높이를 카드 높이에 맞춤 */
+  body.mp-sheet-on #stays .split-layout > section.mp-compact #stayList .catalog-stay { grid-template-columns: 112px minmax(0, 1fr); grid-template-rows: auto auto; align-items: start; }
+  body.mp-sheet-on #stays .split-layout > section.mp-compact #stayList .catalog-stay-photo { align-self: stretch; width: 112px !important; height: auto !important; min-height: 112px; }
+  body.mp-sheet-on #stays .split-layout > section.mp-compact #stayList .catalog-stay-bottom { align-self: start; margin: 6px 0 0 !important; }
+  body.mp-sheet-on #stays .split-layout > section.mp-compact #stayList .catalog-stay-bottom > strong { font-size: 16px !important; }
+  /* 숙소 상세 객실 카드: 기본~최대 금액 */
+  .mp-rooms .mp-room-price { flex-wrap: wrap; }
+  .mp-rooms .mp-room-price strong { font-size: 18px; }
+  .mp-rooms .mp-room-info .mp-room-price-note { display: block !important; margin: 2px 0 0 !important; text-align: right; font-size: 12px !important; color: var(--mp-sub) !important; }
+}

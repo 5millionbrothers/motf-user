@@ -303,9 +303,12 @@
     sheet.el.classList.toggle('mp-dragging', !animate);
     sheet.el.style.setProperty('--mp-sheet-y', `${sheet.y}px`);
     if (state !== 'full') sheet.el.scrollTop = 0;
+    // 목록이 중간·아래일 때는 촘촘한 목록(사진 왼쪽), 끝까지 올리면 큰 사진 카드
+    sheet.el.classList.toggle('mp-compact', state !== 'full');
     const toggle = $('#stays .mp-map-toggle');
     if (toggle) {
-      toggle.hidden = state === 'half';
+      // 목록을 올렸을 때는 '지도 보기'를 띄우지 않고, 지도만 크게 볼 때만 '목록 보기'를 보여줌
+      toggle.hidden = state !== 'peek';
       const mode = state === 'full' ? 'map' : 'list';
       if (toggle.dataset.mode !== mode) { toggle.dataset.mode = mode; toggle.innerHTML = mode === 'map' ? `${svg.map}지도 보기` : `${svg.list}목록 보기`; }
     }
@@ -397,15 +400,50 @@
       window.addEventListener('pointercancel', onUp);
     });
     section.addEventListener('dragstart', event => event.preventDefault());
+    // 카드 어디를 눌러도 숙소 상세로 (목록에서는 바로 예약·내 MT 버튼을 빼고 상세에서 고르게)
+    section.addEventListener('click', event => {
+      const card = event.target.closest('#stayList .catalog-stay');
+      if (!card || event.target.closest('button, a, input, label')) return;
+      card.querySelector('.catalog-stay-photo, .catalog-stay-name')?.click();
+    });
     section.addEventListener('click', event => {
       if (event.target.closest('.mp-sheet-handle') && sheet.state !== 'full') setSheet(sheet.state === 'peek' ? 'half' : 'full');
     });
+  }
+
+  /* ---------- 숙소 목록: 지도 말풍선 (작게, 많이 축소하면 가격만) ---------- */
+  const COMPACT_ZOOM = 14;
+  let zoomBoundMap = null;
+  const shortPrice = text => {
+    const n = Number(String(text || '').replace(/[^0-9]/g, ''));
+    if (!n) return String(text || '').trim();
+    if (n < 10000) return `${n.toLocaleString('ko-KR')}원`;
+    const man = n / 10000;
+    return `${man >= 100 ? Math.round(man) : Math.round(man * 10) / 10}만`;
+  };
+  function markers() {
+    const panel = $('#stays .map-panel');
+    if (!panel) return;
+    $$('.naver-map-marker', panel).forEach(marker => {
+      if (marker.dataset.short) return;
+      const price = [...marker.childNodes].filter(node => node.nodeType === 3).map(node => node.textContent).join('').trim();
+      marker.dataset.short = shortPrice(price);
+    });
+    const map = typeof mapState !== 'undefined' ? mapState?.stays?.map : null;
+    if (!map || typeof map.getZoom !== 'function') return;
+    const apply = () => panel.classList.toggle('mp-map-compact', map.getZoom() <= COMPACT_ZOOM);
+    if (zoomBoundMap !== map && window.naver?.maps?.Event) {
+      zoomBoundMap = map;
+      window.naver.maps.Event.addListener(map, 'zoom_changed', apply);
+    }
+    apply();
   }
 
   function refreshStays() {
     if (!mobile.matches) { document.body.classList.remove('mp-sheet-on'); return; }
     renderSearchbar();
     layoutSheet();
+    markers();
   }
 
   window.mpMobile = Object.assign(window.mpMobile || {}, { svg, short, nights, values, won, route, markRoute, refreshStays, setSheet });
@@ -514,9 +552,51 @@
       const features = (Array.isArray(room.features) ? room.features : []).filter(item => !/화장실|욕실/.test(item)).slice(0, 3);
       const info = document.createElement('div');
       info.className = 'mp-room-info';
-      info.innerHTML = `<p>${M()?.svg.user || ''}<span>${esc(room.capacity || '인원 확인 필요')}</span></p>${features.length ? `<p><span>${features.map(esc).join(' · ')}</span></p>` : ''}<div class="mp-room-price"><small>숙박</small><strong>${esc(M()?.won(room.price) || room.price)}</strong></div>`;
+      // 금액: 기본 금액 ~ 최대 인원까지 추가 인원 요금을 더한 금액
+      const base = Number(room.price) || 0;
+      const basePeople = Number(room.basePeople) || 0;
+      const maxPeople = Number(room.maxPeople) || 0;
+      const extraFee = Number(room.extraPersonFee) || 0;
+      const top = basePeople && maxPeople > basePeople && extraFee ? base + (maxPeople - basePeople) * extraFee : base;
+      const priceText = top > base ? `${esc(M()?.won(base))} ~ ${esc(M()?.won(top))}` : esc(M()?.won(base) || base);
+      const peopleText = basePeople && maxPeople > basePeople ? `기준 ${basePeople}명 · 최대 ${maxPeople}명` : (room.capacity || '인원 확인 필요');
+      info.innerHTML = `<p>${M()?.svg.user || ''}<span>${esc(peopleText)}</span></p>${features.length ? `<p><span>${features.map(esc).join(' · ')}</span></p>` : ''}<div class="mp-room-price"><small>${top > base ? '기준~최대 인원' : '숙박'}</small><strong>${priceText}</strong></div>${top > base ? `<p class="mp-room-price-note">기준 인원 초과 시 1인당 ${esc(M()?.won(extraFee))} 추가</p>` : ''}`;
       head?.after(info);
     });
+  }
+
+  /* 위치: 단체 이용 시설 바로 아래에 지도 + 주소 */
+  function locationSection(root, stay) {
+    const loc = stay.location;
+    if ($('.mp-location', root) || !loc || !Number.isFinite(Number(loc.lat)) || !Number.isFinite(Number(loc.lng))) return;
+    const address = String(stay.distance || '').trim();
+    const section = document.createElement('section');
+    section.className = 'mp-location';
+    const near = [];
+    if (Number(stay.stationDistanceM) > 0) near.push(`가까운 역까지 ${Number(stay.stationDistanceM) >= 1000 ? `${(Number(stay.stationDistanceM) / 1000).toFixed(1)}km` : `${Number(stay.stationDistanceM)}m`}`);
+    if (Number(stay.convenienceDistanceM) > 0) near.push(`편의점까지 ${Number(stay.convenienceDistanceM)}m`);
+    const mapUrl = `https://map.naver.com/p/search/${encodeURIComponent(address || stay.name || '')}`;
+    section.innerHTML = `<h2>위치</h2><div class="mp-loc-map" role="img" aria-label="${esc(stay.name)} 위치 지도"></div><p class="mp-loc-address">${esc(address || stay.region || '')}</p>${near.length ? `<p class="mp-loc-near">${near.map(esc).join(' · ')}</p>` : ''}<div class="mp-loc-actions">${address ? '<button type="button" class="mp-loc-copy">주소 복사</button>' : ''}<a class="mp-loc-open" href="${esc(mapUrl)}" target="_blank" rel="noopener">네이버 지도에서 보기</a></div>`;
+    const anchor = $('.stay-facility-showcase', root);
+    if (anchor) anchor.after(section); else root.append(section);
+    $('.mp-loc-copy', section)?.addEventListener('click', event => {
+      const button = event.currentTarget;
+      const done = () => { button.textContent = '복사했어요'; setTimeout(() => { button.textContent = '주소 복사'; }, 1600); };
+      try { navigator.clipboard.writeText(address).then(done, done); } catch (error) { done(); }
+    });
+    const box = $('.mp-loc-map', section);
+    const draw = maps => {
+      if (!box.isConnected) return;
+      const position = new maps.LatLng(Number(loc.lat), Number(loc.lng));
+      const map = new maps.Map(box, { center: position, zoom: 15, draggable: false, pinchZoom: false, scrollWheel: false, keyboardShortcuts: false, disableDoubleTapZoom: true, disableDoubleClickZoom: true, disableTwoFingerTapZoom: true, zoomControl: false, mapDataControl: false, scaleControl: false });
+      new maps.Marker({ position, map, title: stay.name, icon: { content: `<div class="mp-loc-pin"><span>${esc(stay.name)}</span></div>`, size: new maps.Size(24, 24), anchor: new maps.Point(12, 12) } });
+    };
+    if (typeof loadNaverMaps === 'function' && (typeof hasNaverMapKey !== 'function' || hasNaverMapKey())) {
+      loadNaverMaps().then(draw).catch(() => { box.classList.add('mp-loc-fallback'); box.textContent = '지도를 불러오지 못했어요'; });
+    } else {
+      box.classList.add('mp-loc-fallback');
+      box.textContent = '지도를 불러오지 못했어요';
+    }
   }
 
   function minPrice(stay) {
@@ -667,6 +747,7 @@
         facility.after(button);
       }
     }
+    locationSection(root, stay);
     $$('.detail-sections-bottom > .info-panel', root).forEach(panel => fold(panel, '더보기', 128));
     const details = $('.stay-description-more', root);
     if (details) $('summary', details).textContent = '숙소 소개 더보기';
