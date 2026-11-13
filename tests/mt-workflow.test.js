@@ -1,6 +1,16 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const model=require('../mt-workflow-model');
 const projects=[{id:'a',status:'planning'},{id:'b',status:'planning'},{id:'old',status:'completed'},{id:'invited',status:'planning',is_owner:false}];
+test('recent destination requires an explicit, unexpired choice',()=>{
+  assert.equal(model.recentProject([projects[0]],null,100),null);
+  assert.equal(model.recentProject(projects,{projectId:'b',selectedAt:100},101).id,'b');
+  assert.equal(model.recentProject(projects,{projectId:'b',selectedAt:100},100+model.recentTtlMs),null);
+});
+test('recent destination excludes completed, read-only, deleted and future-dated choices',()=>{
+  for(const projectId of ['old','invited','deleted'])assert.equal(model.recentProject(projects,{projectId,selectedAt:100},101),null);
+  assert.equal(model.recentProject(projects,{projectId:'a',selectedAt:102},101),null);
+  assert.equal(model.recentProject(projects,'a',101),null);
+});
 test('one writable ongoing MT is selected without another choice',()=>assert.equal(model.activeProject([projects[0],projects[2],projects[3]],'')?.id,'a'));
 test('the preferred MT wins when several are ongoing',()=>assert.equal(model.activeProject(projects,'b')?.id,'b'));
 test('several MTs without a current choice still require selection',()=>assert.equal(model.activeProject(projects,''),null));

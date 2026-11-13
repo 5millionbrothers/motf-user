@@ -6,27 +6,34 @@
   dialog.setAttribute('aria-label','내 MT에 담기'); document.body.append(dialog);
   let pending = null, version = 0, awaitingCreate = false;
   const workflow = window.motfMtWorkflow;
-  let activeProject = null, snapshot = null, activeUserId = '', refreshVersion = 0, receiptTimer, scheduled = false;
-  const preferenceKey = () => window.motfCurrentUserId ? `motf.currentMt.${window.motfCurrentUserId}` : '';
-  const preferredId = () => { try { return localStorage.getItem(preferenceKey()) || ''; } catch { return ''; } };
+  let activeProject = null, snapshot = null, activeUserId = '', refreshVersion = 0, receiptTimer, expiryTimer, scheduled = false, lastReceipt = null, memoryPreference = null;
+  const preferenceKey = () => window.motfCurrentUserId ? `motf.recentSaveMt.v1.${window.motfCurrentUserId}` : '';
+  const preference = () => { try { return JSON.parse(localStorage.getItem(preferenceKey())) || memoryPreference; } catch { return memoryPreference; } };
+  function remember(project) {
+    memoryPreference = {projectId:project.id,selectedAt:Date.now()};
+    try { localStorage.setItem(preferenceKey(),JSON.stringify(memoryPreference)); } catch { /* Use the in-memory choice when storage is unavailable. */ }
+  }
   function selectCurrent(project, nextSnapshot) {
     activeProject = project;
     snapshot = nextSnapshot || null;
-    try { if (preferenceKey()) localStorage.setItem(preferenceKey(), project?.id || ''); } catch { /* Storage may be disabled. */ }
     syncButtons();
   }
   async function refreshCurrent() {
     const stamp = ++refreshVersion;
     if (activeUserId !== (window.motfCurrentUserId || '')) {
       activeUserId=window.motfCurrentUserId || ''; activeProject=null; snapshot=null;
-      pending=null; version++; dialog.close(); document.querySelector('.mt-save-receipt')?.remove(); syncButtons();
+      pending=null; lastReceipt=null; memoryPreference=null; version++; dialog.close(); document.querySelector('.mt-save-receipt')?.remove(); syncButtons();
     }
     if (!window.motfCurrentUserId) { selectCurrent(null); return; }
     try {
       const list = await window.motfListWritableMtProjects();
-      const project = workflow.activeProject(list, preferredId());
+      const recent = preference(), project = workflow.recentProject(list, recent,Date.now());
       const next = project ? await window.motfReadMtSelection(project.id) : null;
-      if (stamp === refreshVersion) selectCurrent(project, next);
+      if (stamp === refreshVersion) {
+        clearTimeout(expiryTimer);
+        if (project) expiryTimer=setTimeout(refreshCurrent,Math.max(1,recent.selectedAt+workflow.recentTtlMs-Date.now()));
+        selectCurrent(project, next);
+      }
     } catch {
       if (stamp === refreshVersion) { activeProject=null; snapshot=null; syncButtons(); }
     }
@@ -48,31 +55,35 @@
       button.innerHTML = `${icon(count ? 'bookmark-check' : 'bookmark-plus')}<span class="mt-save-text">${count ? `MT 담김 ${count}${shopping ? '개' : '실'}` : 'MT 담기'}</span>`;
       changed = true;
     });
-    document.querySelectorAll('#stays>.view-title,#market>.view-title,#mtProjectDirectory>.mt-directory-head,#mtProjectWorkspace>.mt-project-hero').forEach(host => {
-      let context = host.querySelector('.mt-current-context');
-      if (!context) { context = document.createElement('button'); context.type = 'button'; context.className = 'text-button mt-current-context'; context.dataset.selectCurrentMt = ''; host.append(context); }
-      const text = activeProject ? `현재 MT: ${activeProject.title}` : '담을 MT 선택';
-      if (context.textContent !== text) { context.textContent = text; context.title = '현재 MT 변경'; }
-    });
+    document.querySelectorAll('.mt-current-context').forEach(button => button.remove());
     if (changed) refreshIcons();
   }
-  function showReceipt(project, text) {
-    document.querySelector('.mt-save-receipt')?.remove(); clearTimeout(receiptTimer);
-    const notice = document.createElement('div'); notice.className = 'mt-save-receipt'; notice.setAttribute('role','status');
-    notice.innerHTML = `<span>${esc(text)}<small>${esc(project.title)}</small></span><button class="secondary-btn" type="button" data-mt-jump="${project.id}">내 MT 보기 ${icon('arrow-up-right')}</button><button class="icon-button" type="button" data-mt-receipt-close aria-label="알림 닫기">${icon('x')}</button>`;
-    document.body.append(notice); refreshIcons(); receiptTimer = setTimeout(() => notice.remove(), 10000);
+  const shoppingReference = item => item?.id ? {kind:'shopping',recordIds:[item.id],moveQuantity:item.quantity,expectedQuantity:item.quantity,updatedAt:item.updated_at || null} : null;
+  const roomReference = ids => ids?.length ? {kind:'stay',recordIds:ids} : null;
+  async function commit(request, write) {
+    request.committing=true; dialog.setAttribute('aria-busy','true');
+    try { return await write(); }
+    finally { request.committing=false; if(pending===request)dialog.removeAttribute('aria-busy'); }
   }
-  async function saved(project, text) {
-    if (!pending || pending.userId !== window.motfCurrentUserId) return;
+  function showReceipt(project, text, reference) {
+    document.querySelector('.mt-save-receipt')?.remove(); clearTimeout(receiptTimer);
+    lastReceipt={project,reference,userId:window.motfCurrentUserId};
+    const notice = document.createElement('div'); notice.className = 'mt-save-receipt'; notice.setAttribute('role','status');
+    notice.innerHTML = `<span><button type="button" class="mt-receipt-target" data-mt-jump="${project.id}" title="내 MT 보기">${esc(project.title)}</button>${text ? `<small>${esc(text)}</small>` : '에 담았습니다.'}</span>${reference ? '<button class="mt-receipt-change" type="button" data-mt-receipt-change>변경</button>' : ''}<button class="icon-button" type="button" data-mt-receipt-close aria-label="알림 닫기">${icon('x')}</button>`;
+    document.body.append(notice); refreshIcons(); receiptTimer = setTimeout(() => { if(!notice.contains(document.activeElement))notice.remove(); }, 12000);
+  }
+  async function saved(project, text = '', reference = null, request = pending) {
+    if (!pending || pending !== request || pending.userId !== window.motfCurrentUserId) return;
     const userId = pending.userId;
+    if (pending.rememberChoice) remember(project);
     dialog.close(); pending = null; await refreshCurrent();
-    if (userId === window.motfCurrentUserId) showReceipt(project, text);
+    if (userId === window.motfCurrentUserId) showReceipt(project, text, reference);
   }
   const label = project => project.organization_id
     ? window.motfGetOrganizations?.().find(org => org.id === project.organization_id)?.name || '단체 MT'
     : '개인 MT';
   function shell(body) {
-    dialog.innerHTML = `<div class="modal-top"><h2>내 MT에 담기</h2><button class="icon-button" type="button" data-selection-close aria-label="닫기">${icon('x')}</button></div>${body}<p class="selection-error" role="alert"></p>`;
+    dialog.innerHTML = `<div class="modal-top"><h2>${pending?.kind === 'relocate' ? '저장할 MT 변경' : '내 MT에 담기'}</h2><button class="icon-button" type="button" data-selection-close aria-label="닫기">${icon('x')}</button></div>${body}<p class="selection-error" role="alert"></p>`;
     if (!dialog.open) dialog.showModal(); refreshIcons();
   }
   async function projects() {
@@ -81,7 +92,7 @@
     return window.motfListWritableMtProjects();
   }
   function renderProjects() {
-    shell(`<p class="selection-lead">${pending.kind === 'select' ? '앞으로 담을 현재 MT를 선택해주세요.' : pending.kind === 'stay' ? '숙소 객실을 담을 MT를 선택해주세요.' : esc(pending.product.name) + ' 상품을 담을 MT를 선택해주세요.'}</p><div class="selection-projects">${pending.projects.map(project => `<button type="button" data-selection-project="${project.id}"><span class="selection-project-symbol">${icon(project.organization_id ? 'users-round' : 'folder-heart')}</span><span><small>${esc(label(project))}</small><strong>${esc(project.title)}</strong><small>${esc(project.starts_on)} ~ ${esc(project.ends_on)} · ${project.guest_count}명</small></span>${icon('chevron-right')}</button>`).join('') || '<p class="selection-lead">준비 중인 MT가 없어요. 먼저 새 MT를 만들어주세요.</p>'}</div><button class="secondary selection-new" type="button" data-selection-new>${icon('plus')} 새 MT 만들기</button>`);
+    shell(`<p class="selection-lead">${pending.kind === 'relocate' ? '방금 담은 항목을 옮길 MT를 선택해주세요.' : pending.kind === 'stay' ? '숙소 객실을 담을 MT를 선택해주세요.' : esc(pending.product.name) + ' 상품을 담을 MT를 선택해주세요.'}</p><div class="selection-projects">${pending.projects.map(project => `<button type="button" data-selection-project="${project.id}"><span class="selection-project-symbol">${icon(project.organization_id ? 'users-round' : 'folder-heart')}</span><span><small>${esc(label(project))}</small><strong>${esc(project.title)}</strong><small>${esc(project.starts_on)} ~ ${esc(project.ends_on)} · ${project.guest_count}명</small></span>${icon('chevron-right')}</button>`).join('') || '<p class="selection-lead">준비 중인 MT가 없어요. 먼저 새 MT를 만들어주세요.</p>'}</div><button class="secondary selection-new" type="button" data-selection-new>${icon('plus')} 새 MT 만들기</button>`);
   }
   async function open(value) {
     window.motfRequireLogin(async () => {
@@ -92,8 +103,8 @@
         const list = await projects();
         if (stamp !== version || !pending) return;
         pending.projects = list;
-        const current = workflow.activeProject(list, preferredId());
-        if (current && pending.kind !== 'select') await chooseProject(current.id);
+        const current = workflow.recentProject(list, preference(),Date.now());
+        if (current && pending.kind !== 'relocate') await chooseProject(current.id,false);
         else renderProjects();
       } catch (error) { if (pending === request) $('.selection-error',dialog).textContent = error.message; }
     });
@@ -108,21 +119,30 @@
     $('[data-selection-count]',dialog).textContent = `${selected.length}개 객실 · ${money(selected.reduce((sum,room) => sum + mtRoomRangeTotal(stay,room,pending.project),0))}`;
     $('[data-selection-save]',dialog).disabled = !selected.some(room => !workflow.roomCount(snapshot, pending.businessId, room.id));
   }
-  async function chooseProject(id) {
-    pending.project = pending.projects.find(project => String(project.id) === String(id));
+  async function chooseProject(id, explicit = true) {
+    pending = {...pending,project:pending.projects.find(project => String(project.id) === String(id))};
     if (!pending.project) throw new Error('선택한 MT를 찾을 수 없습니다.');
     const chosen = pending.project;
     const request = pending;
     const next = await window.motfReadMtSelection(id);
     if (pending !== request) return;
+    pending.rememberChoice = explicit;
     selectCurrent(chosen, next);
-    if (pending.kind === 'select') { dialog.close(); pending = null; toast(`현재 MT를 ${chosen.title}(으)로 선택했어요.`); return; }
+    if (pending.kind === 'relocate') {
+      const receipt = pending.receipt;
+      if (receipt.userId !== window.motfCurrentUserId) throw new Error('로그인 정보가 변경되었습니다. 다시 담아주세요.');
+      if (chosen.id === receipt.project.id) { await saved(chosen,'',receipt.reference); return; }
+      const result = await commit(request,()=>window.motfMoveRecentMtSave(receipt.project.id,chosen.id,receipt.reference));
+      if (pending !== request) return;
+      await saved(chosen,'저장할 MT를 변경했어요.',result.save_reference); return;
+    }
     if (pending.kind === 'shopping') {
       const existing = workflow.shoppingItem(snapshot, pending.product.id);
       if (existing) pending.quantity = existing.quantity;
       if (!existing && productVariants(pending.product).length === 1) {
-        await window.motfSetMtShoppingQuantity(id, pending.product.id, pending.quantity);
-        await saved(chosen,'장보기 후보에 담았어요.'); return;
+        const item = await commit(request,()=>window.motfSetMtShoppingQuantity(id, pending.product.id, normalizeProductQuantity(pending.product,pending.quantity)));
+        if (pending !== request) return;
+        await saved(chosen,'',shoppingReference(item)); return;
       }
       renderProduct(); return;
     }
@@ -135,7 +155,16 @@
     if (!stay) throw new Error('숙소 정보를 찾을 수 없습니다.');
     const unavailable = new Set(availability.unavailableOfferingIds.map(String));
     pending.rooms = new Set(stay.rooms.filter(room => workflow.roomCount(snapshot, pending.businessId, room.id) || String(room.id) === pending.preferredRoom && !unavailable.has(String(room.id))).map(room => String(room.id)));
-    if (pending.preferredRoom && workflow.roomCount(snapshot, pending.businessId, pending.preferredRoom)) { await saved(chosen,'이미 담긴 객실이에요. 내 MT에서 확인해주세요.'); return; }
+    if (pending.preferredRoom && workflow.roomCount(snapshot, pending.businessId, pending.preferredRoom)) {
+      const existing = snapshot.candidates.find(item=>String(item.offering_id)===pending.preferredRoom);
+      await saved(chosen,'이미 담긴 객실이에요.',roomReference(existing?.id ? [existing.id] : [])); return;
+    }
+    if (pending.preferredRoom) {
+      if (unavailable.has(pending.preferredRoom)) throw new Error('이 MT 일정에는 해당 객실을 담을 수 없습니다. 다른 MT를 선택해주세요.');
+      const result = await commit(request,()=>window.motfSaveRoomsToProject(id,pending.businessId,[pending.preferredRoom]));
+      if (pending !== request) return;
+      await saved(chosen,'',roomReference(result?.candidate_ids)); return;
+    }
     shell(`<button class="text-button" type="button" data-selection-back>${icon('arrow-left')} MT 다시 선택</button><div class="selection-context"><strong>${esc(stay.name)}</strong><span>${esc(pending.project.title)} · ${esc(pending.project.starts_on)} ~ ${esc(pending.project.ends_on)}</span></div><p class="selection-lead">필요한 객실을 여러 개 선택하세요. 예약은 아직 접수되지 않아요.</p><div class="selection-room-list">${stay.rooms.map(room => {
       const soldOut = unavailable.has(String(room.id)), already = workflow.roomCount(snapshot, pending.businessId, room.id);
       return `<label class="selection-room ${soldOut ? 'unavailable' : ''}"><input type="checkbox" data-selection-room="${room.id}" ${soldOut || already ? 'disabled' : ''} ${pending.rooms.has(String(room.id)) ? 'checked' : ''}><img src="${esc(room.image || stay.image)}" alt=""><span><strong>${esc(room.name)}${already ? ' · 담긴 객실' : ''}</strong><small>기준 ${room.basePeople || '-'}명 / 최대 ${room.maxPeople || roomCapacityMax(room) || '-'}명</small><small>${soldOut ? '선택 일정 예약 마감' : money(mtRoomRangeTotal(stay,room,pending.project))}</small></span></label>`;
@@ -153,6 +182,7 @@
     }
   }
   dialog.addEventListener('change',event => {
+    if (!pending || pending.committing) return;
     const input = event.target;
     if (input.hasAttribute('data-selection-room')) {
       if (input.checked) pending.rooms.add(input.dataset.selectionRoom); else pending.rooms.delete(input.dataset.selectionRoom);
@@ -170,18 +200,19 @@
   });
   dialog.addEventListener('click',async event => {
     const button = event.target.closest('button'); if (!button) return;
+    if (!pending || pending.committing) return;
     if (button.hasAttribute('data-selection-close')) { pending = null; version++; dialog.close(); return; }
-    if (button.hasAttribute('data-selection-back')) { version++; renderProjects(); return; }
+    if (button.hasAttribute('data-selection-back')) { version++; pending={...pending,project:null,rooms:new Set()}; renderProjects(); return; }
     if (button.hasAttribute('data-selection-new')) {
       awaitingCreate = true; dialog.close(); navigate('myMt');
       document.querySelector('#mtProjectDirectory [data-create-mt-project]').click(); return;
     }
-    const errorNode = $('.selection-error',dialog); errorNode.textContent = ''; button.disabled = true;
+    const request=pending, errorNode = $('.selection-error',dialog); errorNode.textContent = ''; button.disabled = true;
     try {
       if (button.hasAttribute('data-selection-delete')) {
         const chosen = pending.project;
-        await window.motfSetMtShoppingQuantity(chosen.id,pending.product.id,0);
-        await saved(chosen,'장보기 후보에서 삭제했어요.'); return;
+        await commit(request,()=>window.motfSetMtShoppingQuantity(chosen.id,pending.product.id,0));
+        await saved(chosen,'장보기 후보에서 삭제했어요.',null,request); return;
       }
       if (button.hasAttribute('data-selection-project')) await chooseProject(button.dataset.selectionProject);
       if (button.hasAttribute('data-selection-save')) {
@@ -189,18 +220,19 @@
         if (pending.kind === 'stay') {
           const newRooms = [...pending.rooms].filter(id => !workflow.roomCount(snapshot, pending.businessId, id));
           if (!newRooms.length) { await saved(chosen,'이미 담긴 객실이에요.'); return; }
-          await window.motfSaveRoomsToProject(chosen.id,pending.businessId,newRooms);
+          const result = await commit(request,()=>window.motfSaveRoomsToProject(chosen.id,pending.businessId,newRooms));
+          await saved(chosen,'',roomReference(result?.candidate_ids),request); return;
         }
         else {
           pending.quantity = normalizeProductQuantity(pending.product,$('[data-selection-quantity]',dialog).value);
-          await window.motfSetMtShoppingQuantity(chosen.id,pending.product.id,pending.quantity);
+          const item = await commit(request,()=>window.motfSetMtShoppingQuantity(chosen.id,pending.product.id,pending.quantity));
+          await saved(chosen,'',shoppingReference(item),request); return;
         }
-        await saved(chosen, '내 MT 후보를 저장했어요.');
       }
-    } catch (error) { $('.selection-error',dialog).textContent = error.message || '내 MT에 담지 못했습니다.'; }
+    } catch (error) { if(pending?.userId===window.motfCurrentUserId) $('.selection-error',dialog).textContent = error.message || '내 MT에 담지 못했습니다.'; }
     finally { button.disabled = false; }
   });
-  dialog.addEventListener('cancel',() => { pending = null; version++; awaitingCreate = false; });
+  dialog.addEventListener('cancel',event => { if(pending?.committing){event.preventDefault();return;} pending = null; version++; awaitingCreate = false; });
   window.motfResumeMtSelection = async project => {
     if (!awaitingCreate || !pending) return;
     awaitingCreate = false; pending.projects = [project]; await chooseProject(project.id);
@@ -209,7 +241,11 @@
     const jump = event.target.closest('[data-mt-jump]');
     if (jump) { try { await window.motfOpenMtProjectWorkspace(jump.dataset.mtJump); jump.closest('.mt-save-receipt')?.remove(); } catch (error) { toast(error.message); } return; }
     if (event.target.closest('[data-mt-receipt-close]')) event.target.closest('.mt-save-receipt').remove();
-    if (event.target.closest('[data-select-current-mt]')) open({kind:'select'});
+    if (event.target.closest('[data-mt-receipt-change]') && lastReceipt?.reference) {
+      const receipt = lastReceipt;
+      clearTimeout(receiptTimer); document.querySelector('.mt-save-receipt')?.remove();
+      open({kind:'relocate',receipt}); return;
+    }
     const stepper = event.target.closest('[data-mt-quantity-delta]');
     if (!stepper) return;
     const item = state.mtProject.items.find(item => item.id === stepper.dataset.mtItem);
@@ -226,8 +262,7 @@
   });
   window.addEventListener('motf:mt-selected', event => {
     const project = event.detail.project;
-    if (project.is_owner === false || ['completed','cancelled'].includes(project.status)) { refreshCurrent(); return; }
-    selectCurrent(project, {projectId:project.id,items:project.items || [],candidates:(event.detail.candidates || []).map(item => ({business_id:item.businessId,offering_id:item.offeringId}))});
+    if (project.id === activeProject?.id || ['completed','cancelled'].includes(project.status)) refreshCurrent();
   });
   ['motf:mt-projects-loaded','motf:auth-ready','motf:mt-items-changed'].forEach(name => window.addEventListener(name,refreshCurrent));
   new MutationObserver(() => { if (!scheduled) { scheduled = true; requestAnimationFrame(() => { scheduled = false; syncButtons(); }); } }).observe(document.body,{childList:true,subtree:true});

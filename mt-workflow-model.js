@@ -1,5 +1,10 @@
 (function (root) {
   const model = {
+    recentTtlMs: 3 * 60 * 60 * 1000,
+    recentProject(projects, preference, now = Date.now()) {
+      if (!preference || !Number.isFinite(preference.selectedAt) || preference.selectedAt > now || now - preference.selectedAt >= model.recentTtlMs) return null;
+      return projects.find(project => String(project.id) === String(preference.projectId) && project.is_owner !== false && !['completed','cancelled'].includes(project.status)) || null;
+    },
     activeProject(projects, preferredId) {
       const active = projects.filter(project => project.is_owner !== false && !['completed', 'cancelled'].includes(project.status));
       return active.find(project => String(project.id) === String(preferredId)) || (active.length === 1 ? active[0] : null);

@@ -249,7 +249,7 @@
   window.motfReadMtSelection = async function readMtSelection(projectId) {
     requireUser();
     const [candidateResult, itemResult] = await Promise.all([
-      client.from('mt_project_candidates').select('business_id,offering_id').eq('project_id', projectId),
+      client.from('mt_project_candidates').select('id,business_id,offering_id').eq('project_id', projectId),
       client.from('mt_project_items').select(itemFields).eq('project_id', projectId).neq('status', 'cancelled'),
     ]);
     if (candidateResult.error || itemResult.error) throw candidateResult.error || itemResult.error;
@@ -263,6 +263,18 @@
     if (error) throw error;
     if (currentProject?.id === projectId) await window.motfSelectMtProject(projectId);
     window.dispatchEvent(new CustomEvent('motf:mt-items-changed', { detail: { projectId } }));
+    return data;
+  };
+  window.motfMoveRecentMtSave = async function moveRecentMtSave(sourceProjectId, targetProjectId, reference) {
+    requireUser();
+    const { data, error } = await client.rpc('move_mt_recent_save', {
+      source_project_id:sourceProjectId, target_project_id:targetProjectId, save_kind:reference.kind,
+      source_record_ids:reference.recordIds, move_quantity:reference.moveQuantity ?? null,
+      expected_quantity:reference.expectedQuantity ?? null, expected_updated_at:reference.updatedAt ?? null,
+    });
+    if (error) throw error;
+    if ([sourceProjectId,targetProjectId].includes(currentProject?.id)) await window.motfSelectMtProject(currentProject.id);
+    window.dispatchEvent(new CustomEvent('motf:mt-items-changed', {detail:{projectId:targetProjectId}}));
     return data;
   };
 

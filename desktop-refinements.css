@@ -22,11 +22,12 @@
 .design-main .product-card .home-price { margin-top:auto; padding-top:10px; }
 .design-main .product-price-action { display:flex; align-items:center; justify-content:space-between; width:100%; text-align:left; }
 .design-main .product-price-action svg { width:16px; height:16px; }
-.mt-current-context { align-self:center; max-width:100%; overflow:hidden; text-overflow:ellipsis; }
 .mt-save-receipt { position:fixed; z-index:15000; left:50%; bottom:90px; transform:translateX(-50%); width:max-content; max-width:calc(100% - 24px); display:flex; align-items:center; gap:14px; padding:14px 16px; border:1px solid #dbe3d3; border-radius:6px; background:white; box-shadow:0 4px 16px #26331c16; color:#273023; }
 .mt-save-receipt span { min-width:0; overflow-wrap:anywhere; }
 .mt-save-receipt small { display:block; margin-top:4px; color:#6b7563; }
 .mt-save-receipt button { flex:none; }
+.mt-save-receipt .mt-receipt-target { display:inline-block; max-inline-size:min(260px,50vw); overflow:hidden; text-overflow:ellipsis; vertical-align:bottom; white-space:nowrap; padding:0; background:none; color:inherit; font:inherit; font-weight:600; }
+.mt-save-receipt .mt-receipt-change { padding:8px; min-height:36px; background:none; color:#465a36; font:inherit; font-weight:700; text-decoration:underline; text-underline-offset:3px; }
 .design-main .mt-shopping-row { display:flex; flex-wrap:wrap; align-items:center; gap:12px; }
 .design-main .mt-shopping-copy { flex:1; min-width:120px; }
 .design-main .mt-quantity-control { display:inline-flex; align-items:center; gap:6px; border:1px solid #d9e1d2; border-radius:5px; flex:none; }
@@ -38,6 +39,7 @@
 .review-write-nudge span { margin-top:4px; font-size:13px; color:#6c7863; }
 /* Existing mobile geometry is deliberately unchanged. */
 @media (min-width:1024px) {
+  .design-main .mt-directory-head>[data-create-mt-project], .design-main #market>.view-title>[data-route="cart"] { margin-left:auto; flex:none; }
   .design-main .home-search-intro>p { margin:0 0 18px; font-size:14px; color:#74806b; font-weight:400; }
   .design-main #mtCandidateComparison .mt-compare-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,300px)); width:100%; gap:18px; align-items:stretch; justify-content:start; }
   .design-main #mtCandidateComparison .mt-candidate-card { width:100%; max-width:300px; min-width:0; display:flex; flex-direction:column; }
