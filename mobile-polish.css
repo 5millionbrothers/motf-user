@@ -1442,3 +1442,86 @@
   form[data-home-stay-search] .starter-field:has([data-stay-search-field="region"]) { grid-column: 1 / -1; }
 }
 .mp-map-card { display: none; }
+
+/* ==========================================================================
+   2026-11-13 팀 피드백 반영 (모바일만)
+   ========================================================================== */
+@media (max-width: 699px) {
+  /* 장보기 상품 카드 (새 구조: .home-card-meta 안에 분류 + .product-quick-actions)
+     사진(세로로 긴 상자) → [담기 | 내 MT] → 상품명 순서, 분류(라면·즉석밥 등)는 숨김 */
+  .design-main .retained-market-grid .product-card > .home-product-image { order: 0; width: 100% !important; height: auto !important; aspect-ratio: 4 / 5; padding: 14px !important; border-radius: 12px !important; }
+  .design-main .retained-market-grid .product-card > .home-card-meta { order: 1; display: block !important; margin: 8px 0 0 !important; }
+  .design-main .retained-market-grid .product-card > .home-card-meta > span { display: none !important; }
+  .design-main .retained-market-grid .product-card .product-quick-actions { display: grid !important; grid-template-columns: 1fr 1fr; gap: 6px !important; width: 100%; max-width: none !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; }
+  .design-main .retained-market-grid .product-card .product-quick-actions > button.icon-button { position: static !important; display: flex !important; align-items: center; justify-content: center; gap: 4px !important; width: 100% !important; min-width: 0 !important; height: 40px !important; min-height: 0 !important; margin: 0 !important; padding: 0 6px !important; border-radius: 10px !important; box-shadow: none !important; font-size: 0 !important; flex: none !important; }
+  .design-main .retained-market-grid .product-card .product-quick-actions > button.icon-button svg { width: 16px !important; height: 16px !important; flex: none; }
+  .design-main .retained-market-grid .product-card .product-quick-actions > button.product-cart-action { border: 1px solid var(--mp-line-strong) !important; background: #fff !important; color: var(--mp-ink) !important; }
+  .design-main .retained-market-grid .product-card .product-quick-actions > button.product-cart-action::after { content: "담기"; font-size: 14px; font-weight: 600; }
+  /* 내 MT 담기: 주 버튼(채운 올리브). 이미 담긴 상품은 연한 색 + 'MT 담김 N개' (팀 코드의 상태 문구 그대로) */
+  .design-main .retained-market-grid .product-card .product-quick-actions > button[data-add-mt-shopping] { border: 1px solid var(--mp-olive) !important; background: var(--mp-olive) !important; color: #fff !important; }
+  .design-main .retained-market-grid .product-card .product-quick-actions > button[data-add-mt-shopping] svg { display: none !important; }
+  .design-main .retained-market-grid .product-card .product-quick-actions > button[data-add-mt-shopping] > span { display: block !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px !important; font-weight: 700; line-height: 1.2; }
+  .design-main .retained-market-grid .product-card .product-quick-actions > button[data-add-mt-shopping].is-saved { border-color: #b9c6a9 !important; background: #eef2e8 !important; color: var(--mp-olive) !important; }
+  .design-main .retained-market-grid .product-card > .home-card-title { order: 2 !important; margin-top: 10px !important; }
+  .design-main .retained-market-grid .product-card > .product-unit { order: 3 !important; }
+  .design-main .retained-market-grid .product-card > .product-minimum-summary { order: 4 !important; margin: 2px 0 0 !important; font-size: 12px !important; color: var(--mp-sub) !important; }
+  .design-main .retained-market-grid .product-card > .home-price { order: 5 !important; margin-top: 6px !important; padding-top: 0 !important; }
+  .design-main .retained-market-grid .product-card > .product-review-summary { order: 6 !important; }
+
+  /* 공판장 소개 아래 버튼: 짧은 이름으로 가로 스크롤 없이 한 줄 */
+  #marketIntro .market-intro > .button-row { display: grid !important; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px !important; margin: 4px 0 0 !important; padding: 0 !important; overflow: visible; }
+  #marketIntro .market-intro > .button-row > button { width: 100% !important; min-width: 0; height: 36px !important; padding: 0 4px !important; gap: 3px !important; font-size: 0 !important; }
+  #marketIntro .market-intro > .button-row > button svg { display: none !important; }
+  #marketIntro .market-intro > .button-row > button::after { font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+  #marketIntro .market-intro > .button-row > [data-local-meal]::after { content: "추천 주문량"; }
+  #marketIntro .market-intro > .button-row > [data-open-chat]::after { content: "문의하기"; }
+  #marketIntro .market-intro > .button-row > [data-review-scope]::after { content: "리뷰"; }
+  #marketIntro .market-intro > .button-row > .merchant-info-link::after { content: "매장 안내"; }
+}
+@media (max-width: 699px) {
+  /* 숙소 목록 카드 사진 넘겨보기 */
+  .design-main #stayList .catalog-stay.mp-has-photos > button.catalog-stay-photo { display: none !important; }
+  .design-main #stayList .mp-stay-photos { position: relative; cursor: pointer; }
+  .design-main #stayList .mp-stay-photos .mp-sp-track { display: flex; width: 100%; height: 100%; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .design-main #stayList .mp-stay-photos .mp-sp-track::-webkit-scrollbar { display: none; }
+  .design-main #stayList .mp-stay-photos .mp-sp-track img { flex: 0 0 100%; width: 100% !important; height: 100% !important; object-fit: cover; scroll-snap-align: start; scroll-snap-stop: always; border-radius: 0 !important; }
+  .design-main #stayList .mp-stay-photos .mp-sp-count { position: absolute; right: 10px; bottom: 10px; padding: 3px 8px; border-radius: 999px; background: rgba(20, 24, 18, .6); color: #fff; font-size: 11.5px; font-weight: 600; pointer-events: none; }
+  body.mp-sheet-on #stays .split-layout > section.mp-compact #stayList .mp-stay-photos .mp-sp-count { right: 6px; bottom: 6px; padding: 2px 6px; font-size: 10.5px; }
+
+  /* 숙소·객실 상세 사진: 옆으로만 넘어가고 위아래로 흔들리지 않게 */
+  .mp-hero .mp-hero-track { overflow-y: hidden !important; overscroll-behavior-x: contain; touch-action: pan-x pan-y; }
+  .mp-hero .mp-hero-track > button { overflow: hidden; }
+
+  /* 목록을 끝까지 올렸을 때 큰 카드: 한 화면에 1.5개 정도 보이게 */
+  body.mp-sheet-on #stays .split-layout > section:not(.mp-compact) #stayList .catalog-stay-photo { aspect-ratio: 2.2 / 1 !important; }
+  body.mp-sheet-on #stays .split-layout > section:not(.mp-compact) #stayList .retained-stay-copy { padding: 10px 14px 0 !important; row-gap: 2px; }
+  body.mp-sheet-on #stays .split-layout > section:not(.mp-compact) #stayList .stay-card-intro { display: -webkit-box !important; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+  body.mp-sheet-on #stays .split-layout > section:not(.mp-compact) #stayList .retained-stay-copy > .catalog-tags:nth-child(4) { display: none !important; }
+  body.mp-sheet-on #stays .split-layout > section:not(.mp-compact) #stayList .catalog-stay { padding-bottom: 12px !important; }
+  body.mp-sheet-on #stays .split-layout > section:not(.mp-compact) #stayList .catalog-stay-bottom { margin: 6px 14px 0 !important; }
+  body.mp-sheet-on #stays .split-layout > section:not(.mp-compact) #stayList { gap: 12px !important; }
+
+  /* 숙소 상세: 위에 '사장님과 채팅'이 있어 단체 이용 시설 쪽 문의 버튼은 숨김 */
+  #stayDetailContent .stay-facility-showcase .section-toolbar [data-open-chat] { display: none !important; }
+}
+@media (max-width: 699px) {
+  /* 숙소 상세 객실 카드: '객실 자세히 보기' 버튼 대신 카드를 누르면 객실 상세, 버튼은 [내 MT 담기 | 바로 예약하기] */
+  .mp-rooms .room-option-card.mp-room-linked { cursor: pointer; }
+  .mp-rooms .room-option-card.mp-room-linked .room-option-actions > button:not([data-add-mt-candidate]):not(.mp-room-book) { display: none !important; }
+  .mp-rooms .room-option-card.mp-room-linked .room-option-actions { grid-template-columns: 1fr 1fr !important; }
+  .mp-rooms .room-option-card .room-option-actions > .mp-room-book { order: 1; display: flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 12px; border: 1px solid var(--mp-olive); border-radius: 10px; background: var(--mp-olive); color: #fff; font: inherit; font-size: 14.5px; font-weight: 700; }
+  .mp-rooms .room-option-card .room-option-actions > .mp-room-book:disabled { border-color: #c9cfc0; background: #c9cfc0; }
+  .mp-rooms .room-option-card .room-option-actions > .text-button { min-height: 44px; }
+}
+@media (max-width: 699px) {
+  /* 내 MT 만들기 팝업: 'MT 기본 정보' + 닫기를 맨 위 제목으로, '우리 MT 방' 문구는 숨김 */
+  #mtProjectForm > .section-toolbar { display: flex !important; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 4px !important; }
+  #mtProjectForm > .section-toolbar .eyebrow { display: none !important; }
+  #mtProjectForm > .section-toolbar h2 { margin: 0 !important; }
+  /* 내 MT 메인: MT를 만들 때 개인·단체를 고르므로 상단의 개인/단체 선택은 숨김 */
+  #myMt .preparation-context { display: none !important; }
+}
+@media (max-width: 699px) {
+  body.mp-sheet-on #stays .split-layout > section:not(.mp-compact) #stayList .catalog-stay-bottom > strong { display: flex !important; align-items: baseline; gap: 6px; font-size: 17px !important; }
+  body.mp-sheet-on #stays .split-layout > section:not(.mp-compact) #stayList .catalog-stay-bottom > strong span { margin: 0 !important; font-size: 12px !important; }
+}

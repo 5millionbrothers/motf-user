@@ -403,7 +403,7 @@
     section.addEventListener('click', event => {
       const card = event.target.closest('#stayList .catalog-stay');
       if (!card || event.target.closest('button, a, input, label')) return;
-      card.querySelector('.catalog-stay-photo, .catalog-stay-name')?.click();
+      card.querySelector('button.catalog-stay-photo, .catalog-stay-name')?.click();
     });
     section.addEventListener('click', event => {
       if (event.target.closest('.mp-sheet-handle') && sheet.state !== 'full') setSheet(sheet.state === 'peek' ? 'half' : 'full');
@@ -500,8 +500,33 @@
   }, true);
   window.addEventListener('motf:routechange', hideMapCard);
 
+  /* ---------- 숙소 목록 카드: 사진을 옆으로 넘겨보기 ---------- */
+  function stayPhotos() {
+    $$('#stayList .catalog-stay').forEach(card => {
+      if (card.dataset.mpPhotos) return;
+      const button = $(':scope > button.catalog-stay-photo', card);
+      const stay = findStay(card.dataset.stayCardId);
+      if (!button || !stay) return;
+      card.dataset.mpPhotos = '1';
+      const images = [...new Set([stay.image, ...(Array.isArray(stay.images) ? stay.images : [])].filter(Boolean))].slice(0, 8);
+      if (images.length < 2) return;
+      const box = document.createElement('div');
+      box.className = 'catalog-stay-photo mp-stay-photos';
+      box.innerHTML = `<div class="mp-sp-track">${images.map((src, i) => `<img src="${esc(src)}" alt="${esc(stay.name)} 사진 ${i + 1}" loading="lazy" decoding="async">`).join('')}</div><span class="mp-sp-count"><b>1</b> / ${images.length}</span>`;
+      button.after(box);
+      card.classList.add('mp-has-photos');
+      const track = $('.mp-sp-track', box);
+      const count = $('.mp-sp-count b', box);
+      track.addEventListener('scroll', () => {
+        const index = Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
+        count.textContent = String(Math.min(images.length, index + 1));
+      }, { passive: true });
+    });
+  }
+
   function refreshStays() {
     if (!mobile.matches) { document.body.classList.remove('mp-sheet-on'); return; }
+    stayPhotos();
     renderSearchbar();
     layoutSheet();
     markers();
@@ -623,6 +648,33 @@
       const peopleText = basePeople && maxPeople > basePeople ? `기준 ${basePeople}명 · 최대 ${maxPeople}명` : (room.capacity || '인원 확인 필요');
       info.innerHTML = `<p>${M()?.svg.user || ''}<span>${esc(peopleText)}</span></p>${features.length ? `<p><span>${features.map(esc).join(' · ')}</span></p>` : ''}<div class="mp-room-price">${top > base ? '' : '<small>숙박</small>'}<strong>${priceText}</strong></div>${top > base ? `<p class="mp-room-price-note">기준 인원 초과 시 1인당 ${esc(M()?.won(extraFee))} 추가</p>` : ''}`;
       head?.after(info);
+      // 버튼은 [내 MT 담기 | 바로 예약하기], 카드(사진·객실명)를 누르면 객실 자세히 보기
+      const actions = $('.room-option-actions', card);
+      const detail = $('[data-room-index]', actions || card);
+      if (actions && !$('.mp-room-book', actions)) {
+        const unavailable = typeof isRoomUnavailable === 'function' && isRoomUnavailable(room);
+        const book = document.createElement('button');
+        book.type = 'button';
+        book.className = 'mp-room-book';
+        book.disabled = unavailable;
+        book.textContent = unavailable ? '품절' : '바로 예약하기';
+        book.addEventListener('click', event => {
+          event.preventDefault();
+          event.stopPropagation();
+          if (unavailable || typeof state === 'undefined' || typeof navigate !== 'function') return;
+          state.selectedRoom = room;
+          navigate('booking');
+        });
+        actions.append(book);
+        card.classList.add('mp-room-linked');
+      }
+      if (detail && !card.dataset.mpLink) {
+        card.dataset.mpLink = '1';
+        card.addEventListener('click', event => {
+          if (event.target.closest('button, a, input, label')) return;
+          detail.click();
+        });
+      }
     });
   }
 
@@ -1175,7 +1227,7 @@
   }
   document.addEventListener('click', event => {
     if (!mobile.matches) return;
-    const trigger = event.target.closest('.retained-market-grid [data-add-product], .retained-market-grid .product-option-button');
+    const trigger = event.target.closest('.retained-market-grid [data-add-product], .retained-market-grid .product-option-button, .retained-market-grid .product-cart-action');
     if (!trigger) return;
     const id = trigger.dataset.addProduct || trigger.dataset.productId;
     if (openCartModal(id)) { event.preventDefault(); event.stopImmediatePropagation(); }
@@ -1273,6 +1325,40 @@
     window.addEventListener('motf:routechange', () => { setTimeout(run, 40); setTimeout(() => mobile.matches && placeContext(), 400); });
     run();
   };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+})();
+
+/* ---------- 내 MT 만들기 팝업 (모바일): 제목·닫기 버튼을 맨 위로 ----------
+   '누구의 MT인가요?' 선택칸이 제목보다 위에 있으면 팝업이 열릴 때 그 선택칸에 먼저 초점이 가서
+   아이폰에서 휴대폰 기본 선택 창이 바로 떠버립니다. 제목·닫기 줄을 맨 앞으로 옮겨 막습니다. */
+(() => {
+  if (window.__mpModule7) return;
+  window.__mpModule7 = true;
+  const mobile = window.matchMedia('(max-width: 699px)');
+
+  function placeHead(form) {
+    if (!mobile.matches || !form) return;
+    const head = form.querySelector(':scope > .section-toolbar');
+    if (head && form.firstElementChild !== head) form.prepend(head);
+  }
+
+  function start() {
+    const form = document.getElementById('mtProjectForm');
+    const dialog = document.getElementById('mtProjectDialog');
+    if (!form || !dialog) return;
+    placeHead(form);
+    new MutationObserver(() => placeHead(form)).observe(form, { childList: true });
+    // 열릴 때 선택칸에 초점이 가 있으면 풀어줌 (아이폰 기본 선택 창 방지)
+    new MutationObserver(() => {
+      if (!mobile.matches || !dialog.open) return;
+      placeHead(form);
+      requestAnimationFrame(() => {
+        if (document.activeElement?.tagName === 'SELECT' && dialog.contains(document.activeElement)) document.activeElement.blur();
+      });
+    }).observe(dialog, { attributes: true, attributeFilter: ['open'] });
+  }
+
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();
 })();
