@@ -1106,7 +1106,7 @@
       if (actions && mt) actions.append(mt);
     });
     const count = $$(':scope > .product-card', grid).length;
-    const text = count ? `총 ${count}개` : '';
+    const text = '';
     if ($('.mp-sort-count', bar).textContent !== text) $('.mp-sort-count', bar).textContent = text;
     applySort(grid);
   }

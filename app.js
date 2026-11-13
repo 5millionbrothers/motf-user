@@ -482,9 +482,10 @@ window.motfApplyCatalog = function applyCatalog(nextStays, nextStores, options =
     }));
     const regionSelect = qs("#stayRegion");
     if (regionSelect) {
-      const regions = [...new Set([DEFAULT_STAY_REGION, ...stays.map((stay) => stay.region).filter(Boolean)])];
+      const selectedRegion = regionSelect.value;
+      const regions = window.motfServiceRegions || [DEFAULT_STAY_REGION, '대성리'];
       regionSelect.innerHTML = regions.map((region) => `<option value="${escapeHtml(region)}">${escapeHtml(region)}</option>`).join("");
-      regionSelect.value = regions.includes(DEFAULT_STAY_REGION) ? DEFAULT_STAY_REGION : (regions[0] || "");
+      regionSelect.value = regions.includes(selectedRegion) ? selectedRegion : (regions[0] || "");
     }
     state.selectedStay = stays.find((stay) => String(stay.id) === String(requestedStayId)) || stays[0] || null;
     state.selectedRoom = state.selectedStay?.rooms?.find((room) => String(room.id) === String(requestedRoomId)) || state.selectedStay?.rooms?.[0] || null;
@@ -1683,7 +1684,7 @@ function getStayMatches() {
   const maxPrice = Number(qs("#stayPrice").value || 0);
   const detailFilters = getStayDetailFilters();
   return stays.filter((stay) => {
-    const regionOk = region === "전체" || stay.region === region;
+    const regionOk = region === "전체" || (Array.isArray(stay.regions) ? stay.regions.includes(region) : stay.region === region || region === '대성리' && String(stay.distance || '').includes('대성리'));
     const priceOk = maxPrice >= 2000000 || stayDisplayPrice(stay) <= maxPrice;
     return regionOk && stay.maxPeople >= people && priceOk && stayMatchesDetailFilters(stay, detailFilters) && stayHasAvailableRoom(stay);
   });
@@ -2378,7 +2379,6 @@ function renderStores() {
   productSection.innerHTML = `
     <div class="section-toolbar market-page-toolbar">
       <div><p class="eyebrow">제휴 마트 등록 상품</p><h2>상품 둘러보기</h2></div>
-      <span>${productCatalogCountLabel(products)}</span>
     </div>
     <div class="category-tabs">
       ${categories.map((cat) => `<button class="category-tab ${cat === state.activeCategory ? "active" : ""}" data-category="${escapeHtml(cat)}">${escapeHtml(cat)}</button>`).join("")}
@@ -2550,18 +2550,12 @@ function productCard(product) {
       <button class="home-product-image product-card-image-button" type="button" data-product-id="${product.id}" aria-label="${escapeHtml(product.name)} 상세 보기">
         <img class="${productImageClass(product)}" src="${product.image}" alt="${product.name} 사진" loading="lazy" decoding="async" />
       </button>
-      <div class="home-card-meta"><span>${escapeHtml(product.isBundle?'moTF 전용 패키지':product.category)}</span><button class="icon-button" data-add-mt-shopping="${product.id}" title="내 MT에 담기" aria-label="${escapeHtml(product.name)} 내 MT에 담기"><i data-lucide="folder-plus"></i></button></div>
+      <div class="home-card-meta"><span>${escapeHtml(product.isBundle?'moTF 전용 패키지':product.category)}</span><div class="product-quick-actions"><button class="icon-button product-cart-action" type="button" ${hasVariants ? `data-product-id="${product.id}"` : `data-add-product="${product.id}"`} aria-label="${escapeHtml(product.name)} ${hasVariants ? '옵션을 골라 장바구니에 담기' : '장바구니 담기'}" title="장바구니 담기"><i data-lucide="shopping-cart"></i></button><button class="icon-button" type="button" data-add-mt-shopping="${product.id}" title="내 MT에 담기" aria-label="${escapeHtml(product.name)} 내 MT에 담기"><i data-lucide="bookmark-plus"></i><span>MT 담기</span></button></div></div>
         <button class="home-card-title" data-product-id="${product.id}">${catalogLabel(product.name)}</button>
         <p class="product-unit product-option-summary">${catalogLabel(optionSummary)}</p>
         ${rules.minimum > 1 ? `<p class="product-minimum-summary">최소 ${rules.minimum}${escapeHtml(rules.unit)} 주문</p>` : ""}
         <button class="product-review-summary text-button" data-product-id="${product.id}" data-product-reviews><i data-lucide="star"></i>${reviewRatingLabel(window.motfProductReviewSummary?.(product.id))}</button>
-        <strong class="home-price">${productPriceLabel(product)}</strong>
-        <div class="product-card-actions">
-          ${hasVariants
-            ? `<button class="product-option-button" type="button" data-product-id="${product.id}">옵션 선택<i data-lucide="chevron-right"></i></button>`
-            : `<button class="icon-action" data-product-id="${product.id}" aria-label="${escapeHtml(product.name)} 상세 보기" title="상세 보기"><i data-lucide="search"></i></button>
-               <button class="icon-button" data-add-product="${product.id}" aria-label="${escapeHtml(product.name)} 장바구니 담기" title="장바구니 담기"><i data-lucide="shopping-cart"></i></button>`}
-        </div>
+        ${hasVariants ? `<button class="home-price product-price-action text-button" type="button" data-product-id="${product.id}" aria-label="${escapeHtml(product.name)} 옵션과 가격 선택">${productPriceLabel(product)}<i data-lucide="chevron-right"></i></button>` : `<strong class="home-price">${productPriceLabel(product)}</strong>`}
     </article>
   `;
 }
@@ -3151,7 +3145,7 @@ function renderMyMt() {
   }
   const shopping = (state.mtProject.items || []).filter((item) => item.item_kind === "shopping" && item.status !== "cancelled");
   const shoppingList = qs("#mtShoppingItems");
-  if (shoppingList) shoppingList.innerHTML = shopping.length ? shopping.map((item) => `<article><span class="mt-shopping-icon"><i data-lucide="shopping-basket"></i></span><div><strong>${escapeHtml(item.title)}</strong><span>${Number(item.quantity || 1)}개 · ${money(Number(item.amount || 0) * Number(item.quantity || 1))}</span></div><button class="icon-action" type="button" data-remove-mt-item="${item.id}" aria-label="장보기 후보 삭제"><i data-lucide="x"></i></button></article>`).join("") : `<div class="empty-state compact">장보기에서 필요한 상품을 ` + "`내 MT에 담기`" + `로 추가해보세요.</div>`;
+  if (shoppingList) shoppingList.innerHTML = shopping.length ? shopping.map((item) => `<article class="mt-shopping-row"><span class="mt-shopping-icon"><i data-lucide="shopping-basket"></i></span><div class="mt-shopping-copy"><strong>${escapeHtml(item.title)}</strong><span>${money(Number(item.amount || 0))} / 개</span></div><div class="mt-quantity-control" role="group" aria-label="${escapeHtml(item.title)} 수량"><button class="icon-button" type="button" data-mt-quantity-delta="-1" data-mt-item="${item.id}" aria-label="수량 줄이기" ${state.mtProject.is_owner === false ? 'disabled' : ''}><i data-lucide="minus"></i></button><output aria-live="polite">${Number(item.quantity || 1)}</output><button class="icon-button" type="button" data-mt-quantity-delta="1" data-mt-item="${item.id}" aria-label="수량 늘리기" ${state.mtProject.is_owner === false ? 'disabled' : ''}><i data-lucide="plus"></i></button></div><strong class="mt-shopping-total">${money(Number(item.amount || 0) * Number(item.quantity || 1))}</strong>${state.mtProject.is_owner === false ? '' : `<button class="icon-action" type="button" data-remove-mt-item="${item.id}" aria-label="장보기 후보 삭제"><i data-lucide="x"></i></button>`}</article>`).join("") : `<div class="empty-state compact">상품의 ‘MT 담기’를 눌러 장보기 후보를 모아보세요.</div>`;
   window.motfHomeDesign?.renderMtExtras(state.mtProject);
   refreshIcons();
 }
@@ -3203,11 +3197,13 @@ window.motfApplyMtProject = function applyMtProject(project, candidates = []) {
     state.mtCandidates = mapped.map((item) => String(item.id));
   }
   if (currentRoute() === "myMt") renderMyMt();
+  window.dispatchEvent(new CustomEvent('motf:mt-selected', { detail: { project: state.mtProject, candidates: state.mtCandidateRecords } }));
 };
 
 window.motfApplyMtProjects = function applyMtProjects(projects = []) {
   state.mtProjects = Array.isArray(projects) ? projects : [];
   if (currentRoute() === "myMt" && state.mtProjectMode === "list") renderMyMt();
+  window.dispatchEvent(new CustomEvent('motf:mt-projects-loaded', { detail: { projects: state.mtProjects } }));
 };
 
 window.motfIsMtDetail = () => state.mtProjectMode === "detail";
@@ -4341,6 +4337,7 @@ window.motfApplyReviewSummaries = function applyReviewSummaries(nextSummaries = 
 window.motfApplyReviewTargets = function applyReviewTargets(nextTargets = []) {
   state.reviewTargets = Array.isArray(nextTargets) ? nextTargets : [];
   if (currentRoute() === "review") renderReviews();
+  window.dispatchEvent(new CustomEvent('motf:review-targets', { detail: { targets: state.reviewTargets } }));
 };
 
 window.motfSetReviewScope = function setReviewScope(scope = "all") {
@@ -4469,7 +4466,7 @@ document.addEventListener("click", async (event) => {
 
   if (event.target.closest("[data-add-mt-notice]")) {
     qs("#mtNoticeTitle").value = "";
-    qs("#mtNoticeDate").value = localDateKey(new Date());
+    setDateInputValue(qs("#mtNoticeDate"), localDateKey(new Date()));
     qs("#mtNoticeBody").value = "";
     qs("#mtNoticePinned").checked = false;
     qs("#mtNoticeDialog").showModal();
@@ -4577,9 +4574,13 @@ document.addEventListener("click", async (event) => {
   const removeMtItemButton = event.target.closest("[data-remove-mt-item]");
   if (removeMtItemButton) {
     const itemId = removeMtItemButton.dataset.removeMtItem;
-    state.mtProject.items = (state.mtProject.items || []).filter((item) => String(item.id) !== String(itemId));
-    try { await window.motfRemoveMtItem?.(itemId); } catch (error) { console.warn("MT 준비 항목 삭제 실패", error); }
-    renderMyMt();
+    removeMtItemButton.disabled = true;
+    try {
+      await window.motfRemoveMtItem?.(itemId);
+      state.mtProject.items = (state.mtProject.items || []).filter((item) => String(item.id) !== String(itemId));
+      renderMyMt();
+    } catch (error) { toast(error.message || '항목을 삭제하지 못했습니다.'); }
+    finally { removeMtItemButton.disabled = false; }
     return;
   }
 

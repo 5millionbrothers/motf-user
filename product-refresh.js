@@ -1,6 +1,13 @@
 (function initializeProductRefresh() {
   const qs = (selector, root = document) => root.querySelector(selector);
   const qsa = (selector, root = document) => [...root.querySelectorAll(selector)];
+  function positionDialogCalendar(instance) {
+    const rect = instance.altInput.getBoundingClientRect(), calendar = instance.calendarContainer;
+    calendar.style.position = 'fixed';
+    calendar.style.right = 'auto';
+    calendar.style.left = `${Math.max(8,Math.min(rect.left,innerWidth-calendar.offsetWidth-8))}px`;
+    calendar.style.top = `${Math.max(8,Math.min(rect.bottom+6,innerHeight-calendar.offsetHeight-8))}px`;
+  }
 
   function initializePickers() {
     if (!window.flatpickr) return;
@@ -14,11 +21,11 @@
         dateFormat: "Y-m-d",
         altInput: true,
         altFormat: "Y년 m월 d일",
-        minDate: input.id?.includes("usage") ? null : "today",
+        minDate: input.id?.includes("usage") || input.id === 'mtNoticeDate' ? null : "today",
         maxDate: isStayDate ? new Date().fp_incr(90) : null,
         disableMobile: true,
         monthSelectorType: "static",
-        position: dialog ? "above left" : "below left",
+        position: dialog ? positionDialogCalendar : "below left",
         onDayCreate: (_selectedDates, _dateStr, _instance, dayElem) => {
           const textNode = [...dayElem.childNodes].find((node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim());
           if (!textNode || dayElem.querySelector(".day-number")) return;
@@ -28,6 +35,10 @@
           textNode.replaceWith(number);
         },
         ...(dialog ? { appendTo: dialog } : {}),
+        onOpen: (_dates, _value, instance) => {
+          if (!dialog) return;
+          requestAnimationFrame(() => positionDialogCalendar(instance));
+        },
       });
       if (initialValue) input._flatpickr.setDate(initialValue, false);
     });

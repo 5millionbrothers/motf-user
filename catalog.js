@@ -5,6 +5,7 @@
   const stayFallback = "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&q=82";
   const marketFallback = "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=82";
   const roomFallback = "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=82";
+  const serviceRegionMap = new Map();
   const productFallback = "https://images.unsplash.com/photo-1606787366850-de6330128bfc?auto=format&fit=crop&w=1200&q=82";
   const facilityLabels = {
     barbecue: "야외바베큐",
@@ -79,6 +80,7 @@
       name: text(business.business_name),
       phone: String(business.phone || ""),
       region: regionOf(business),
+      regions: serviceRegionMap.get(business.id) ?? null,
       price: Math.min(...rooms.map((room) => room.price)),
       maxPeople: Math.max(...rooms.map((room) => Number(room.capacity.match(/\d+/)?.[0] || 40))),
       rating: 0,
@@ -180,7 +182,7 @@
   }
 
   (async () => {
-    let [businessResult, offeringResult] = await Promise.all([
+    let [businessResult, offeringResult, regionResult] = await Promise.all([
       client.from("businesses")
         .select("id, business_type, business_name, phone, address, description, short_description, highlight_summary, highlight_keys, region, cover_image_url, gallery_image_urls, facilities, approval_status, latitude, longitude, location_verified_at, station_distance_m, convenience_distance_m, nearby_tags, room_count, bath_count, shared_bathroom_count, shared_bathroom_gender_separated, shared_bathroom_note, shoulder_season_ranges, peak_season_ranges, amenity_details, extra_fees, refund_policy, recommended_sets, is_featured, display_order, discovery_weight")
         .eq("approval_status", "approved"),
@@ -188,7 +190,9 @@
         .select("id, business_id, name, description, price, is_active, max_people, min_people, base_people, extra_person_fee, unit, category, image_url, image_urls, sort_order, feature_summary, amenity_details, detail_sections, origin, nutrition_info, is_alcohol, stock_quantity, offseason_weekday_price, offseason_weekend_price, shoulder_weekday_price, shoulder_weekend_price, peak_weekday_price, peak_weekend_price, bathroom_count, bathroom_gender_separated, bathroom_note")
         .eq("is_active", true)
         .order("sort_order"),
+      client.rpc('list_business_service_regions'),
     ]);
+    if (!regionResult.error) (regionResult.data || []).forEach(item => serviceRegionMap.set(item.business_id,item.regions || []));
 
     // 새 DB 열과 프론트 배포 순서가 잠시 엇갈려도 전체 카탈로그가 사라지지 않도록
     if (businessResult.error?.code === "42501") {

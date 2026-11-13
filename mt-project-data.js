@@ -96,13 +96,14 @@
   }
 
   window.motfSelectMtProject = async function selectMtProject(projectId) {
-    requireUser();
+    const selectingUser = requireUser();
     const { data: project, error } = await client.from("mt_projects")
       .select(projectFields)
       .eq("id", projectId)
       .single();
     if (error) throw error;
     const [children, candidates] = await Promise.all([projectChildren(project.id), candidateDetails(project.id)]);
+    if (currentUser?.id !== selectingUser.id) throw new Error('로그인 정보가 변경되었습니다. 다시 선택해주세요.');
     if ((project.organization_id || null) !== (window.motfGetOrganizationId?.() || null)) {
       await window.motfSetOrganizationScope(project.organization_id || null,{skipProjects:true});
     }
@@ -245,6 +246,25 @@
     if (error) throw error;
     return data;
   };
+  window.motfReadMtSelection = async function readMtSelection(projectId) {
+    requireUser();
+    const [candidateResult, itemResult] = await Promise.all([
+      client.from('mt_project_candidates').select('business_id,offering_id').eq('project_id', projectId),
+      client.from('mt_project_items').select(itemFields).eq('project_id', projectId).neq('status', 'cancelled'),
+    ]);
+    if (candidateResult.error || itemResult.error) throw candidateResult.error || itemResult.error;
+    return { projectId, candidates: candidateResult.data || [], items: itemResult.data || [] };
+  };
+  window.motfSetMtShoppingQuantity = async function setMtShoppingQuantity(projectId, productId, quantity) {
+    requireUser();
+    const { data, error } = await client.rpc('set_mt_shopping_candidate', {
+      target_project_id: projectId, target_offering_id: productId, requested_quantity: quantity,
+    });
+    if (error) throw error;
+    if (currentProject?.id === projectId) await window.motfSelectMtProject(projectId);
+    window.dispatchEvent(new CustomEvent('motf:mt-items-changed', { detail: { projectId } }));
+    return data;
+  };
 
   window.motfSetMtStayItem = async function setMtStayItem({ business_id, offering_id, title, amount }) {
     const project = ensureProject();
@@ -313,6 +333,7 @@
     const { error } = await client.from("mt_project_items").delete().eq("id", itemId).eq("project_id", project.id);
     if (error) throw error;
     currentProject.items = (currentProject.items || []).filter((item) => item.id !== itemId);
+    window.dispatchEvent(new CustomEvent('motf:mt-items-changed', { detail: { projectId: project.id } }));
   };
 
   window.motfAddMtOtherItems = async function addMtOtherItems(items) {

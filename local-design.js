@@ -9,8 +9,7 @@
   const brand=$('.brand',header);header.prepend(brand);$('.header-left',header).remove();
   $('.top-nav',header).className='site-nav';$('.header-account-actions',header).classList.add('header-actions');
   $$('.header-actions .icon-nav').forEach(button=>button.classList.add('icon-button'));
-  $('.header-actions [data-route="mypage"]').classList.add('home-account');
-  $('.header-actions').insertAdjacentHTML('beforeend',`<button class="icon-button" data-local-organization title="단체 관리" aria-label="단체 관리">${icon('users-round')}</button><button class="login" data-route="mypage" aria-label="로그인">로그인</button>`);
+  $('.header-actions [data-route="mypage"]').classList.add('icon-button');
   $('.mobile-bottom-nav').classList.add('mobile-navigation');
   $('.site-footer').classList.add('wrap');
   const searchDialog=document.createElement('dialog');searchDialog.className='motf-dialog local-search-dialog';document.body.append(searchDialog);
@@ -34,7 +33,7 @@
     const ranked=rankedIds.map(id=>stays.find(stay=>stay.id===id)).filter(Boolean);
     const products=stores.flatMap(store=>{ensureMarketBundleProducts(store);return groupProductVariants(store.products).map(product=>({...product,storeName:catalogLabel(store.name),name:catalogLabel(product.name),unit:catalogLabel(product.unit||''),image:esc(product.image)}));}).slice(0,4);
     const posts=communityBoards.flatMap(board=>board.posts.map(post=>({...post,board}))).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))).slice(0,2);
-    return {state:draft,budgetStep:step,stays:ranked.map(stay=>({id:stay.id,name:catalogLabel(stay.name),region:catalogLabel(stay.region),badge:catalogLabel(stay.amenities?.[0]||'단체 숙소'),maxPeople:stay.maxPeople||'문의',rooms:stay.roomCount||stay.rooms?.length||0,bathLabel:stay.bathCount?'화장실 '+stay.bathCount+'개':'화장실 수 확인 필요',price:estimateMtStayCost(stay).total,image:esc(stay.image)})),pageProducts:()=>products,homePosts:posts.map(post=>({id:post.id,author:esc(post.authorName||'익명'),time:relativeTime(post.createdAt),label:esc(post.board.title),title:esc(post.title),symbol:'messages-square'})),homePromos:slides.map(slide=>({...slide,title:esc(slide.title),description:esc(slide.description),kind:esc(slide.kind),button:esc(slide.button),image:esc(slide.image.startsWith('design/')?'assets/'+slide.image:slide.image)})),HomeStudy:{promo:slideIndex,isMobile:()=>innerWidth<700},regions:['가평','대성리','청평','양평']};
+    return {state:draft,budgetStep:step,stays:ranked.map(stay=>({id:stay.id,name:catalogLabel(stay.name),region:catalogLabel(stay.region),badge:catalogLabel(stay.amenities?.[0]||'단체 숙소'),maxPeople:stay.maxPeople||'문의',rooms:stay.roomCount||stay.rooms?.length||0,bathLabel:stay.bathCount?'화장실 '+stay.bathCount+'개':'화장실 수 확인 필요',price:estimateMtStayCost(stay).total,image:esc(stay.image)})),pageProducts:()=>products,homePosts:posts.map(post=>({id:post.id,author:esc(post.authorName||'익명'),time:relativeTime(post.createdAt),label:esc(post.board.title),title:esc(post.title),symbol:'messages-square'})),homePromos:slides.map(slide=>({...slide,title:esc(slide.title),description:esc(slide.description),kind:esc(slide.kind),button:esc(slide.button),image:esc(slide.image.startsWith('design/')?'assets/'+slide.image:slide.image)})),HomeStudy:{promo:slideIndex,isMobile:()=>innerWidth<700},regions:window.motfServiceRegions || ['가평','대성리']};
   }
   function wire(root){
     const attrs={'data-page-choose-stay':'data-add-mt-candidate','data-mt-start-product':'data-add-mt-shopping','data-home-product':'data-product-id','data-home-post':'data-post-id'};
