@@ -229,7 +229,7 @@
         )
         .order("created_at", { ascending: false }),
       scopeQuery(client.from("payment_intents")
-        .select("order_id, kind, amount, original_amount, points_used, coupon_discount, order_name, status, provider, payment_key, draft, payment_method, virtual_account, virtual_account_issued_at, created_at, expires_at, extra_charge_request_id")
+        .select("order_id, kind, amount, original_amount, points_used, coupon_discount, order_name, status, provider, payment_key, draft, payment_method, virtual_account, virtual_account_issued_at, created_at, expires_at, extra_charge_request_id").is("launch_archived_at",null)
         )
         .in("status", ["virtual_account_issued", "waiting_for_deposit", "in_progress", "expired"])
         .order("created_at", { ascending: false }),

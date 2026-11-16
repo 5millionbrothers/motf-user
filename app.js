@@ -477,7 +477,7 @@ window.motfApplyCatalog = function applyCatalog(nextStays, nextStores, options =
   if (Array.isArray(nextStores)) {
     stores = nextStores;
     state.selectedStore = stores[0] || null;
-    state.selectedProduct = stores[0]?.products?.[0] || null;
+    state.selectedProduct = groupProductVariants(stores[0]?.products || [])[0] || null;
     state.cart = [];
   }
   state.catalogLoading = false;
@@ -2461,7 +2461,14 @@ function groupProductVariants(products = []) {
     if (!grouped.has(key)) grouped.set(key, []);
     grouped.get(key).push(product);
   });
-  return [...grouped.values()].map((variants) => ({ ...variants[0], variants }));
+  return [...grouped.values()].map((variants) => {
+    let selected = variants.find(item => item.detailSections?.isDefaultVariant === true);
+    if (!selected && variants.some(item => /삼겹|목살/.test(item.name || ''))) {
+      selected = variants.filter(item => /냉동/.test([item.variantLabel,item.detailSections?.temperature,item.detail].filter(Boolean).join(' ')))
+        .sort((a,b) => Number(a.price) - Number(b.price))[0];
+    }
+    return { ...(selected || variants[0]), variants };
+  });
 }
 
 function productVariants(product) {
@@ -4715,7 +4722,7 @@ document.addEventListener("click", async (event) => {
   const marketSelectButton = event.target.closest("[data-market-select]");
   if (marketSelectButton) {
     state.selectedStore = stores.find((store) => store.id === marketSelectButton.dataset.marketSelect) || stores[0] || null;
-    state.selectedProduct = state.selectedStore?.products?.[0] || null;
+    state.selectedProduct = groupProductVariants(state.selectedStore?.products || [])[0] || null;
     state.activeCategory = "전체";
     renderStores();
     return;

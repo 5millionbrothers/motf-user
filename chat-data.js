@@ -143,13 +143,14 @@
     const relevantIds = (relevant.data || []).map(row => row.id);
     if (!relevantIds.length) { window.motfApplyChats?.([], ''); return; }
     let query = client.from("conversations")
-      .select("id, business_id, organization_id, customer_name, group_name, last_message_at, businesses(business_name, business_type, address, phone, cover_image_url), conversation_contact_shares(user_id,phone), messages(id, sender_id, sender_name, sender_role, body, read_at, created_at)");
+      .select("id, business_id, organization_id, customer_name, group_name, last_message_at, history_started_at, businesses(business_name, business_type, address, phone, cover_image_url), conversation_contact_shares(user_id,phone,last_shared_at), messages(id, sender_id, sender_name, sender_role, body, read_at, created_at)");
     query = scope ? query.eq("organization_id", scope) : query.eq("customer_id", authData.session.user.id).is("organization_id", null);
     const { data, error } = await query.in('id', relevantIds).order("last_message_at", { ascending: false });
     if (authStamp !== authVersion || version !== loadVersion || scope !== (window.motfGetOrganizationId?.() || null)) return;
     if (error) return console.error(error);
     const chats = (data || []).map((conversation) => {
-      const messages = [...(conversation.messages || [])].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+      const currentHistory = row => !conversation.history_started_at || new Date(row.created_at || row.last_shared_at).getTime() >= new Date(conversation.history_started_at).getTime();
+      const messages = [...(conversation.messages || [])].filter(currentHistory).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
       const isSupport = conversation.businesses?.business_type === "support" || conversation.id === supportConversationId;
       return {
         id: conversation.id,
@@ -159,7 +160,7 @@
         isSupport,
         address: conversation.businesses?.address || "",
         phone: conversation.businesses?.phone || "",
-        contactShares: conversation.conversation_contact_shares || [],
+        contactShares: (conversation.conversation_contact_shares || []).filter(currentHistory),
         image: conversation.businesses?.cover_image_url || "",
         messages: messages.map((message) => ({
           from: message.sender_role === "user" ? "user" : message.sender_role === "partner" ? "owner" : "admin",
