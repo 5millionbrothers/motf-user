@@ -42,6 +42,10 @@
     { "source": "/refund-policy", "destination": "/index.html" },
     { "source": "/complete", "destination": "/index.html" },
     { "source": "/partner-inquiry", "destination": "/index.html" },
+    { "source": "/partner-inquiry/", "destination": "/index.html" },
+    { "source": "/partner-inquiry/:path*", "destination": "/index.html" },
+    { "source": "/feedback/", "destination": "/index.html" },
+    { "source": "/feedback/:path*", "destination": "/index.html" },
     { "source": "/feedback", "destination": "/index.html" }
   ],
   "headers": [{
