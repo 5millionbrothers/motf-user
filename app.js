@@ -5459,7 +5459,9 @@ window.addEventListener("motf:auth-ready", async () => {
   try {
     await loadPaymentConfig();
     const handledPaymentRedirect = await handleTossRedirect();
-    if (!handledPaymentRedirect) navigate(routeFromLocation(), { record: false, replace: true });
+    if (!handledPaymentRedirect) {
+      navigate(routeFromLocation(), { record: false, updateHistory: false });
+    }
     await Promise.all([loadFavoriteStaysFromDatabase(true), loadFavoriteEventsFromDatabase(true)]);
     refreshFavoriteViews();
     updateCartBadge();
