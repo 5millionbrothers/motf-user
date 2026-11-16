@@ -1,3 +1,4 @@
+.product-summary-desktop,.desktop-home-review { display:none; }
 @media (min-width:1024px) {
   .design-main .home-search-intro { text-align:center; }
   .design-main .home-search-intro>p { width:100%; max-width:none; margin-inline:auto; text-align:center; }
@@ -12,13 +13,23 @@
   .design-main #stayAdvancedFilters .advanced-filter-header>div { display:none; }
   .design-main .product-card .home-card-meta>span { display:none; }
   .design-main .product-card .home-card-meta { min-height:32px; justify-content:flex-end; }
-  .design-main .product-card>.home-card-title { order:1!important; margin:10px 0 4px; min-height:42px; }
-  .design-main .product-card>.home-card-meta { order:2!important; justify-content:flex-start; }
+  .design-main .product-card>.home-card-title { order:1!important; margin:10px 0 5px; min-height:0; font-size:14px; line-height:1.5; }
+  .design-main .product-card>.home-card-meta { order:2!important; justify-content:flex-start; margin:0; }
   .design-main .product-card .product-quick-actions { margin-left:0; }
+  .design-main .product-card>.product-unit,.design-main .product-card>.product-minimum-summary { margin:6px 0 0; min-height:0; line-height:1.5; }
+  .design-main .product-card { height:100%; }
+  .design-main .product-card>.product-unit { height:30px; min-height:30px; flex:0 0 30px; overflow:hidden; }
+  .design-main .product-summary-standard { display:none; }
+  .design-main .product-summary-desktop { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; line-height:15px; }
+  .design-main .product-card>.product-minimum-summary { order:4!important; }
+  .design-main .product-card>.product-review-summary { display:inline-flex; align-items:center; gap:4px; justify-content:flex-start; margin:6px 0 0; margin-top:auto; padding:0; min-height:20px; }
+  .design-main .desktop-home-review { display:inline-flex; align-items:center; gap:4px; padding:0; margin:5px 0 2px; min-height:20px; font-size:11px; line-height:1.5; color:#79866e; }
+  .design-main :is(.stay-review-chip,.stay-detail-review-summary,.product-review-summary,.home-stay-review-rating,.home-stay-review-new,.desktop-home-review) svg { width:12px; height:12px; flex:none; color:#e7ac32; fill:#e7ac32; }
   .design-main .product-card .product-price-action { min-height:38px; height:38px; padding:0; line-height:1.4; background:none; color:var(--ink); border:0; align-items:center; }
   .design-main .product-card .product-price-action>span { display:block; white-space:normal; }
   .design-main .product-card .home-price { min-height:48px; display:flex; align-items:flex-end; }
-  .design-main .product-card>.home-price { box-sizing:border-box; min-height:44px; height:44px; margin-top:auto; padding:8px 0; display:flex; align-items:center; font-size:16px; font-weight:650; line-height:1.5; }
+  .design-main .product-card>.home-price { box-sizing:border-box; min-height:48px; height:48px; flex:0 0 48px; margin-top:6px; padding:0; display:flex; align-items:flex-start; font-size:16px; font-weight:650; line-height:1.5; }
+  .design-main .product-card>.product-price-action svg { margin-top:4px; }
   .design-main #mtCandidateComparison [data-stay-id] { display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:8px 12px; min-height:38px; border:1px solid #d9e0d1; border-radius:5px; background:white; color:#465a36; }
   .design-main .mt-project-main .section-toolbar .eyebrow,.design-main .mt-section-heading .eyebrow { display:none; }
   .design-main .mt-expense-row.desktop-editable-cost { display:grid; grid-template-columns:minmax(180px,1fr) 150px 32px; align-items:center; gap:12px; }

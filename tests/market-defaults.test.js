@@ -24,7 +24,8 @@ for (const name of ['삼겹살', '목살']) {
     assert.equal(grouped[0].id, 'frozen');
     assert.equal(grouped[1].id, 'water');
     assert.equal(products[0].id, 'cold');
-    assert.equal(api.productVariants(products[0])[0].id, 'cold');
+    assert.equal(api.productVariants(products[0])[0].id, 'frozen-expensive');
+    assert.equal(api.productVariants(grouped[0])[2].id, 'cold');
     assert.equal(api.productVariants(products[0]).length, 3);
   });
 }
@@ -39,4 +40,18 @@ test('explicit default marker is respected without changing unrelated products',
   const grouped = catalog(products).groupProductVariants(products);
   assert.equal(grouped[0].id,'first');
   assert.equal(grouped[1].id,'default');
+});
+
+test('stay budget keeps filtering between two and four million', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
+  const slider = {value:'2000000',max:'4000000'};
+  const context = vm.createContext({
+    qs:s=>s==='#stayPrice'?slider:{value:s==='#stayRegion'?'전체':'10'},
+    stays:[{id:'low',price:1800000,maxPeople:30},{id:'high',price:2800000,maxPeople:30}],
+    normalizeStaySearchDates(){},ensureStayAvailability(){},getStayDetailFilters(){return {};},
+    stayDisplayPrice:s=>s.price,stayMatchesDetailFilters:()=>true,stayHasAvailableRoom:()=>true,
+  });
+  vm.runInContext(source.slice(source.indexOf('function getStayMatches()'),source.indexOf('function renderStays()')),context);
+  assert.equal(context.getStayMatches().length,1);
+  slider.value='3000000';assert.equal(context.getStayMatches().length,2);
 });

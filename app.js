@@ -1670,7 +1670,7 @@ function getStayMatches() {
   const detailFilters = getStayDetailFilters();
   return stays.filter((stay) => {
     const regionOk = region === "전체" || (Array.isArray(stay.regions) ? stay.regions.includes(region) : stay.region === region || region === '대성리' && String(stay.distance || '').includes('대성리'));
-    const priceOk = maxPrice >= 2000000 || stayDisplayPrice(stay) <= maxPrice;
+    const priceOk = maxPrice >= Number(qs("#stayPrice").max) || stayDisplayPrice(stay) <= maxPrice;
     return regionOk && stay.maxPeople >= people && priceOk && stayMatchesDetailFilters(stay, detailFilters) && stayHasAvailableRoom(stay);
   });
 }
@@ -1679,7 +1679,7 @@ function renderStays() {
   normalizeStaySearchDates();
   ensureStayAvailability();
   const price = Number(qs("#stayPrice").value);
-  qs("#stayPriceLabel").textContent = price >= 2000000 ? "2,000,000원 이상" : `${money(price)} 이하`;
+  qs("#stayPriceLabel").textContent = price >= Number(qs("#stayPrice").max) ? `${money(price)} 이상` : `${money(price)} 이하`;
   const detailFilters = getStayDetailFilters();
   const activeDetailFilterCount = detailFilters.tags.length + (detailFilters.minRooms > 0 ? 1 : 0);
   const detailFilterButton = qs("[data-toggle-stay-filters]");
@@ -2473,11 +2473,14 @@ function groupProductVariants(products = []) {
 
 function productVariants(product) {
   if (!product) return [];
-  if (Array.isArray(product.variants) && product.variants.length) return product.variants;
   const source = state.selectedStore?.products || findProduct(product.id)?.store?.products || [];
   const key = productGroupIdentity(product);
-  const variants = source.filter((item) => productGroupIdentity(item) === key);
-  return variants.length ? variants : [product];
+  const variants = Array.isArray(product.variants) && product.variants.length
+    ? product.variants : source.filter((item) => productGroupIdentity(item) === key);
+  const options = variants.length ? variants : [product];
+  if (!/삼겹|목살/.test(product.name || '')) return options;
+  const frozen = item => /냉동/.test([item.variantLabel,item.detailSections?.temperature,item.detail].filter(Boolean).join(' '));
+  return [...options].sort((a,b) => Number(frozen(b)) - Number(frozen(a)));
 }
 
 function productCatalogCountLabel(products = []) {

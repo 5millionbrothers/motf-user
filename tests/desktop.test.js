@@ -28,3 +28,11 @@ test('mobile calculator retains the exact pre-change budget allocation',()=>{
   assert.equal(cost.used,3000000);assert.equal(cost.remaining,0);assert.equal(cost.travel,undefined);
   sandbox.innerWidth=1440;const desktop=sandbox.window.motfLocalTemplates(context).costs();assert.ok(desktop.remaining>0);assert.ok(desktop.travel>0);
 });
+test('desktop product summary removes container duplication and option counts',()=>{
+  assert.equal(M.productSummary({},[{unit:'캔 / 500mL'},{unit:'캔 / 500mL×6입'}]),'500mL / 500mL×6입');
+  assert.equal(M.productSummary({},[{unit:'병 / 360mL'},{unit:'병 / 360mL'},{unit:'360mL×6병'}]),'360mL / 360mL×6병');
+  assert.equal(M.productSummary({unit:'750mL',manufacturer:'우리술'}),'750mL · 우리술');
+  assert.equal(M.productSummary({unit:'1kg',manufacturer:'너무 긴 제조사 이름으로 용량 표시를 방해하지 않아요'}),'1kg');
+  assert.equal(M.productSummary({unit:'1세트'}),'1세트');
+  assert.equal(M.productSummary({unit:''}),'');
+});

@@ -20,7 +20,17 @@
   function authorPolicy({ owned, deleted, replyCount = 0 }) {
     return { edit: Boolean(owned && !deleted && replyCount === 0), remove: Boolean(owned && !deleted) };
   }
+  function productSummary(product, variants = [product]) {
+    const capacity = item => {
+      const unit = String(item?.unit || '').trim();
+      const sizes = unit.match(/\d+(?:[.,]\d+)?\s*(?:ml|kg|g|l|리터)(?:\s*[×x*]\s*\d+\s*(?:입|개|병|캔|팩)?)?/gi);
+      return sizes ? sizes.map(size => size.replace(/\s+/g, '')).join(' / ') : unit;
+    };
+    const sizes = [...new Set(variants.map(capacity).filter(Boolean))].join(' / ');
+    const maker = String(product?.manufacturer || '').trim();
+    return maker && sizes && sizes.length + maker.length <= 22 ? `${sizes} · ${maker}` : sizes;
+  }
   const categoryOrder = ['전체', '정육', '주류', '음료', '과자·안주', '채소·농산물', '즉석밥', '라면', '김치·반찬', '통조림·가공식품', '조미료·소스', '숙취해소', '일회용품', '생활용품'];
   const search = (value, query) => String(value || '').normalize('NFKC').toLocaleLowerCase('ko').includes(String(query || '').normalize('NFKC').trim().toLocaleLowerCase('ko'));
-  return { budget, authorPolicy, categoryOrder, search };
+  return { budget, authorPolicy, productSummary, categoryOrder, search };
 });

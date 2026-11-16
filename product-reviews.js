@@ -16,6 +16,7 @@
     const {data,error} = await client.rpc('get_public_product_review_summaries');
     if (error) { console.warn('상품 리뷰 요약',error); return; }
     summaries.clear(); (data || []).forEach(row => summaries.set(String(row.offering_id),{rating:Number(row.average_rating_5),count:Number(row.review_count)}));
+    window.dispatchEvent(new Event('motf:product-review-summaries'));
     if (currentRoute() === 'market') renderStores();
     if (currentRoute() === 'productDetail') window.motfRenderProductReviews(state.selectedProduct);
   }

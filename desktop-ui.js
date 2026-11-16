@@ -70,6 +70,14 @@
   }
   function merchant() {
     $$('.product-price-action').forEach(button => { button.classList.remove('primary'); });
+    $$('.product-card .product-option-summary').forEach(node => {
+      if (node.dataset.desktopSummary) return;
+      const product = findProduct($('[data-product-id]', node.closest('.product-card'))?.dataset.productId)?.product;
+      if (!product) return;
+      const text = model.productSummary(product, productVariants(product));
+      node.dataset.desktopSummary = 'true';
+      node.innerHTML = `<span class="product-summary-standard">${esc(node.textContent)}</span><span class="product-summary-desktop" title="${esc(text)}">${esc(text)}</span>`;
+    });
     const tabs = $('#market .category-tabs') || $('#storeDetail .category-tabs');
     if (tabs && !tabs.dataset.desktopOrdered) {
       const children = [...tabs.children];
@@ -82,6 +90,30 @@
       const button = document.createElement('button'); button.type = 'button'; button.className = 'desktop-mt-jump'; button.dataset.mtJump = target.dataset.mtJump; button.textContent = '내 MT로 이동';
       $('[data-mt-receipt-close]', notice)?.before(button);
     }
+  }
+  function homeReviews() {
+    let changed = false;
+    function update(card, summary, attribute, id, label) {
+      const price = $('.home-price', card); if (!price) return;
+      let button = $('.desktop-home-review', card);
+      if (!button) {
+        button = document.createElement('button'); button.type = 'button'; button.className = 'desktop-home-review text-button';
+        button.setAttribute(attribute, id); button.setAttribute('aria-label', `${label} 리뷰 보기`);
+        if (attribute === 'data-product-id') button.setAttribute('data-product-reviews', '');
+        price.before(button);
+      }
+      const text = reviewRatingLabel(summary);
+      if (button.dataset.rating !== text) { button.dataset.rating = text; button.innerHTML = `${icon('star')}<span>${esc(text)}</span>`; changed = true; }
+    }
+    $$('#homeLocalStays .home-stay-card').forEach(card => {
+      const id = $('[data-stay-id]', card)?.dataset.stayId, stay = stays.find(item => String(item.id) === id);
+      if (stay) update(card, stayReviewSummary(stay), 'data-stay-review-id', id, stay.name);
+    });
+    $$('#homeLocalMarket .home-product-card').forEach(card => {
+      const id = $('[data-product-id]', card)?.dataset.productId, product = findProduct(id)?.product;
+      if (product) update(card, window.motfProductReviewSummary?.(id), 'data-product-id', id, product.name);
+    });
+    if (changed) refreshIcons();
   }
   function costs() {
     const project = state.mtProject; if (currentRoute() !== 'myMt' || !project || project.is_owner === false) return;
@@ -123,7 +155,7 @@
   }
   function decorate() {
     calendar(); collapsible($('#usagePeriodFilter'), '기간 검색'); collapsible($('[data-record-filter]'), '검색·필터');
-    boardSearch(); recreation(); merchant(); costs(); authNote();
+    boardSearch(); recreation(); merchant(); homeReviews(); costs(); authNote();
     const cost = window.motfLocalDesign?.getCosts();
     if (cost?.tier) {
       const foot = $('#home .calculator-foot span');
@@ -199,6 +231,7 @@
   document.addEventListener('focusout', event => { const row = event.target.closest('.desktop-editable-cost'); if (row && event.target.matches('input') && !row.contains(event.relatedTarget)) void saveCost(row); });
   document.addEventListener('keydown', event => {if(event.key === 'Enter' && event.target.matches('[data-desktop-cost]')) {event.preventDefault();event.target.blur();}});
   window.addEventListener('motf:routechange', () => {decorate();guide();if(currentRoute()==='myUsage')void renderMyActivity(true);});
+  window.addEventListener('motf:product-review-summaries', homeReviews);
   window.addEventListener('motf:auth-ready', () => { activityVersion++; activityKey=''; activityPending=false;activityRows=[];if(currentRoute()==='myUsage')void renderMyActivity(true); });
   new MutationObserver(() => { if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;decorate();}); }).observe(document.body,{childList:true,subtree:true});
   window.motfDesktopUI = {renderMyActivity,showMarketGuide:guide};
