@@ -221,11 +221,11 @@
     }
     const [reservationResult, orderResult, intentResult, pointResult, pointLedgerResult] = await Promise.all([
       scopeQuery(client.from("reservations")
-        .select("id, business_id, event_date, check_out_date, guest_count, offering_name, total_amount, original_amount, customer_paid_amount, points_used, coupon_discount, base_accommodation_amount, status, refund_status, refund_amount, businesses(business_name)")
+        .select("id, business_id, event_date, check_out_date, guest_count, offering_name, total_amount, original_amount, customer_paid_amount, points_used, coupon_discount, base_accommodation_amount, status, refund_status, refund_amount, businesses(business_name)").is("launch_archived_at", null)
         )
         .order("created_at", { ascending: false }),
       scopeQuery(client.from("market_orders")
-        .select("id, business_id, pickup_time, total_amount, original_amount, customer_paid_amount, points_used, coupon_discount, status, refund_status, refund_amount, businesses(business_name), market_order_items(id)")
+        .select("id, business_id, pickup_time, total_amount, original_amount, customer_paid_amount, points_used, coupon_discount, status, refund_status, refund_amount, businesses(business_name), market_order_items(id)").is("launch_archived_at", null)
         )
         .order("created_at", { ascending: false }),
       scopeQuery(client.from("payment_intents")

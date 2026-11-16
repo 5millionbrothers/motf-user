@@ -70,7 +70,7 @@
     lastReceipt={project,reference,userId:window.motfCurrentUserId};
     const notice = document.createElement('div'); notice.className = 'mt-save-receipt'; notice.setAttribute('role','status');
     notice.innerHTML = `<span><button type="button" class="mt-receipt-target" data-mt-jump="${project.id}" title="내 MT 보기">${esc(project.title)}</button>${text ? `<small>${esc(text)}</small>` : '에 담았습니다.'}</span>${reference ? '<button class="mt-receipt-change" type="button" data-mt-receipt-change>변경</button>' : ''}<button class="icon-button" type="button" data-mt-receipt-close aria-label="알림 닫기">${icon('x')}</button>`;
-    document.body.append(notice); refreshIcons(); receiptTimer = setTimeout(() => { if(!notice.contains(document.activeElement))notice.remove(); }, 12000);
+    document.body.append(notice); refreshIcons(); receiptTimer = setTimeout(() => notice.remove(), 5000);
   }
   async function saved(project, text = '', reference = null, request = pending) {
     if (!pending || pending !== request || pending.userId !== window.motfCurrentUserId) return;

@@ -74,7 +74,7 @@ module.exports = async function handler(req, res) {
       const ids = transactionIds || selections?.filter(item => item.kind === kind).map(item => item.id);
       if (ids && !ids.length) continue;
       const table = kind === 'stay' ? 'reservations' : 'market_orders';
-      const rows = await db(`/rest/v1/${table}?${scope}${ids ? `&id=in.(${ids.join(',')})` : ''}&select=*,businesses(business_name)${kind === 'market' ? ',market_order_items(item_name,quantity,unit_price,offering_id)' : ''}&order=created_at.desc&limit=501`);
+      const rows = await db(`/rest/v1/${table}?${scope}&launch_archived_at=is.null${ids ? `&id=in.(${ids.join(',')})` : ''}&select=*,businesses(business_name)${kind === 'market' ? ',market_order_items(item_name,quantity,unit_price,offering_id)' : ''}&order=created_at.desc&limit=501`);
       if (rows.length > 500) throw new Error('거래가 많습니다. 이용 내역에서 200건 이하로 선택해주세요.');
       if (!transactionIds && ids && rows.length !== new Set(ids).size) return json(res, 403, { ok: false, message: '접근할 수 없는 거래가 포함되어 있습니다.' });
       if (!rows.length) continue;

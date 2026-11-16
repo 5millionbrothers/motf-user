@@ -18,7 +18,7 @@
   cachedCards = cardsResult.error ? [] : (cardsResult.data || []);
   cachedSocial = settingsResult.data?.setting_value || {};
   applyEvents(eventsResult.error ? [] : (eventsResult.data || []));
-  if (!recreationResult.error) window.motfApplyRecreationActivities?.(recreationResult.data || []);
+  window.motfApplyRecreationActivities?.(recreationResult.error ? [] : (recreationResult.data || []));
   if (!popupResult.error) showPopup(popupResult.data?.[0]);
 
   async function refreshEvents() {

@@ -137,10 +137,15 @@
       scope ? "start_organization_support_conversation" : "start_support_conversation",
       scope ? { target_organization_id: scope } : undefined);
     if (supportError) console.error(supportError);
+    const relevant = await client.rpc('list_relevant_conversation_ids', {target_business_id:null,target_organization_id:scope});
+    if (authStamp !== authVersion || version !== loadVersion || scope !== (window.motfGetOrganizationId?.() || null)) return;
+    if (relevant.error) { window.motfApplyChats?.([], ''); console.error(relevant.error); return; }
+    const relevantIds = (relevant.data || []).map(row => row.id);
+    if (!relevantIds.length) { window.motfApplyChats?.([], ''); return; }
     let query = client.from("conversations")
       .select("id, business_id, organization_id, customer_name, group_name, last_message_at, businesses(business_name, business_type, address, phone, cover_image_url), conversation_contact_shares(user_id,phone), messages(id, sender_id, sender_name, sender_role, body, read_at, created_at)");
     query = scope ? query.eq("organization_id", scope) : query.eq("customer_id", authData.session.user.id).is("organization_id", null);
-    const { data, error } = await query.order("last_message_at", { ascending: false });
+    const { data, error } = await query.in('id', relevantIds).order("last_message_at", { ascending: false });
     if (authStamp !== authVersion || version !== loadVersion || scope !== (window.motfGetOrganizationId?.() || null)) return;
     if (error) return console.error(error);
     const chats = (data || []).map((conversation) => {
@@ -279,7 +284,7 @@
   });
 
   window.addEventListener("motf:routechange", () => {
-    if (isChatVisible()) void loadChats(activeConversationId);
+    if (document.body.dataset.currentRoute === 'chat') void loadChats(activeConversationId);
     else stopPresence();
   });
   document.addEventListener("visibilitychange", () => {

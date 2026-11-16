@@ -341,14 +341,7 @@ const legacyDemoStores = [
   },
 ];
 
-const activities = [
-  { id: "bingo", title: "학과 빙고", people: "20~60명", peopleGroup: "medium", space: "indoor", mood: "icebreak", time: "25분", note: "첫 만남 아이스브레이킹", media: "진행지 PDF · 예시 이미지", image: photo("photo-1529156069898-49953e39b3ac"), likes: 0, comments: [], detail: "학과, 동아리, 과잠, 취미 같은 키워드를 빙고판에 넣고 서로 질문하며 칸을 채우는 게임입니다." },
-  { id: "auction", title: "팀별 미션 경매", people: "30~80명", peopleGroup: "large", space: "indoor", mood: "team", time: "45분", note: "예산 게임과 장기자랑 조합", media: "룰 설명 영상", image: photo("photo-1517048676732-d65bc937f952"), likes: 0, comments: [], detail: "팀마다 가상 예산을 주고 미션을 경매로 가져가게 한 뒤, 획득한 미션을 수행해 점수를 얻는 방식입니다." },
-  { id: "court", title: "MT 재판소", people: "15~40명", peopleGroup: "medium", space: "indoor", mood: "solo", time: "30분", note: "익명 사연으로 진행", media: "대본 템플릿", image: photo("photo-1556761175-b413da4baf72"), likes: 0, comments: [], detail: "익명 사연을 받아 판사, 변호인, 증인 역할을 나누고 가볍게 상황극을 하는 레크레이션입니다." },
-  { id: "random-quiz", title: "랜덤 조 편성 퀴즈", people: "20~70명", peopleGroup: "large", space: "any", mood: "icebreak", time: "35분", note: "선후배 섞임 유도", media: "문제 예시", image: photo("photo-1523580846011-d3a5bc25702b"), likes: 0, comments: [], detail: "랜덤으로 섞인 조가 학교, 학과, MT 장소 관련 퀴즈를 풀며 자연스럽게 대화하도록 만드는 게임입니다." },
-  { id: "body-relay", title: "몸으로 말해요 릴레이", people: "20~50명", peopleGroup: "medium", space: "outdoor", mood: "team", time: "20분", note: "장비 없이 빠르게 시작", media: "제시어 카드", image: photo("photo-1517457373958-b7bdd4587205"), likes: 0, comments: [], detail: "팀원이 차례로 제시어를 몸짓으로 전달하고 마지막 사람이 정답을 맞히는 빠른 팀 대항 게임입니다." },
-  { id: "ban-word", title: "술자리 금지어 게임", people: "10~40명", peopleGroup: "small", space: "indoor", mood: "solo", time: "30분", note: "소규모 뒤풀이용", media: "카드 이미지", image: photo("photo-1543269865-cbf427effbad"), likes: 0, comments: [], detail: "각자 모르는 금지어를 머리 위에 붙이고 대화하면서 상대가 금지어를 말하게 유도하는 게임입니다." },
-];
+const activities = [];
 
 const communityBoards = [
   {
@@ -398,24 +391,15 @@ const state = {
   mtCandidateRecords: stays.filter((stay) => ["station", "river", "pine"].includes(String(stay.id))),
   mtProject: {
     id: null,
-    title: "고려대학교 국제학부 2026 여름 MT",
-    organization_name: "고려대학교 국제학부",
+    title: "",
+    organization_name: "",
     region: "대성리",
     starts_on: "2026-08-14",
     ends_on: "2026-08-15",
     guest_count: 32,
     status: "planning",
     estimated_budget: 2500000,
-    items: [
-      { id: "demo-stay-plan", item_kind: "stay", reference_id: "station", title: "대성리 스테이션 하우스", quantity: 1, amount: 1083000, status: "planned" },
-      { id: "demo-shopping-plan", item_kind: "shopping", reference_id: "pork-set", title: "바베큐 세트", quantity: 1, amount: 189000, status: "planned" },
-    ],
-    itinerary: [
-      { starts_at: "2026-08-14T13:00:00+09:00", title: "대성리역 집합", place: "2번 출구" },
-      { starts_at: "2026-08-14T15:00:00+09:00", title: "숙소 체크인", note: "대표자 신분증 지참" },
-      { starts_at: "2026-08-14T16:30:00+09:00", title: "장보기 배송", place: "숙소 주차장" },
-    ],
-    notices: [{ body: "개인 세면도구와 수건을 꼭 챙겨주세요. 방 배정은 출발 전날 공개합니다.", is_pinned: true }],
+    items: [], itinerary: [], notices: [],
   },
   publicCandidateStays: [],
   catalogError: "",
@@ -579,7 +563,7 @@ window.motfGetMarketOrderDraft = function getMarketOrderDraft() {
     business_id: checkoutItems.length ? findProduct(checkoutItems[0].productId)?.store.id : null,
     customer_name: window.motfCurrentUserProfile?.full_name || "이용자",
     contact_phone: window.motfCurrentUserProfile?.phone || null,
-    pickup_place: qs("#pickupPlace").value.trim(),
+    pickup_place: "대성공판장",
     pickup_time: qs("#pickupTime").value,
     request_memo: qs("#pickupMemo").value.trim() || null,
     contains_alcohol: checkoutItems.some((item) => isAlcoholProduct(findProduct(item.productId)?.product || {})),
@@ -615,7 +599,7 @@ window.motfStartPreparedPayment = function startPreparedPayment(intent, draft) {
     stayName: isStay ? state.selectedStay.name : isExtraCharge ? draft.stay_name : undefined,
     roomName: isStay ? state.selectedRoom.name : isExtraCharge ? draft.offering_name : undefined,
     storeName: isStay || isExtraCharge ? undefined : state.selectedStore.name,
-    location: isStay ? state.selectedStay.distance : isExtraCharge ? undefined : "마트 수령 장소는 주문 정보 기준",
+    location: isStay ? state.selectedStay.distance : isExtraCharge ? undefined : "대성공판장 매장 픽업",
     date: isStay ? draft.event_date : isExtraCharge ? draft.event_date : undefined,
     checkOutDate: isStay ? draft.check_out_date : isExtraCharge ? draft.check_out_date : undefined,
     people: isStay ? draft.guest_count : isExtraCharge ? draft.guest_count : undefined,
@@ -3046,8 +3030,7 @@ function mtProjectSpend(project = state.mtProject) {
 
 function mtProjectList() {
   if (state.mtProjects.length) return state.mtProjects.map((project) => String(project.id) === String(state.mtProject?.id) ? { ...project, ...state.mtProject } : project);
-  const isLocalPreview = ["localhost", "127.0.0.1", ""].includes(location.hostname);
-  return isLocalPreview && (state.mtProject?.id || state.mtProject?.title) ? [state.mtProject] : [];
+  return [];
 }
 
 function renderMtDirectory() {

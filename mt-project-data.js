@@ -75,7 +75,7 @@
       window.motfApplyMtProjects?.([]);
       return [];
     }
-    let query = client.from("mt_projects").select(projectFields);
+    let query = client.from("mt_projects").select(projectFields).is("launch_archived_at", null);
     query = scope ? query.eq("organization_id", scope) : query.is("organization_id", null);
     const { data: projects, error } = await query.order("starts_on", { ascending: false });
     if (error) throw error;

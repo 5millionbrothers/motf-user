@@ -2,7 +2,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),vm=require(
 const source=fs.readFileSync(require.resolve('../mt-selection.js'),'utf8');
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 async function setup({one=false,defer=false}={}) {
-  let now=100000,finishWrite,writes=0,moves=0;const events={},dialogEvents={},documentEvents={},storage=new Map(),appended=[],error={textContent:''};
+  let now=100000,finishWrite,writes=0,moves=0;const events={},dialogEvents={},documentEvents={},storage=new Map(),appended=[],timers=[],error={textContent:''};
   const projects=[{id:'mt-a',title:'A의 MT',status:'planning'},{id:'mt-b',title:'B의 MT',status:'planning'}];if(one)projects.pop();
   const dialog={open:false,setAttribute(){},removeAttribute(){},addEventListener(name,handler){dialogEvents[name]=handler},showModal(){this.open=true},close(){this.open=false},querySelector(){return error}};
   const window={motfCurrentUserId:'a',motfMtWorkflow:require('../mt-workflow-model'),motfOrganizationReady:Promise.resolve(),
@@ -12,15 +12,22 @@ async function setup({one=false,defer=false}={}) {
     motfMoveRecentMtSave:async()=>{moves++;return {save_reference:{kind:'shopping',recordIds:['item-b'],moveQuantity:1,expectedQuantity:1,updatedAt:null}}},
     addEventListener(name,handler){events[name]=handler}};
   const context={window,state:{},escapeHtml:String,refreshIcons(){},productVariants:value=>[value],normalizeProductQuantity:(_product,qty)=>qty || 1,
-    Date:class extends Date{static now(){return now}},setTimeout:()=>1,clearTimeout(){},requestAnimationFrame(){},localStorage:{getItem:key=>storage.get(key)||null,setItem:(key,value)=>storage.set(key,value)},
+    Date:class extends Date{static now(){return now}},setTimeout:(fn,ms)=>{timers.push({fn,ms});return timers.length;},clearTimeout(){},requestAnimationFrame(){},localStorage:{getItem:key=>storage.get(key)||null,setItem:(key,value)=>storage.set(key,value)},
     MutationObserver:class{observe(){}},document:{body:{append:element=>appended.push(element)},
-      createElement:tag=>tag==='dialog'?dialog:{setAttribute(){},remove(){},contains:()=>false},querySelector:()=>null,querySelectorAll:()=>[],addEventListener:(name,handler)=>{documentEvents[name]=handler}}};
+      createElement:tag=>tag==='dialog'?dialog:{setAttribute(){},remove(){this.removed=true;},contains:()=>false},querySelector:()=>null,querySelectorAll:()=>[],addEventListener:(name,handler)=>{documentEvents[name]=handler}}};
   vm.runInNewContext(source,context);await tick();
   async function choose(projectId){const button={dataset:{selectionProject:projectId},hasAttribute:name=>name==='data-selection-project'};await dialogEvents.click({target:{closest:()=>button}});await tick();}
   async function add(id='water'){await window.motfOpenShoppingPicker({id,name:'생수'},1);await tick();}
   async function change(){const target={closest:selector=>selector==='[data-mt-receipt-change]'?{}:null};await documentEvents.click({target});await tick();}
-  return {window,events,dialog,storage,appended,choose,add,change,error,setNow:value=>{now=value},finish:()=>finishWrite(),writes:()=>writes,moves:()=>moves};
+  return {window,events,dialog,storage,appended,timers,choose,add,change,error,setNow:value=>{now=value},finish:()=>finishWrite(),writes:()=>writes,moves:()=>moves};
 }
+
+test('saved receipt dismisses after five seconds without closing an uncommitted chooser',async()=>{
+  const app=await setup({one:true});await app.add();
+  assert.equal(app.dialog.open,true);assert.equal(app.timers.some(timer=>timer.ms===5000),false);
+  await app.choose('mt-a');const receipt=app.appended.at(-1),timer=app.timers.find(timer=>timer.ms===5000);
+  assert.ok(timer);assert.notEqual(receipt.removed,true);timer.fn();assert.equal(receipt.removed,true);
+});
 test('first save asks for an MT even when there is only one',async()=>{
   const app=await setup({one:true});await app.add();assert.equal(app.writes(),0);assert.match(app.dialog.innerHTML,/data-selection-project="mt-a"/);
   await app.choose('mt-a');assert.equal(app.writes(),1);assert.match(app.appended.at(-1).innerHTML,/data-mt-receipt-change/);assert.equal(app.dialog.open,false);
