@@ -55,6 +55,7 @@
   let welcomeEmailRequestPromise = null;
   let verifiedIdentity = null;
   let passwordResetIdentity = null;
+  let identityInProgress = false;
 
   function showToast(message) {
     if (typeof window.toast === "function") {
@@ -230,24 +231,25 @@
       ? document.querySelector("#identityResetEmail")?.value.trim()
       : document.querySelector("#customerSignupEmail")?.value.trim();
     if (purpose === "password_reset" && !email) throw new Error("가입 아이디 또는 기존 가입 이메일을 먼저 입력해주세요.");
-    const popup = window.open("", "motf_identity", "width=430,height=640,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
+    if(identityInProgress)throw new Error('진행 중인 본인인증 창을 먼저 완료하거나 닫아주세요.');
+    const popupName = `motf_identity_${crypto.randomUUID().replaceAll('-', '')}`;
+    const popup = window.open('/identity-wait.html', popupName, "width=430,height=640,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
     if (!popup) throw new Error("본인인증 팝업이 차단되었습니다. 브라우저에서 팝업을 허용해주세요.");
-    popup.document.write("<!doctype html><html lang='ko'><meta charset='utf-8'><title>본인인증 연결 중</title><body style='font-family:sans-serif;padding:32px;text-align:center'>본인인증 화면을 연결하고 있습니다.</body></html>");
-    let start;
+    identityInProgress = true;
+    let form;
     try {
-      start = await apiJson("/api/identity-start", {
+      const start = await apiJson("/api/identity-start", {
         method: "POST",
+        signal: AbortSignal.timeout(30000),
         headers: { "Content-Type": "application/json", ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}) },
         body: JSON.stringify({ purpose, email, accountType: "user", returnUrl: window.location.href, mobile: window.innerWidth < 720 }),
       });
-    } catch (error) {
-      popup.close();
-      throw error;
-    }
-    const form = document.createElement("form");
+    if (!start.identityToken || !start.form?.reg_cert_key || new URL(start.callUrl).protocol !== 'https:') throw new Error('본인인증 연결 정보를 확인하지 못했습니다. 다시 시도해주세요.');
+    if (popup.closed) throw new Error('본인인증 창이 닫혔습니다. 다시 시도해주세요.');
+    form = document.createElement("form");
     form.method = "POST";
     form.action = start.callUrl;
-    form.target = "motf_identity";
+    form.target = popupName;
     Object.entries(start.form || {}).forEach(([name, value]) => {
       const input = document.createElement("input");
       input.type = "hidden";
@@ -256,22 +258,24 @@
       form.appendChild(input);
     });
     document.body.appendChild(form);
-    form.submit();
-    form.remove();
-    return new Promise((resolve, reject) => {
-      const timeout = window.setTimeout(() => { cleanup(); reject(new Error("본인인증 시간이 만료되었습니다. 다시 시도해주세요.")); }, 10 * 60 * 1000);
-      const poll = window.setInterval(() => { if (popup.closed) { cleanup(); reject(new Error("본인인증 창이 닫혔습니다.")); } }, 700);
+    return await new Promise((resolve, reject) => {
+      let finished = false;
+      const finish = error => {if(finished)return;finished=true;cleanup();reject(error);};
+      const timeout = window.setTimeout(() => finish(new Error("본인인증 시간이 만료되었습니다. 다시 시도해주세요.")), 10 * 60 * 1000);
+      const poll = window.setInterval(() => { if (popup.closed) finish(new Error("본인인증 창이 닫혔습니다.")); }, 1000);
       const onMessage = async (event) => {
-        if (event.origin !== window.location.origin) return;
+        if (event.origin !== window.location.origin || event.source !== popup || finished) return;
         if (event.data?.type !== "motf:kcp-identity") return;
-        cleanup();
-        if (!event.data.ok) return reject(new Error(event.data.message || "본인인증에 실패했습니다."));
+        finished = true;cleanup();
+        if (event.data.ok !== true) return reject(new Error(event.data.message || "본인인증에 실패했습니다."));
         try {
           const status = await apiJson("/api/identity-status", {
             method: "POST",
+            signal: AbortSignal.timeout(30000),
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ identityToken: start.identityToken, purpose }),
           });
+          if(!status.verified || !status.person?.name || !status.person?.phone || !status.person?.birthDate)throw new Error('인증 결과를 확인하지 못했습니다. 다시 인증해주세요.');
           resolve({ token: start.identityToken, purpose, person: status.person });
         } catch (error) { reject(error); }
       };
@@ -281,7 +285,9 @@
         window.removeEventListener("message", onMessage);
       }
       window.addEventListener("message", onMessage);
+      try{form.submit();}catch(error){finish(error);}
     });
+    } finally { form?.remove();popup.close();identityInProgress=false; }
   }
 
   function showIdentityResult(targetId, identity) {
@@ -686,11 +692,32 @@
     window.refreshIcons?.();
   });
 
+  let legalDialog = null;
+  function openSignupLegal(kind) {
+    if (!['terms', 'privacy'].includes(kind)) return;
+    const source = document.querySelector(`#${kind} .legal-document`);
+    if (!source) { setMessage('약관을 불러오지 못했습니다. 잠시 후 다시 확인해주세요.', 'error'); return; }
+    if (!legalDialog) {
+      legalDialog = document.createElement('dialog');
+      legalDialog.className = 'auth-legal-dialog';legalDialog.setAttribute('aria-labelledby', 'authLegalTitle');
+      legalDialog.innerHTML = '<header><h2 id="authLegalTitle"></h2><button type="button" class="auth-close" data-auth-legal-close aria-label="닫기"><i data-lucide="x"></i></button></header><div class="auth-legal-body" tabindex="0"></div><footer><button class="primary-btn" type="button" data-auth-legal-close>확인하고 돌아가기</button></footer>';
+      document.body.appendChild(legalDialog);
+      legalDialog.addEventListener('click', event => { if(event.target.closest('[data-auth-legal-close]'))legalDialog.close(); });
+    }
+    legalDialog.querySelector('#authLegalTitle').textContent = kind === 'terms' ? '이용약관' : '개인정보 처리방침';
+    const content = source.cloneNode(true);content.className = 'legal-document';
+    content.querySelectorAll('[id]').forEach(node=>node.removeAttribute('id'));
+    content.querySelectorAll('a[href]').forEach(node=>{node.target='_blank';node.rel='noopener noreferrer';});
+    const body = legalDialog.querySelector('.auth-legal-body');body.replaceChildren(content);body.scrollTop=0;
+    if(!legalDialog.open)legalDialog.showModal();
+    window.refreshIcons?.();
+  }
+
   document.addEventListener("click", (event) => {
     const legalButton = event.target.closest("[data-auth-legal-route]");
     if (!legalButton) return;
-    closeModal(false);
-    window.motfNavigate?.(legalButton.dataset.authLegalRoute);
+    event.preventDefault();
+    openSignupLegal(legalButton.dataset.authLegalRoute);
   });
 
   signupForm.addEventListener("submit", async (event) => {
@@ -1126,7 +1153,7 @@
   });
 
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !modal.hidden && (profileCompleteForm.hidden || !needsProfileCompletion())) closeModal();
+    if (event.key === "Escape" && !legalDialog?.open && !modal.hidden && (profileCompleteForm.hidden || !needsProfileCompletion())) closeModal();
   });
 
   client.auth.onAuthStateChange((event, nextSession) => {
