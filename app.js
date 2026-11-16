@@ -764,6 +764,8 @@ const routeParents = {
   terms: "home",
   privacy: "home",
   refundPolicy: "home",
+  partnerInquiry: "home",
+  feedback: "home",
   complete: "",
 };
 
@@ -799,6 +801,8 @@ const appRoutes = new Set([
   "terms",
   "privacy",
   "refundPolicy",
+  "partnerInquiry",
+  "feedback",
   "complete",
 ]);
 
@@ -834,6 +838,8 @@ const routePaths = {
   terms: "/terms",
   privacy: "/privacy",
   refundPolicy: "/refund-policy",
+  partnerInquiry: "/partner-inquiry",
+  feedback: "/feedback",
   complete: "/complete",
 };
 

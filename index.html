@@ -32,7 +32,7 @@
     <link rel="stylesheet" href="legacy-style.css?v=20261103-local2" />
     <link rel="preload" href="assets/SUIT-Variable.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="local-reset.css?v=20261103-local2" />
-    <link rel="stylesheet" href="local-design.css?v=20261103-local2" />
+    <link rel="stylesheet" href="local-design.css?v=20261116-contact29" />
     <link rel="stylesheet" href="local-adapter.css?v=20261103-symbol-small" />
     <link rel="stylesheet" href="screen-polish.css?v=20261106" />
     <link rel="stylesheet" href="preparation-workflows.css?v=20261108" />
@@ -45,7 +45,7 @@
   <link rel="stylesheet" href="/desktop-refinements.css?v=20261113-recent">
     <link rel="stylesheet" href="/desktop-ui.css?v=20261116-market-combined" />
     <link rel="stylesheet" href="/desktop-replies.css?v=20261116" />
-    <link rel="stylesheet" href="/launch.css?v=20261116" />
+    <link rel="stylesheet" href="/launch.css?v=20261116-footer1" />
   </head>
   <body data-current-route="home">
     <div class="motf-loading-overlay" id="motfLoadingOverlay" role="status" aria-live="polite" aria-label="페이지를 불러오는 중입니다">
@@ -795,6 +795,35 @@
         </div>
       </section>
 
+      <section id="partnerInquiry" class="view legal-view contact-form-view">
+        <div class="legal-layout contact-form-layout">
+          <div class="view-title compact"><div><h1>신규 입점 문의</h1></div></div>
+          <form id="partnerInquiryForm" class="legal-card contact-form" data-static-contact-form data-success-title="신규 입점 문의가 접수되었습니다." data-success-message="빠른 시일 내에 확인 후 연락드리겠습니다.">
+            <label>업장 종류 <span>*</span><select required><option value="">선택해주세요</option><option>숙소</option><option>식당·식자재</option><option>레크리에이션·체험</option><option>교통</option><option>기타</option></select></label>
+            <label>업장 이름 <span>*</span><input type="text" placeholder="업장 이름을 입력해주세요" required /></label>
+            <div class="contact-form-row">
+              <label>담당자 이름 <span>*</span><input type="text" placeholder="담당자 이름을 입력해주세요" required /></label>
+              <label>이메일 또는 전화번호 <span>*</span><input type="text" placeholder="이메일 또는 전화번호를 입력해주세요" required /></label>
+            </div>
+            <label>업장 소개 또는 제공 가능한 서비스<textarea rows="5" placeholder="모티프에 소개하고 싶은 내용을 자유롭게 적어주세요"></textarea></label>
+            <label class="contact-consent"><input type="checkbox" required /><span>문의 확인을 위한 개인정보 수집 및 이용에 대해 동의합니다.</span></label>
+          </form>
+          <div class="contact-form-actions"><button class="secondary-btn" type="button" data-history-back data-fallback-route="home">이전</button><button class="primary-btn" type="submit" form="partnerInquiryForm"><i data-lucide="send"></i>문의 접수하기</button></div>
+        </div>
+      </section>
+
+      <section id="feedback" class="view legal-view contact-form-view">
+        <div class="legal-layout contact-form-layout">
+          <div class="view-title compact"><div><h1>유저 건의사항</h1></div></div>
+          <form id="feedbackForm" class="legal-card contact-form" data-static-contact-form data-success-title="건의사항이 접수되었습니다." data-success-message="소중한 의견 감사합니다. 더 나은 서비스로 보답하겠습니다.">
+            <label>건의 유형<select><option>불편한 점</option><option>추가되었으면 하는 기능</option><option>오류 신고</option><option>기타 의견</option></select></label>
+            <label>건의 내용 <span>*</span><textarea rows="8" placeholder="의견을 자유롭게 남겨주세요" required></textarea></label>
+            <label>이메일 또는 연락처<input type="text" placeholder="답변을 원하시면 남겨주세요" /></label>
+          </form>
+          <div class="contact-form-actions"><button class="secondary-btn" type="button" data-history-back data-fallback-route="home">이전</button><button class="primary-btn" type="submit" form="feedbackForm"><i data-lucide="send"></i>보내기</button></div>
+        </div>
+      </section>
+
       <section id="terms" class="view legal-view">
         <button class="ghost-btn back-btn" data-history-back data-fallback-route="myGuide"><i data-lucide="chevron-left"></i>뒤로가기</button>
         <div class="legal-layout">
@@ -1186,7 +1215,7 @@
         모티프는 통신판매중개자이며 개별 숙박 및 식자재 거래의 당사자가 아닙니다.
       </address>
       <a class="footer-instagram" data-social-instagram href="#" target="_blank" rel="noopener noreferrer" aria-label="모티프 인스타그램"><i data-lucide="camera"></i><span>Instagram</span></a>
-      <div class="footer-contact-links"><a href="https://forms.gle/mHNaoH2Tq4xNQKkc7" target="_blank" rel="noopener noreferrer">신규입점문의 <i data-lucide="arrow-up-right"></i></a><a href="https://forms.gle/3Ygs7HY1CSexXXng8" target="_blank" rel="noopener noreferrer">유저 건의사항 <i data-lucide="arrow-up-right"></i></a></div>
+      <div class="footer-contact-links"><a href="/partner-inquiry">신규입점문의 <i data-lucide="arrow-up-right"></i></a><a href="/feedback">유저 건의사항 <i data-lucide="arrow-up-right"></i></a></div>
     </footer>
 
     <dialog id="photoGalleryDialog" class="photo-gallery-dialog" aria-label="숙소 사진 전체보기">
@@ -1214,6 +1243,17 @@
         </div>
         <button class="primary-btn" type="submit">확인했습니다</button>
       </form>
+    </dialog>
+
+    <dialog id="contactSuccessDialog" class="contact-success-dialog" aria-labelledby="contactSuccessTitle">
+      <div class="contact-success-dialog__body">
+        <div class="contact-success-dialog__top">
+          <h2 id="contactSuccessTitle">접수되었습니다.</h2>
+          <button class="contact-success-dialog__close" type="button" data-close-contact-success aria-label="팝업 닫기"><i data-lucide="x"></i></button>
+        </div>
+        <p id="contactSuccessMessage">문의가 접수되었습니다.</p>
+        <button class="primary-btn" type="button" data-close-contact-success>확인</button>
+      </div>
     </dialog>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -1247,5 +1287,22 @@
     <script src="/workflow-ui.js?v=20261116-desktop"></script>
     <script src="/desktop-ui.js?v=20261116-market-combined"></script>
     <script src="/desktop-replies.js?v=20261116"></script>
+    <script>
+      document.addEventListener("submit", (event) => {
+        const form = event.target.closest("[data-static-contact-form]");
+        if (!form) return;
+        event.preventDefault();
+        document.getElementById("contactSuccessTitle").textContent = form.dataset.successTitle;
+        document.getElementById("contactSuccessMessage").textContent = form.dataset.successMessage;
+        document.getElementById("contactSuccessDialog").showModal();
+        form.parentElement.querySelector("button[type=submit]").disabled = true;
+        form.querySelectorAll("input, select, textarea").forEach((field) => { field.disabled = true; });
+      });
+      document.addEventListener("click", (event) => {
+        if (event.target.closest("[data-close-contact-success]")) {
+          document.getElementById("contactSuccessDialog").close();
+        }
+      });
+    </script>
   </body>
 </html>
