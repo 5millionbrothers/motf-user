@@ -301,6 +301,14 @@
   function setSheet(state, animate = true) {
     if (!sheet.el) return;
     if (state !== 'peek') hideMapCard();
+    // 끝까지 올린 상태(full)는 화면 고정 시트가 아니라 일반 페이지 스크롤로 바꿈
+    // → 내리면 로고 줄이 같이 올라가고, 아이폰 사파리·크롬 주소창도 접혀서 목록이 화면을 꽉 채움
+    const wasFull = document.body.classList.contains('mp-sheet-full');
+    const toFull = state === 'full';
+    if (wasFull !== toFull) {
+      window.scrollTo(0, 0);
+      document.body.classList.toggle('mp-sheet-full', toFull);
+    }
     sheet.state = state;
     sheet.y = sheetSnaps()[state];
     sheet.el.classList.toggle('mp-dragging', !animate);
@@ -319,7 +327,7 @@
   function layoutSheet() {
     const on = mobile.matches && route() === 'stays';
     document.body.classList.toggle('mp-sheet-on', on);
-    if (!on) return;
+    if (!on) { document.body.classList.remove('mp-sheet-full'); return; }
     markRoute();
     const view = $('#stays');
     const section = $('.split-layout > section', view);
@@ -614,6 +622,26 @@
     element.after(button);
   }
 
+  /* 편의시설 목록 접기: 높이로 자르지 않고 앞의 6개만 온전히 보여주고 나머지는 '모두 보기' (흐릿한 가림 없음) */
+  function listFold(list) {
+    if (!list || list.dataset.mpFold) return;
+    list.dataset.mpFold = '1';
+    const items = $$(':scope > li', list);
+    if (items.length <= 6) return;
+    list.classList.add('mp-list-folded');
+    const label = `편의시설 ${items.length}개 모두 보기`;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'mp-fold-toggle';
+    button.innerHTML = `<span>${label}</span>${M().svg.chevronDown}`;
+    button.addEventListener('click', () => {
+      const open = list.classList.toggle('mp-list-open');
+      button.classList.toggle('open', open);
+      button.querySelector('span').textContent = open ? '접기' : label;
+    });
+    list.after(button);
+  }
+
   function rooms(root, stay) {
     const list = $('.room-list-vertical', root);
     if (!list) return;
@@ -771,12 +799,9 @@
     const go = el.querySelector('.mp-db-go');
     go.textContent = opts.label;
     go.disabled = !!opts.disabled;
+    go.classList.toggle('is-secondary', !!opts.secondary);
     el._onGo = opts.onGo;
   }
-  const scrollToRooms = () => {
-    const target = $('#mpRooms');
-    if (target) window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY - 70, behavior: 'smooth' });
-  };
 
   /* 날짜·인원 시트 */
   let dateSheet = null;
@@ -827,10 +852,12 @@
     const v = M()?.values();
     if (!v) return;
     if (!dateSheet) {
-      dateSheet = document.createElement('div');
+      // 독립 팝업(dialog)으로 띄워야 숙소 검색 창 같은 다른 팝업 위에서도 잘리지 않고 화면 전체에 보임
+      dateSheet = document.createElement('dialog');
       dateSheet.className = 'mp-date-sheet';
       dateSheet.hidden = true;
-      dateSheet.innerHTML = `<button type="button" class="mp-ds-backdrop" aria-label="닫기" tabindex="-1"></button><section class="mp-ds-panel" role="dialog" aria-modal="true" aria-label="날짜, 인원 선택"><div class="mp-ds-grip"></div><header class="mp-ds-head"><h2>날짜, 인원 선택</h2><button type="button" class="mp-ds-close" aria-label="닫기">${M().svg.close}</button></header><div class="mp-ds-body"><p class="mp-ds-range"><strong></strong></p><div class="mp-cal-week"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div><div class="mp-ds-calendar"></div><div class="mp-ds-people"><span>${M().svg.users}<strong>인원</strong><small>10명부터 예약할 수 있어요</small></span><div class="mp-ds-stepper"><button type="button" data-step="-1" aria-label="인원 줄이기">${M().svg.minus}</button><input type="number" inputmode="numeric" min="10" max="120" aria-label="인원"><button type="button" data-step="1" aria-label="인원 늘리기">${M().svg.plus}</button></div></div></div><footer class="mp-ds-foot"><button type="button" class="mp-ds-reset">재설정</button><button type="button" class="mp-ds-apply">적용하기</button></footer></section>`;
+      dateSheet.addEventListener('cancel', event => { event.preventDefault(); closeDateSheet(); });
+      dateSheet.innerHTML = `<button type="button" class="mp-ds-backdrop" aria-label="닫기" tabindex="-1"></button><section class="mp-ds-panel" role="dialog" aria-modal="true" aria-label="날짜, 인원 선택"><div class="mp-ds-grip"></div><header class="mp-ds-head"><h2>날짜, 인원 선택</h2><button type="button" class="mp-ds-close" aria-label="닫기">${M().svg.close}</button></header><div class="mp-ds-body"><p class="mp-ds-range"><strong></strong></p><div class="mp-cal-week"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div><div class="mp-ds-calendar"></div><div class="mp-ds-people"><span>${M().svg.users}<strong>인원</strong><small>10명부터 예약할 수 있어요</small></span><div class="mp-ds-stepper"><button type="button" data-step="-1" aria-label="인원 줄이기">${M().svg.minus}</button><label class="mp-ds-count"><input type="number" inputmode="numeric" pattern="[0-9]*" min="10" max="120" aria-label="인원 직접 입력"><span>명</span></label><button type="button" data-step="1" aria-label="인원 늘리기">${M().svg.plus}</button></div></div></div><footer class="mp-ds-foot"><button type="button" class="mp-ds-reset">재설정</button><button type="button" class="mp-ds-apply">적용하기</button></footer></section>`;
       dateSheet.addEventListener('click', event => {
         if (event.target.closest('.mp-ds-backdrop, .mp-ds-close')) { closeDateSheet(); return; }
         const day = event.target.closest('.mp-cal-day');
@@ -838,23 +865,28 @@
         const step = event.target.closest('[data-step]');
         if (step) {
           const input = $('.mp-ds-stepper input', dateSheet);
-          input.value = Math.min(120, Math.max(10, Number(input.value || 10) + Number(step.dataset.step)));
+          input.value = clampPeople(Number(input.value || 10) + Number(step.dataset.step));
           updateRange();
         }
         if (event.target.closest('.mp-ds-reset')) { range.a = ''; range.b = ''; paintRange(); }
         if (event.target.closest('.mp-ds-apply')) applyDateSheet();
       });
-      $('.mp-ds-stepper input', dateSheet).addEventListener('input', updateRange);
+      // 인원은 직접 입력도 가능 (입력 중엔 그대로 두고, 칸을 벗어날 때 10~120명으로 맞춤)
+      const count = $('.mp-ds-stepper input', dateSheet);
+      count.addEventListener('input', updateRange);
+      count.addEventListener('focus', () => count.select());
+      count.addEventListener('change', () => { count.value = clampPeople(count.value); updateRange(); });
+      count.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); count.blur(); } });
       dateSheet.addEventListener('keydown', event => { if (event.key === 'Escape') closeDateSheet(); });
     }
-    // 팝업(dialog) 위에서 열면 그 팝업 안에 붙여야 위에 보임
-    (document.querySelector('dialog[open]') || document.body).append(dateSheet);
+    if (dateSheet.parentElement !== document.body) document.body.append(dateSheet);
     $('.mp-ds-stepper input', dateSheet).value = v.people;
     const holder = $('.mp-ds-calendar', dateSheet);
     renderMonths(holder);
     range.a = v.checkIn && v.checkIn >= todayYmd() ? v.checkIn : '';
     range.b = range.a && v.checkOut > range.a ? v.checkOut : '';
     dateSheet.hidden = false;
+    if (!dateSheet.open) { try { dateSheet.showModal(); } catch (error) { dateSheet.setAttribute('open', ''); } }
     document.body.classList.add('mp-date-open');
     paintRange();
     const target = range.a ? $(`.mp-cal-month[data-month="${range.a.slice(0, 7)}"]`, holder) : null;
@@ -872,17 +904,19 @@
     $('.mp-ds-range strong', dateSheet).textContent = a ? (b ? `${M().short(a)} ~ ${M().short(b)} · ${n}박` : `${M().short(a)} ~ 체크아웃 날짜를 골라주세요`) : '체크인 날짜를 골라주세요';
     const apply = $('.mp-ds-apply', dateSheet);
     apply.disabled = !(a && b && n > 0);
-    apply.textContent = apply.disabled ? '날짜를 골라주세요' : `${n}박 · ${Math.min(120, Math.max(10, people))}명 적용`;
+    apply.textContent = apply.disabled ? '날짜를 골라주세요' : `${n}박 · ${clampPeople(people)}명 적용`;
   }
+  const clampPeople = value => Math.min(120, Math.max(10, Math.round(Number(value) || 10)));
   function closeDateSheet() {
     if (!dateSheet || dateSheet.hidden) return;
     dateSheet.hidden = true;
+    if (dateSheet.open) { try { dateSheet.close(); } catch (error) { dateSheet.removeAttribute('open'); } }
     document.body.classList.remove('mp-date-open');
   }
   function applyDateSheet() {
     const [a, b] = selectedRange();
     if (!a || !b) return;
-    const people = Math.min(120, Math.max(10, Number($('.mp-ds-stepper input', dateSheet).value || 10)));
+    const people = clampPeople($('.mp-ds-stepper input', dateSheet).value);
     closeDateSheet();
     if (typeof applyStaySearchField === 'function') {
       applyStaySearchField('checkIn', a);
@@ -951,30 +985,14 @@
     hero(root);
     keywords(root, stay);
     rooms(root, stay);
-    const facility = $('.stay-facility-showcase .amenity-checklist', root);
-    if (facility && !facility.dataset.mpFold) {
-      facility.dataset.mpFold = '1';
-      const items = $$('li', facility);
-      if (items.length > 6) {
-        facility.classList.add('mp-list-folded');
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'mp-fold-toggle';
-        button.innerHTML = `<span>편의시설 ${items.length}개 모두 보기</span>${M().svg.chevronDown}`;
-        button.addEventListener('click', () => {
-          const open = facility.classList.toggle('mp-list-open');
-          button.classList.toggle('open', open);
-          button.querySelector('span').textContent = open ? '접기' : `편의시설 ${items.length}개 모두 보기`;
-        });
-        facility.after(button);
-      }
-    }
+    listFold($('.stay-facility-showcase .amenity-checklist', root));
     locationSection(root, stay);
     $$('.detail-sections-bottom > .info-panel', root).forEach(panel => fold(panel, '더보기', 128));
     const details = $('.stay-description-more', root);
     if (details) $('summary', details).textContent = '숙소 소개 더보기';
     const price = minPrice(stay);
-    bar({ price: price ? `숙박 <strong>${esc(M().won(price))}</strong>~` : '객실 확인', label: '객실 선택', onGo: scrollToRooms });
+    // 하단 오른쪽 버튼: 객실로 스크롤하던 '객실 선택' 대신 '일정 변경'(날짜·인원 시트). 예약 버튼은 객실 카드마다 있음
+    bar({ price: price ? `숙박 <strong>${esc(M().won(price))}</strong>~` : '객실 확인', label: '일정 변경', secondary: true, onGo: openDateSheet });
   }
 
   /* 객실 상세: 사진 → 객실명 → 예약(일정·금액·버튼) → 세부 안내(더보기) */
@@ -997,7 +1015,8 @@
       const text = `${M().svg.calendar}<span><small>예약 일정</small><strong>${M().short(v.checkIn)} ~ ${M().short(v.checkOut)}${n ? ` · ${n}박` : ''} · ${v.people}명</strong></span><em>변경</em>`;
       if (row.dataset.text !== text) { row.dataset.text = text; row.innerHTML = text; }
     }
-    $$('.room-detail-grid > .info-panel', root).forEach(panel => fold(panel, '더보기', 150));
+    // 객실 상세: 편의시설은 숙소 상세와 같은 방식(앞 6개 + 모두 보기), 환불 규정 등 나머지는 접지 않음
+    $$('.room-detail-grid > .info-panel .amenity-checklist', root).forEach(listFold);
     const primary = $('.room-reserve-card .primary-btn', root);
     const amount = $('.room-reserve-card > strong', root)?.textContent?.trim();
     bar({
@@ -1014,7 +1033,13 @@
       const root = $(selector);
       if (root) new MutationObserver(() => { clearTimeout(start.t); start.t = setTimeout(enhance, 20); }).observe(root, { childList: true });
     });
-    window.addEventListener('motf:routechange', () => { closeDateSheet(); setTimeout(() => { M()?.markRoute(); enhance(); }, 30); });
+    window.addEventListener('motf:routechange', event => {
+      closeDateSheet();
+      setTimeout(() => { M()?.markRoute(); enhance(); }, 30);
+      // 객실 상세는 항상 맨 위(사진)부터 보이게 (숙소 상세에서 스크롤한 위치가 남지 않도록)
+      const next = event?.detail?.route || M()?.route();
+      if (mobile.matches && next === 'roomDetail') [0, 60, 300].forEach(delay => setTimeout(() => window.scrollTo(0, 0), delay));
+    });
     enhance();
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
@@ -1359,6 +1384,92 @@
     }).observe(dialog, { attributes: true, attributeFilter: ['open'] });
   }
 
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+})();
+
+/* ---------- 채팅·커뮤니티 (모바일) ----------
+   채팅: 처음엔 대화 상대 목록만, 누르면 그 대화만 (뒤로가기 → 목록)
+   커뮤니티 레크레이션·같이 가요 화면: '← 커뮤니티'를 제목 위로 */
+(() => {
+  if (window.__mpModule8) return;
+  window.__mpModule8 = true;
+  const mobile = window.matchMedia('(max-width: 699px)');
+  const $ = (selector, root = document) => root.querySelector(selector);
+  const route = () => (typeof currentRoute === 'function' ? currentRoute() : '');
+  const backIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
+  let openRoomNext = false;
+
+  const chatView = () => $('#chat');
+  function setRoom(open) {
+    const view = chatView();
+    if (!view) return;
+    view.classList.toggle('mp-chat-room', !!open);
+    if (open) {
+      addRoomBack();
+      const box = $('#chatMessages', view);
+      if (box) requestAnimationFrame(() => { box.scrollTop = box.scrollHeight; });
+      window.scrollTo(0, 0);
+    }
+  }
+  function addRoomBack() {
+    const header = $('#chatRoomHeader');
+    if (!header || $('.mp-chat-back', header)) return;
+    const back = document.createElement('button');
+    back.type = 'button';
+    back.className = 'mp-chat-back';
+    back.setAttribute('aria-label', '대화 목록으로');
+    back.innerHTML = `${backIcon}<span>목록</span>`;
+    header.prepend(back);
+  }
+
+  document.addEventListener('click', event => {
+    if (!mobile.matches) return;
+    // 숙소·장보기 화면의 '사장님과 채팅'·'문의하기'로 들어오면 바로 그 대화를 엶
+    if (event.target.closest('[data-open-chat]')) { openRoomNext = true; setTimeout(() => { openRoomNext = false; }, 2500); }
+    if (route() !== 'chat') return;
+    if (event.target.closest('#chatList [data-chat-id]')) { setTimeout(() => setRoom(true), 0); return; }
+    if (event.target.closest('.mp-chat-back') || (event.target.closest('#chat > .mp-back') && chatView()?.classList.contains('mp-chat-room'))) {
+      event.preventDefault();
+      event.stopPropagation();
+      setRoom(false);
+    }
+  }, true);
+
+  // 대화가 다시 그려져도(새 메시지) 목록 버튼 유지
+  function watchHeader() {
+    const header = $('#chatRoomHeader');
+    if (!header || header.dataset.mpWatch) return;
+    header.dataset.mpWatch = '1';
+    new MutationObserver(() => { if (chatView()?.classList.contains('mp-chat-room')) addRoomBack(); }).observe(header, { childList: true });
+  }
+
+  function communitySection() {
+    const view = $('#community');
+    if (!view) return;
+    const page = $('.community-section-page', view);
+    view.classList.toggle('mp-community-section', !!page);
+    if (!page) return;
+    const back = $('.page-back', page);
+    const heading = $(':scope > .page-heading', view);
+    if (back && heading && back.nextElementSibling !== heading) heading.before(back);
+  }
+
+  function onRoute() {
+    if (!mobile.matches) return;
+    if (route() === 'chat') {
+      watchHeader();
+      setRoom(openRoomNext);
+      openRoomNext = false;
+    }
+    if (route() === 'community') communitySection();
+  }
+  window.addEventListener('motf:routechange', () => setTimeout(onRoute, 60));
+  function start() {
+    onRoute();
+    const community = $('#community');
+    if (community) new MutationObserver(() => { if (mobile.matches) communitySection(); }).observe(community, { childList: true });
+  }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();
 })();

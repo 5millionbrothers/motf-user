@@ -3672,6 +3672,15 @@ function likeOnce(kind, id) {
   return true;
 }
 
+// 게시글 공감은 다시 누르면 취소 (토글). true = 공감한 상태가 됨
+function togglePostLike(id) {
+  const key = `motf.like.${communityActorId()}.post.${id}`;
+  if (localStorage.getItem(key)) { localStorage.removeItem(key); return false; }
+  localStorage.setItem(key, "1");
+  return true;
+}
+window.motfPostLiked = (id) => Boolean(localStorage.getItem(`motf.like.${communityActorId()}.post.${id}`));
+
 function renderBoardDetail() {
   const board = activeBoard();
   qs("#boardDetail")?.classList.remove("compose-mode");
@@ -3790,7 +3799,7 @@ function renderPostDetail() {
       <p>${escapeHtml(post.body)}</p>
       ${post.media ? `<div class="post-media-placeholder"><i data-lucide="image"></i>${post.media} 첨부 영역</div>` : ""}
       <div class="post-actions">
-        <button class="secondary-btn" type="button" data-like-post><i data-lucide="heart"></i>공감 ${post.likes}</button>
+        <button class="secondary-btn${window.motfPostLiked?.(post.id) ? " is-liked" : ""}" type="button" data-like-post aria-pressed="${window.motfPostLiked?.(post.id) ? "true" : "false"}"><i data-lucide="heart"></i>공감 ${post.likes}</button>
         <button class="ghost-btn" type="button" data-focus-post-comment><i data-lucide="message-square"></i>댓글 ${post.comments.length}</button>
       </div>
     </div>
@@ -4799,8 +4808,9 @@ document.addEventListener("click", async (event) => {
   }
 
   if (event.target.closest("[data-like-post]")) {
-    if (!likeOnce("post", activePost().id)) { toast("공감은 한 게시물에 한 번만 할 수 있어요."); return; }
-    activePost().likes += 1;
+    const post = activePost();
+    const liked = togglePostLike(post.id);
+    post.likes = Math.max(0, Number(post.likes || 0) + (liked ? 1 : -1));
     renderPostDetail();
     return;
   }

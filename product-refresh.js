@@ -185,7 +185,13 @@
       const active = window.motfGetActiveCommunityPost?.();
       const postId = active?.post?.id || "";
       if (/^[0-9a-f-]{36}$/i.test(postId) && window.motfCurrentUserId) {
-        window.motfSupabase.from("community_post_likes").insert({ post_id: postId, user_id: window.motfCurrentUserId }).then(() => {});
+        // 공감 토글: 화면에서 공감 상태가 정해진 뒤(app.js) 서버에도 추가 또는 삭제
+        const userId = window.motfCurrentUserId;
+        setTimeout(() => {
+          const table = window.motfSupabase.from("community_post_likes");
+          if (window.motfPostLiked?.(postId) === false) table.delete().eq("post_id", postId).eq("user_id", userId).then(() => {});
+          else table.insert({ post_id: postId, user_id: userId }).then(() => {});
+        }, 0);
       }
     }
     const recreationButton = event.target.closest("[data-open-recreation-form]");
@@ -263,7 +269,11 @@
   window.motfInitializeDatePickers = initializePickers;
   window.motfReloadDesktopCommunity = loadCommunityData;
   initializePickers();
-  window.setTimeout(loadCommunityData, 250);
+  // 서버 연결(motfSupabase)이 늦게 준비되면 첫 시도에서 아무것도 못 불러와 홈 커뮤니티 칸이 비어 보였음 → 준비될 때까지 다시 시도
+  (function loadCommunityWhenReady(tries = 0) {
+    if (window.motfSupabase) { loadCommunityData(); return; }
+    if (tries < 40) window.setTimeout(() => loadCommunityWhenReady(tries + 1), 250);
+  })();
 
   function escapeHtml(value) {
     return String(value || "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character]));
