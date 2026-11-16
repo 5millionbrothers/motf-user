@@ -8,7 +8,7 @@ async function setup(names=['가평','대성리'],initial='가평') {
   const window={motfSupabase:{from(){return query}},addEventListener(){}};
   const context={window,state:{reviewTargets:[]},escapeHtml:String,currentRoute:()=>'',console,Event:class{},requestAnimationFrame:callback=>callback(),
     matchMedia:()=>({matches:true,addEventListener(){}}),MutationObserver:class{constructor(callback){observer=callback}observe(){}},
-    document:{body:{},addEventListener(){},querySelector:()=>null,querySelectorAll:selector=>selector.includes('#stayRegion')?[select]:[]}};
+    document:{body:{},addEventListener(){},querySelector:()=>null,querySelectorAll:selector=>selector.includes('#stayRegion')?[select,{id:'mtEditRegion',value:'가평',dataset:{}}]:[]}};
   vm.runInNewContext(source,context);
   await new Promise(resolve=>setImmediate(resolve));
   return {select,observer,eventCount:()=>events};

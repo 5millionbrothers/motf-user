@@ -1058,6 +1058,7 @@ function applyRouteSelection(route) {
 }
 
 function maybeShowMarketGuide() {
+  if (window.innerWidth >= 1024 && window.motfDesktopUI) return window.motfDesktopUI.showMarketGuide();
   const dialog = qs("#marketGuideDialog");
   if (!dialog || dialog.open || window.sessionStorage.getItem(MARKET_GUIDE_SESSION_KEY)) return;
   window.sessionStorage.setItem(MARKET_GUIDE_SESSION_KEY, "1");

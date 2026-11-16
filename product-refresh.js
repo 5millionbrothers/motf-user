@@ -139,6 +139,7 @@
   };
 
   async function renderMyActivity() {
+    if (window.innerWidth >= 1024 && window.motfDesktopUI) return window.motfDesktopUI.renderMyActivity(true);
     const container = qs("#myActivityList");
     const client = window.motfSupabase;
     const userId = window.motfCurrentUserId;
@@ -260,6 +261,7 @@
   });
   observer.observe(document.body, { attributes: true, attributeFilter: ["data-current-route"] });
   window.motfInitializeDatePickers = initializePickers;
+  window.motfReloadDesktopCommunity = loadCommunityData;
   initializePickers();
   window.setTimeout(loadCommunityData, 250);
 

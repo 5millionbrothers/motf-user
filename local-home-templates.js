@@ -9,6 +9,7 @@ const tools=[{action:'stays',icon:'house',title:'숙소 비교',subtitle:'우리
 function regionOptions(selected){return context.regions.map(region=>'<option '+(selected===region?'selected':'')+'>'+escapeHtml(region)+'</option>').join('');}
 function costs() {
   const example = concept === 'home';
+  if (example && innerWidth >= 1024 && window.MotfDesktopModel) return window.MotfDesktopModel.budget(state);
   const stay = example ? undefined : stays.find(item => item.id === state.stay);
   const other = state.extraCosts.reduce((sum, item) => sum + item.amount, 0);
   let lodging = stay?.price || 0;
@@ -29,6 +30,7 @@ function budgetParts() {
   return [
     { key: 'stay', name: cost.example?'숙소 예시':'숙소', amount: cost.lodging },
     { key: 'grocery', name: cost.example?'장보기 예시':'장보기', amount: cost.groceries },
+    ...(cost.travel !== undefined ? [{key:'travel',name:'이동·교통 예시',amount:cost.travel},{key:'play',name:'레크·준비물 예시',amount:cost.play}] : []),
     { key: 'other', name: '기타 비용', amount: cost.other },
     { key: 'remaining', name: '남은 예산', amount: Math.max(0, cost.remaining) },
   ].map(part => ({ ...part, percent: part.amount / base * 100 }));

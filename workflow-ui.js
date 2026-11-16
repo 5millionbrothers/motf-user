@@ -6,6 +6,7 @@
   function regions() {
     const names = window.motfServiceRegions;
     document.querySelectorAll('#stayRegion,#mtEditRegion,select[data-stay-search-field="region"]').forEach(select => {
+      if (!select.options) return;
       const signature = names.join('|');
       if (select.dataset.serviceRegions === signature && [...select.options].map(option=>option.value).join('|') === signature) return;
       const previous = select.value;

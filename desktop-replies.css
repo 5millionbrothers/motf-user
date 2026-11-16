@@ -1,0 +1,26 @@
+@media(min-width:1024px){
+  .desktop-reply-bar{display:flex;align-items:center;flex-wrap:wrap;gap:7px;padding:10px 16px;border-top:1px solid #e3e8db;background:#fafbf8;font:13px/1.5 SUIT,'Apple SD Gothic Neo',sans-serif;color:#465a36}
+  .desktop-reply-bar>span:first-child{font-size:12px;margin-right:4px;color:#79856c}
+  .desktop-reply-bar button{border:1px solid #dce3d3;background:#fff;color:#465a36;border-radius:4px;padding:5px 9px;cursor:pointer;font:inherit}
+  .desktop-reply-feedback{font-size:11px;color:#7a856d}
+  .desktop-reply-bar [data-replies-refresh]{margin-left:auto;width:30px;height:30px;display:grid;place-items:center;padding:6px}
+  .desktop-reply-bar [data-replies-refresh] svg{width:15px;height:15px}
+  .desktop-replies-dialog{position:fixed;inset:0;margin:auto;width:min(480px,calc(100vw - 48px));max-height:calc(100dvh - 60px);padding:24px;border:1px solid #dce3d3;border-radius:8px;background:#fff;color:#2a3323;font:14px/1.5 SUIT,'Apple SD Gothic Neo',sans-serif;overflow:auto}
+  .desktop-replies-dialog::backdrop{background:#242c2055}
+  .desktop-replies-top,.desktop-replies-actions{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .desktop-replies-top h2{font-size:21px;margin:0}
+  .desktop-replies-dialog button{background:white;border:1px solid #dce3d3;color:#465a36;border-radius:4px;padding:6px 10px;font:inherit;cursor:pointer}
+  .desktop-replies-top button{border:0;font-size:22px;line-height:1}
+  .desktop-replies-list{margin:18px 0;max-height:220px;overflow:auto}
+  .desktop-replies-list article{display:flex;align-items:center;gap:6px;border-bottom:1px solid #e6eadf;padding:8px 0}
+  .desktop-replies-list article>button:first-child{flex:1;text-align:left;border:0;font-weight:600;overflow-wrap:anywhere}
+  .desktop-replies-list article>button:not(:first-child){font-size:12px;flex:none}
+  .desktop-replies-list p{font-size:13px;color:#7c866e}
+  .desktop-replies-dialog h3{font-size:15px;margin:18px 0 10px}
+  .desktop-replies-dialog label{display:grid;gap:6px;font-size:12px;margin:12px 0}
+  .desktop-replies-dialog input,.desktop-replies-dialog textarea{box-sizing:border-box;width:100%;background:white;color:#2a3323;border:1px solid #dce3d3;padding:10px;border-radius:4px;font:inherit;line-height:1.6}
+  .desktop-replies-dialog textarea{resize:vertical;min-height:110px}
+  .desktop-replies-actions{justify-content:flex-end}
+  .desktop-replies-actions [type=submit]{background:#465a36;color:white}
+  .desktop-reply-error{color:#a4563e;font-size:12px}
+}
