@@ -29,18 +29,19 @@ function allowCors(req, res) {
 }
 
 function readBody(req) {
+  const parse = (raw) => String(req.headers["content-type"] || "").includes("application/x-www-form-urlencoded")
+    ? Object.fromEntries(new URLSearchParams(raw)) : raw ? JSON.parse(raw) : {};
+  if (typeof req.body === "string" || Buffer.isBuffer(req.body)) {
+    try { return Promise.resolve(parse(String(req.body))); }
+    catch (error) { return Promise.reject(error); }
+  }
   if (req.body && typeof req.body === "object") return Promise.resolve(req.body);
   return new Promise((resolve, reject) => {
     let raw = "";
     req.on("data", (chunk) => { raw += chunk; });
     req.on("end", () => {
       try {
-        const type = String(req.headers["content-type"] || "");
-        if (type.includes("application/x-www-form-urlencoded")) {
-          resolve(Object.fromEntries(new URLSearchParams(raw)));
-        } else {
-          resolve(raw ? JSON.parse(raw) : {});
-        }
+        resolve(parse(raw));
       } catch (error) { reject(error); }
     });
     req.on("error", reject);

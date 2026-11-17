@@ -609,6 +609,7 @@ window.motfStartPreparedPayment = function startPreparedPayment(intent, draft) {
       ...(isStay ? [["숙박일", `${draft.event_date} ~ ${draft.check_out_date}`]] : []),
       ...(isExtraCharge ? [["연결 예약", draft.offering_name || "숙소 예약"], ["추가 이용 항목", draft.items_label || "추가 이용금"]] : []),
       [isStay ? "객실 기본금" : isExtraCharge ? "추가 이용금" : "상품 금액", originalAmount],
+      ...(isStay ? [["추가금", "숙소 현장 결제"]] : []),
       ...(couponDiscount ? [["할인코드", -couponDiscount]] : []),
       ...(pointsUsed ? [["포인트 사용", -pointsUsed]] : []),
     ],
@@ -1396,10 +1397,7 @@ function renderHomeStories() {
 function renderHomeMarketPicks() {
   const container = qs("#homeMarketPicks");
   if (!container) return;
-  const picks = stores.flatMap((store) => {
-    ensureMarketBundleProducts(store);
-    return groupProductVariants(store.products).map((product) => ({ product, store }));
-  }).slice(0, 3);
+  const picks = homeMarketProducts();
   if (!picks.length) {
     container.innerHTML = `<div class="empty-state compact catalog-error"><strong>제휴 마트 상품을 준비하고 있어요.</strong><span>상품이 공개되면 이곳에서 바로 확인할 수 있습니다.</span></div>`;
     return;
@@ -2005,7 +2003,7 @@ function renderStayDetail() {
     <section class="stay-facility-showcase">
       <div class="section-toolbar"><div><p class="eyebrow">FACILITIES</p><h2>단체 이용 시설</h2><span>강당·바베큐장 등은 일별 수용 인원이 달라 예약 전 확인이 필요합니다.</span></div><button class="secondary-btn" data-open-chat="${stay.name}"><i data-lucide="message-circle"></i>이용 가능 여부 문의</button></div>
       ${amenityChecklist(stay)}
-      <p class="facility-onsite-note"><i data-lucide="info"></i>예약 시에는 객실 기본금만 결제하며, 추가 인원과 부대시설 요금은 현장에서 사장님에게 직접 결제합니다.</p>
+      <p class="facility-onsite-note"><i data-lucide="info"></i>모티프에서는 객실 기본금만 결제합니다. 추가 인원·부대시설 요금은 현장에서 확인 후 숙소 현장에서 직접 결제합니다.</p>
     </section>
 
     ${insight ? `<section class="stay-review-insight"><i data-lucide="users-round"></i><div><small>실제 이용팀 리뷰 기준</small><strong>등록 정원은 최대 ${stay.maxPeople}명이지만, 쾌적 인원은 ${insight.min}~${insight.max}명입니다.</strong><span>${insight.count}개 검증 후기에서 계산한 MT 전용 정보입니다.</span></div></section>` : ""}
@@ -2040,6 +2038,7 @@ function renderStayDetail() {
       <section class="info-panel">
         <h2>추가요금</h2>
         ${dashList(stay.fees)}
+        <p>추가금은 현장에서 확인 후 숙소 현장에서 직접 결제하며, 사이트 결제금액에는 포함되지 않습니다.</p>
       </section>
       <section class="info-panel">
         <h2>환불 및 규칙</h2>
@@ -2176,7 +2175,7 @@ function renderRoomDetail() {
         <h2>인원 규정</h2>
         ${dashList([
           room.basePeople ? `기준 인원 ${room.basePeople}명 · 최대 ${room.maxPeople || maxPeople}명` : `최대 ${room.maxPeople || maxPeople || stay.maxPeople}명`,
-          room.extraPersonFee ? `기준 인원 초과 시 1인당 ${money(room.extraPersonFee)} · 이용 후 별도 결제` : "추가 인원 요금 없음 또는 별도 문의",
+          room.extraPersonFee ? `기준 인원 초과 시 1인당 ${money(room.extraPersonFee)} · 현장 확인 후 현장 결제` : "추가 인원 요금은 숙소에 확인해주세요. 발생하는 추가금은 현장 확인 후 현장 결제합니다.",
           "미성년자 단체 이용은 대표자 확인이 필요합니다.",
         ])}
       </section>
@@ -2186,6 +2185,7 @@ function renderRoomDetail() {
       </section>
       <section class="info-panel">
         <h2>추가요금 및 환불</h2>
+        <p>추가 인원·부대시설 요금은 현장 확인 후 숙소 현장에서 직접 결제합니다. 아래 요금은 사이트 결제금액에 포함되지 않습니다.</p>
         ${dashList([...stayFees.slice(0, 3), ...STANDARD_REFUND_POLICY])}
       </section>
     </div>
@@ -2294,7 +2294,7 @@ function renderBooking() {
       <div class="summary-line"><span>부대시설 이용금</span><strong>숙소 현장 결제</strong></div>
       ${unavailable ? `<div class="summary-line"><span>예약 가능 여부</span><strong>선택 날짜 품절</strong></div>` : ""}
       ${exceedsPaymentLimit ? `<div class="summary-line payment-limit-warning"><span>결제 한도</span><strong>최대 ${money(MAX_SINGLE_PAYMENT_AMOUNT)}</strong></div>` : ""}
-      <div class="separate-charge-note"><i data-lucide="info"></i><span>모티프에서는 객실 기본금만 결제합니다. 추가 인원과 바베큐 등 부대시설 요금은 이용 당일 숙소에 직접 결제해주세요.</span></div>
+      <div class="separate-charge-note"><i data-lucide="info"></i><span>모티프에서는 객실 기본금만 결제합니다. 추가 인원·바비큐 등 부대시설 요금은 현장에서 확인 후 숙소 현장에서 직접 결제합니다. 사이트에서 별도 결제하지 않습니다.</span></div>
       <div class="summary-line total"><span>지금 결제할 금액</span><strong>${money(payableAmount)}</strong></div>
     `;
     const submitButton = qs('#bookingForm [type="submit"]');
@@ -2487,6 +2487,23 @@ function productVariants(product) {
   if (!/삼겹|목살/.test(product.name || '')) return options;
   const frozen = item => /냉동/.test([item.variantLabel,item.detailSections?.temperature,item.detail].filter(Boolean).join(' '));
   return [...options].sort((a,b) => Number(frozen(b)) - Number(frozen(a)));
+}
+
+function homeMarketProducts() {
+  return stores.flatMap(store => {
+    ensureMarketBundleProducts(store);
+    const groups = groupProductVariants(store.products.filter(product => product.price > 0 && product.stockQuantity !== 0)).filter(product => !product.isBundle);
+    const configured = Array.isArray(store.homeProductIds) ? store.homeProductIds : [];
+    const chosen = configured.map(id => groups.find(product => product.variants.some(variant => variant.id === id))).filter(Boolean);
+    if (!Array.isArray(store.homeProductIds)) {
+      ['삼겹', '목살', '참이슬', '테라'].forEach(name => {
+        const product = groups.find(item => item.name.includes(name));
+        if (product) chosen.push(product);
+      });
+    }
+    const unique = [...new Map([...chosen,...groups].map(product => [productGroupIdentity(product),product])).values()];
+    return unique.map(product => ({product,store}));
+  }).slice(0,4);
 }
 
 function productCatalogCountLabel(products = []) {

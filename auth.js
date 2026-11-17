@@ -222,7 +222,11 @@
   async function apiJson(path, options = {}) {
     const response = await fetch(path, options);
     const result = await response.json().catch(() => null);
-    if (!response.ok || !result?.ok) throw new Error(result?.message || "요청을 처리하지 못했습니다.");
+    if (!response.ok || !result?.ok) {
+      const error = new Error(result?.message || "요청을 처리하지 못했습니다.");
+      error.status = response.status;
+      throw error;
+    }
     return result;
   }
 
@@ -258,35 +262,16 @@
       form.appendChild(input);
     });
     document.body.appendChild(form);
-    return await new Promise((resolve, reject) => {
-      let finished = false;
-      const finish = error => {if(finished)return;finished=true;cleanup();reject(error);};
-      const timeout = window.setTimeout(() => finish(new Error("본인인증 시간이 만료되었습니다. 다시 시도해주세요.")), 10 * 60 * 1000);
-      const poll = window.setInterval(() => { if (popup.closed) finish(new Error("본인인증 창이 닫혔습니다.")); }, 1000);
-      const onMessage = async (event) => {
-        if (event.origin !== window.location.origin || event.source !== popup || finished) return;
-        if (event.data?.type !== "motf:kcp-identity") return;
-        finished = true;cleanup();
-        if (event.data.ok !== true) return reject(new Error(event.data.message || "본인인증에 실패했습니다."));
-        try {
-          const status = await apiJson("/api/identity-status", {
-            method: "POST",
-            signal: AbortSignal.timeout(30000),
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ identityToken: start.identityToken, purpose }),
-          });
-          if(!status.verified || !status.person?.name || !status.person?.phone || !status.person?.birthDate)throw new Error('인증 결과를 확인하지 못했습니다. 다시 인증해주세요.');
-          resolve({ token: start.identityToken, purpose, person: status.person });
-        } catch (error) { reject(error); }
-      };
-      function cleanup() {
-        window.clearTimeout(timeout);
-        window.clearInterval(poll);
-        window.removeEventListener("message", onMessage);
-      }
-      window.addEventListener("message", onMessage);
-      try{form.submit();}catch(error){finish(error);}
+    const status = await window.MotfIdentityFlow.waitForResult({
+      popup, origin: window.location.origin,
+      submit: () => form.submit(),
+      getStatus: () => apiJson('/api/identity-status', {
+        method: 'POST', signal: AbortSignal.timeout(30000),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identityToken: start.identityToken, purpose }),
+      }),
     });
+    return { token: start.identityToken, purpose, person: status.person };
     } finally { form?.remove();popup.close();identityInProgress=false; }
   }
 

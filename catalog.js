@@ -6,6 +6,7 @@
   const marketFallback = "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=82";
   const roomFallback = "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=82";
   const serviceRegionMap = new Map();
+  const homeProductMap = new Map();
   const productFallback = "https://images.unsplash.com/photo-1606787366850-de6330128bfc?auto=format&fit=crop&w=1200&q=82";
   const facilityLabels = {
     barbecue: "야외바베큐",
@@ -112,7 +113,7 @@
       extraFees: Array.isArray(business.extra_fees) ? business.extra_fees : [],
       fees: Array.isArray(business.extra_fees) && business.extra_fees.length
         ? business.extra_fees.map((fee) => text(`${fee.label || "추가요금"}${fee.amount ? ` ${Number(fee.amount).toLocaleString("ko-KR")}원` : ""}${fee.detail ? ` · ${fee.detail}` : ""}`))
-        : ["추가요금은 예약 전 사장님에게 확인해주세요."],
+        : ["추가금은 현장에서 확인 후 숙소 현장에서 직접 결제합니다."],
       policy: ["이용 14일 전까지 전액 환불", "이용 7일 전까지 50% 환불", "이용 3일 전까지 20% 환불", "이후 및 당일 취소는 환불 불가"],
       rooms,
     };
@@ -157,6 +158,7 @@
       image: imageUrl(business.cover_image_url, products[0]?.image || marketFallback),
       intro: text(business.description || "단체 행사 물품을 준비할 수 있는 제휴 마트입니다."),
       recommendedSets: Array.isArray(business.recommended_sets) ? business.recommended_sets : [],
+      homeProductIds: homeProductMap.get(business.id) ?? null,
       products,
     };
   }
@@ -182,7 +184,7 @@
   }
 
   (async () => {
-    let [businessResult, offeringResult, regionResult] = await Promise.all([
+    let [businessResult, offeringResult, regionResult, homeProductResult] = await Promise.all([
       client.from("businesses")
         .select("id, business_type, business_name, phone, address, description, short_description, highlight_summary, highlight_keys, region, cover_image_url, gallery_image_urls, facilities, approval_status, latitude, longitude, location_verified_at, station_distance_m, convenience_distance_m, nearby_tags, room_count, bath_count, shared_bathroom_count, shared_bathroom_gender_separated, shared_bathroom_note, shoulder_season_ranges, peak_season_ranges, amenity_details, extra_fees, refund_policy, recommended_sets, is_featured, display_order, discovery_weight")
         .eq("approval_status", "approved"),
@@ -191,8 +193,11 @@
         .eq("is_active", true)
         .order("sort_order"),
       client.rpc('list_business_service_regions'),
+      client.rpc('list_market_home_products'),
     ]);
     if (!regionResult.error) (regionResult.data || []).forEach(item => serviceRegionMap.set(item.business_id,item.regions || []));
+    if (!homeProductResult.error) (homeProductResult.data || []).forEach(item => homeProductMap.set(item.business_id,item.offering_ids || []));
+    else console.warn('홈 추천 상품 설정을 불러오지 못했습니다.',homeProductResult.error.message);
 
     // 새 DB 열과 프론트 배포 순서가 잠시 엇갈려도 전체 카탈로그가 사라지지 않도록
     if (businessResult.error?.code === "42501") {
