@@ -22,8 +22,8 @@ module.exports = async function handler(req, res) {
     if (accountType === "partner" && (!["stay", "market"].includes(body.businessType) || !String(body.businessName || "").trim())) return json(res, 400, { ok: false, message: "파트너 유형과 업장명을 확인해주세요." });
     await limitAccountRequest(req, username);
     const identity = await verifiedSession(String(body.identityToken || ""), purpose);
-    const duplicates = await supabaseRequest("/rest/v1/profiles?identity_ci_hash=eq." + identity.verified_ci_hash + "&withdrawal_processed_at=is.null&select=id&limit=1");
-    if (duplicates?.length) return json(res, 409, { ok: false, message: "이미 가입된 본인인증 정보입니다. 기존 계정으로 로그인하거나 비밀번호 찾기를 이용해주세요." });
+    const duplicates = await supabaseRequest("/rest/v1/profiles?identity_ci_hash=eq." + encodeURIComponent(identity.verified_ci_hash) + "&account_type=eq." + accountType + "&withdrawal_processed_at=is.null&select=id&limit=1");
+    if (duplicates?.length) return json(res, 409, { ok: false, message: `이미 ${accountType === 'partner' ? '사장님' : '이용자'} 사이트에 가입된 본인인증 정보입니다. 해당 사이트의 기존 계정으로 로그인하거나 비밀번호 찾기를 이용해주세요.` });
     const usernames = await supabaseRequest("/rest/v1/profiles?username=eq." + encodeURIComponent(username) + "&select=id&limit=1");
     if (usernames?.length) return json(res, 409, { ok: false, message: "이미 사용 중인 아이디입니다." });
     await claimIdentitySession(identity);

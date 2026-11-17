@@ -1,6 +1,6 @@
 const { json, requireEnv, supabaseRequest } = require("./_server");
 const { allowCors, readBody } = require("./_identity");
-const { accountForLogin, limitAccountRequest, passwordSession } = require("./_accounts");
+const { accountTypeForRequest, accountForLogin, limitAccountRequest, passwordSession } = require("./_accounts");
 
 module.exports = async function handler(req, res) {
   if (allowCors(req, res)) return;
@@ -13,7 +13,7 @@ module.exports = async function handler(req, res) {
     const password = String(body.password || "");
     if (!identifier || identifier.length > 254 || !password || password.length > 256) return json(res, 400, { ok: false, message: "아이디와 비밀번호를 입력해주세요." });
     await limitAccountRequest(req, identifier);
-    const account = await accountForLogin(identifier);
+    const account = await accountForLogin(identifier, accountTypeForRequest(req, body));
     if (!account || ["suspended", "rejected"].includes(account.status)) return json(res, 401, { ok: false, message: "아이디 또는 비밀번호가 일치하지 않습니다." });
     const authUser = await supabaseRequest(`/auth/v1/admin/users/${account.id}`);
     const result = await passwordSession(authUser.email, password);

@@ -2,7 +2,7 @@ const { json } = require("./_utils");
 const { env, requireEnv, requestJson, supabaseRequest } = require("./_server");
 const { allowCors, readBody, passwordIsValid, verifiedSession } = require("./_identity");
 const { randomUUID } = require("crypto");
-const { accountForLogin, limitAccountRequest, claimIdentitySession } = require("./_accounts");
+const { accountTypeForRequest, accountForLogin, limitAccountRequest, claimIdentitySession } = require("./_accounts");
 
 module.exports = async function handler(req, res) {
   if (allowCors(req, res)) return;
@@ -15,7 +15,9 @@ module.exports = async function handler(req, res) {
     const password = String(body.password || "");
     if (!passwordIsValid(password)) return json(res, 400, { ok: false, message: "비밀번호는 영문·숫자·특수문자를 포함한 8~12자리여야 합니다." });
     const identity = await verifiedSession(String(body.identityToken || ""), "password_reset");
-    const profile = await accountForLogin(identifier);
+    const accountType = accountTypeForRequest(req, body);
+    if ((identity.request_context?.account_type || 'user') !== accountType) return json(res, 403, { ok:false, message:'비밀번호를 변경할 사이트에서 다시 본인인증해주세요.' });
+    const profile = await accountForLogin(identifier, accountType);
     if (!profile || !["approved", "pending"].includes(profile.status) || !profile.identity_ci_hash || profile.identity_ci_hash !== identity.verified_ci_hash) {
       return json(res, 403, { ok: false, message: "가입 정보와 본인인증 정보가 일치하지 않습니다." });
     }

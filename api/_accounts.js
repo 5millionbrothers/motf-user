@@ -9,11 +9,17 @@ function validUsername(value) {
   return /^[a-z][a-z0-9_]{3,23}$/.test(value);
 }
 
-async function accountForLogin(identifier) {
+function accountTypeForRequest(req, body = {}) {
+  if (body.accountType && !['user','partner'].includes(body.accountType)) throw Object.assign(new Error('계정 종류를 확인해주세요.'), { statusCode: 400 });
+  if (body.accountType) return body.accountType;
+  return /^https:\/\/(www\.)?motfowner\.co\.kr$/.test(String(req.headers.origin || '')) ? 'partner' : 'user';
+}
+
+async function accountForLogin(identifier, accountType = 'user') {
   const value = normalizeUsername(identifier);
   const column = value.includes("@") ? "email" : "username";
   if (column === "username" && !validUsername(value)) return null;
-  const rows = await supabaseRequest("/rest/v1/rpc/resolve_account_login", { method: "POST", body: JSON.stringify({ target_identifier: value }) });
+  const rows = await supabaseRequest("/rest/v1/rpc/resolve_account_login_for_site", { method: "POST", body: JSON.stringify({ target_identifier: value, target_account_type: accountType }) });
   return rows?.[0] || null;
 }
 
@@ -50,7 +56,7 @@ async function assertIdentityMatchesProfile(identity, userId, requireActive = fa
   if (identity.user_id !== userId || !identity.verified_ci_hash) {
     throw Object.assign(new Error("Identity verification does not belong to this account."), { statusCode: 403 });
   }
-  const profiles = await supabaseRequest(`/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=identity_ci_hash,status,withdrawal_processed_at&limit=1`);
+  const profiles = await supabaseRequest(`/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=identity_ci_hash,status,withdrawal_processed_at,account_type&limit=1`);
   const profile = profiles?.[0];
   if (requireActive && (!profile || profile.status !== "approved" || profile.withdrawal_processed_at)) {
     throw Object.assign(new Error("An active account is required."), { statusCode: 403 });
@@ -58,11 +64,12 @@ async function assertIdentityMatchesProfile(identity, userId, requireActive = fa
   if (profile?.identity_ci_hash && profile.identity_ci_hash !== identity.verified_ci_hash) {
     throw Object.assign(new Error("Verification does not match the account's registered identity."), { statusCode: 403 });
   }
-  const duplicates = await supabaseRequest(`/rest/v1/profiles?identity_ci_hash=eq.${encodeURIComponent(identity.verified_ci_hash)}&id=neq.${encodeURIComponent(userId)}&withdrawal_processed_at=is.null&select=id&limit=1`);
+  if (!profile || !['user','partner'].includes(profile.account_type)) throw Object.assign(new Error('계정 종류를 확인하지 못했습니다.'), { statusCode: 403 });
+  const duplicates = await supabaseRequest(`/rest/v1/profiles?identity_ci_hash=eq.${encodeURIComponent(identity.verified_ci_hash)}&account_type=eq.${profile.account_type}&id=neq.${encodeURIComponent(userId)}&withdrawal_processed_at=is.null&select=id&limit=1`);
   if (duplicates?.length) {
     throw Object.assign(new Error("Identity verification is already linked to another account."), { statusCode: 409 });
   }
   return profile;
 }
 
-module.exports = { normalizeUsername, validUsername, accountForLogin, limitAccountRequest, passwordSession, claimIdentitySession, assertIdentityMatchesProfile };
+module.exports = { normalizeUsername, validUsername, accountTypeForRequest, accountForLogin, limitAccountRequest, passwordSession, claimIdentitySession, assertIdentityMatchesProfile };

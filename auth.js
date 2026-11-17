@@ -651,7 +651,7 @@
     try {
       const result = await apiJson("/api/account-login", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identifier: document.querySelector("#customerLoginEmail").value.trim(), password: document.querySelector("#customerLoginPassword").value }),
+        body: JSON.stringify({ accountType: 'user', identifier: document.querySelector("#customerLoginEmail").value.trim(), password: document.querySelector("#customerLoginPassword").value }),
       });
       const { data, error } = await client.auth.setSession(result.session);
       if (error) throw error;
@@ -775,7 +775,7 @@
       await apiJson("/api/identity-password-reset", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identifier: email, password, identityToken: passwordResetIdentity.token }),
+        body: JSON.stringify({ accountType: 'user', identifier: email, password, identityToken: passwordResetIdentity.token }),
       });
       identityPasswordResetForm.reset();
       passwordResetIdentity = null;
