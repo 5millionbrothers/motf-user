@@ -1,5 +1,6 @@
 const https = require("https");
 const { json } = require("./_utils");
+const { notificationRecipient } = require("./_notification-recipient");
 
 const REQUIRED_ENV = [
   "SUPABASE_URL",
@@ -400,6 +401,15 @@ async function sendMockAlimtalk(item) {
 }
 
 async function sendAligoAlimtalk(item) {
+  const route = await supabaseRequest("/rest/v1/rpc/notification_delivery_route", {
+    method: "POST",
+    body: JSON.stringify({ target_outbox_id: item.id }),
+  });
+  if (route?.recipient_role !== item.recipient_role || route?.recipient_user_id !== item.recipient_user_id) {
+    throw new Error("알림 수신자 검증 결과가 대기열과 일치하지 않습니다.");
+  }
+  // Only use the DB-verified destination, never an environment-variable override.
+  const receiver = notificationRecipient({ ...item, recipient_phone: route.recipient_phone });
   const credentials = aligoCredentials();
   validateAligoConfiguration(credentials);
 
@@ -409,11 +419,6 @@ async function sendAligoAlimtalk(item) {
   const templates = await approvedAligoTemplates(credentials);
   const template = templates.get(templateCode);
   if (!template) throw new Error(`승인·활성 상태의 알리고 템플릿을 찾을 수 없습니다: ${templateCode}`);
-
-  const originalPhone = normalizePhone(item.recipient_phone);
-  const testPhone = normalizePhone(process.env.ALIGO_TEST_PHONE);
-  const receiver = testPhone || originalPhone;
-  if (!receiver) throw new Error("알림톡 수신번호가 없습니다.");
 
   const message = templateValue(template.templtContent, item);
   const emphasisTitle = template.templtTitle ? templateValue(template.templtTitle, item) : "";
@@ -445,8 +450,12 @@ async function sendAligoAlimtalk(item) {
       templateKey: item.template_key,
       templateCode,
       recipientPhone: receiver,
-      originalRecipientPhone: testPhone ? originalPhone : undefined,
-      testRecipientOverride: Boolean(testPhone),
+      recipientRole: item.recipient_role,
+      recipientUserId: item.recipient_user_id,
+      originalRecipientPhone: normalizePhone(item.recipient_phone),
+      testRecipientOverride: false,
+      queuedRecipientPhone: normalizePhone(item.recipient_phone),
+      routingSource: route.routing_source,
       subject: params.subject_1,
       message,
       buttons,
@@ -518,7 +527,9 @@ module.exports = async function handler(req, res) {
               provider: "aligo",
               templateKey: item.template_key,
               templateCode: ALIGO_TEMPLATE_CODES[item.template_key] || null,
-              recipientPhone: normalizePhone(process.env.ALIGO_TEST_PHONE || item.recipient_phone),
+              recipientPhone: normalizePhone(item.recipient_phone),
+              recipientRole: item.recipient_role,
+              testRecipientOverride: false,
             }
           : buildMockRequestPayload(item);
         await completeNotification(

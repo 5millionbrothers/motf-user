@@ -83,10 +83,12 @@ ALIGO_RELAY_SECRET=RELAY_SECRET
 
 ```text
 ALIGO_LIVE_ENABLED=true
-ALIGO_TEST_PHONE=실제 테스트 수신번호
 ALIGO_FAILOVER_ENABLED=false
 ALIGO_TEST_MODE=false
 ```
+
+`ALIGO_TEST_PHONE`은 더 이상 사용하지 않습니다. 기존 환경변수가 남아 있어도 수신번호를 바꾸지 않습니다.
+실제 테스트는 운영자 예약 시연에서 역할별 수신번호를 확인한 후 진행합니다.
 
 알리고 계정 비밀값은 Fly가 사용하므로 Vercel에서 제거해도 됩니다.
 
