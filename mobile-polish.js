@@ -809,23 +809,21 @@
   const MONTHS_AHEAD = 4;
   const pad = n => String(n).padStart(2, '0');
   const ymd = date => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-  const todayYmd = () => ymd(new Date());
-  const maxYmd = () => { const d = new Date(); d.setDate(d.getDate() + 90); return ymd(d); };
+  const bookingLimits = () => window.MotfStayBookingWindow.limits();
 
   /* 에어비앤비식 달력: 여러 달을 세로로 이어 보여주고, 동그란 날짜 + 기간 띠 */
   function renderMonths(holder) {
-    const first = new Date(); first.setDate(1);
-    const today = todayYmd();
-    const max = maxYmd();
+    const {today, lastCheckout} = bookingLimits();
+    const first = new Date(`${today.slice(0,7)}-01T00:00:00`);
     let html = '';
-    for (let m = 0; m < MONTHS_AHEAD; m += 1) {
+    for (let m = 0; m <= MONTHS_AHEAD; m += 1) {
       const month = new Date(first.getFullYear(), first.getMonth() + m, 1);
-      const days = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+      const days = m === MONTHS_AHEAD ? 1 : new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
       let cells = '';
       for (let i = 0; i < month.getDay(); i += 1) cells += '<span class="mp-cal-blank"></span>';
       for (let d = 1; d <= days; d += 1) {
         const key = ymd(new Date(month.getFullYear(), month.getMonth(), d));
-        const off = key < today || key > max;
+        const off = key < today || key > lastCheckout;
         cells += `<button type="button" class="mp-cal-day${key === today ? ' is-today' : ''}" data-date="${key}" ${off ? 'disabled' : ''}><span>${d}</span></button>`;
       }
       html += `<section class="mp-cal-month" data-month="${month.getFullYear()}-${pad(month.getMonth() + 1)}"><h3>${month.getFullYear()}년 ${month.getMonth() + 1}월</h3><div class="mp-cal-grid">${cells}</div></section>`;
@@ -834,8 +832,10 @@
   }
   function paintRange() {
     if (!dateSheet) return;
+    const {today, lastNight, lastCheckout} = bookingLimits();
     $$('.mp-cal-day', dateSheet).forEach(day => {
       const key = day.dataset.date;
+      day.disabled = key < today || key > lastCheckout || (key > lastNight && !(range.a && !range.b));
       day.classList.toggle('is-start', key === range.a);
       day.classList.toggle('is-end', !!range.b && key === range.b);
       day.classList.toggle('is-in', !!range.b && key > range.a && key < range.b);
@@ -883,8 +883,9 @@
     $('.mp-ds-stepper input', dateSheet).value = v.people;
     const holder = $('.mp-ds-calendar', dateSheet);
     renderMonths(holder);
-    range.a = v.checkIn && v.checkIn >= todayYmd() ? v.checkIn : '';
-    range.b = range.a && v.checkOut > range.a ? v.checkOut : '';
+    const {today, lastNight, lastCheckout} = bookingLimits();
+    range.a = v.checkIn >= today && v.checkIn <= lastNight ? v.checkIn : '';
+    range.b = range.a && v.checkOut > range.a && v.checkOut <= lastCheckout ? v.checkOut : '';
     dateSheet.hidden = false;
     if (!dateSheet.open) { try { dateSheet.showModal(); } catch (error) { dateSheet.setAttribute('open', ''); } }
     document.body.classList.add('mp-date-open');
@@ -915,7 +916,7 @@
   }
   function applyDateSheet() {
     const [a, b] = selectedRange();
-    if (!a || !b) return;
+    if (!window.MotfStayBookingWindow.range(a,b).ok) return;
     const people = clampPeople($('.mp-ds-stepper input', dateSheet).value);
     closeDateSheet();
     if (typeof applyStaySearchField === 'function') {

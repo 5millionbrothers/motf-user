@@ -33,7 +33,7 @@
     <link rel="preload" href="assets/SUIT-Variable.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="local-reset.css?v=20261103-local2" />
     <link rel="stylesheet" href="local-design.css?v=20261103-local2" />
-    <link rel="stylesheet" href="local-adapter.css?v=20261103-symbol-small" />
+    <link rel="stylesheet" href="local-adapter.css?v=20261119-stay-desktop" />
     <link rel="stylesheet" href="screen-polish.css?v=20261106" />
     <link rel="stylesheet" href="preparation-workflows.css?v=20261108" />
     <link rel="stylesheet" href="budget-export.css?v=20261109-clean" />
@@ -338,7 +338,7 @@
               <div class="benefit-quick-actions"><button type="button" data-use-all-points="stay">전액 사용</button><button type="button" data-reset-benefits="stay">사용 취소</button></div>
               <div class="checkout-benefit-result" id="stayBenefitPreview" aria-live="polite">포인트 또는 할인코드를 입력한 뒤 적용해주세요.</div>
             </div>
-            <p class="checkout-service-period"><strong>서비스 제공 기간</strong> 결제일로부터 최대 90일 이내의 선택한 숙박 일정에 제공됩니다.</p>
+            <p class="checkout-service-period"><strong>서비스 제공 기간</strong> 선택한 체크인일부터 체크아웃일까지입니다. 숙박일은 3개월 전 1일 00:00(한국시간)에 열립니다.</p>
             <div class="checkout-legal-notice">
               <p>모티프는 통신판매중개자로서 본 숙박상품의 거래당사자가 아닙니다. 실제 숙박 제공과 시설 운영의 책임은 표시된 숙박시설 운영사업자에게 있습니다.</p>
               <p>추가 인원, 바비큐 등 추가금은 현장에서 확인 후 숙소 현장에서 직접 결제합니다. 모티프에서는 객실 기본금만 결제하며, 추가금은 사이트 결제금액에 포함되지 않습니다.</p>
@@ -1096,6 +1096,7 @@
 <p class="legal-effective-date">시행일자: 2026년 9월 1일</p>
 <h2>제13조 숙박 예약의 변경·취소·환불</h2>
 <p class="legal-numbered-item">1. 숙박 예약의 변경·취소·환불은 결제 전에 표시된 해당 숙박시설의 개별 취소정책, 관계 법령 및 소비자분쟁해결기준에 따릅니다.</p>
+<p>모티프 일반 숙소의 신규 확정 예약을 이용자 사정으로 취소하는 경우, 체크인 30일 전까지 100%, 29~15일 전 50%, 14일 전부터 당일까지는 환불 불가를 기본으로 합니다. 확정 전에는 전액 환불되며 기존 예약은 예약 시 안내된 기준을 적용합니다. 숙소 귀책이나 불가항력 등은 관계 법령과 적용 기준에 따릅니다.</p>
 <p class="legal-numbered-item">2. 단체예약, 객실 블록, 식사·행사장 결합상품 또는 맞춤 견적상품은 준비 비용과 예약 특성에 따라 별도 기준이 적용될 수 있으며, 회사는 이를 결제 전에 명확히 표시합니다.</p>
 <p class="legal-numbered-item">3. 예약일·객실 변경은 숙박시설의 재확인과 기본 숙박비 차액의 결제 또는 부분환급이 필요할 수 있으며, 변경이 완료되기 전까지 종전 예약조건이 유지됩니다. 추가 인원·부대시설 요금은 별도로 현장에서 확인 후 숙소 현장에서 직접 결제합니다.</p>
 <p class="legal-numbered-item">4. 숙박시설 또는 회사의 귀책으로 거래를 이행할 수 없는 경우 이용자에게 지체 없이 알리고 관계 법령과 개별 거래조건에 따른 환급 또는 대체조치를 제공합니다.</p>
@@ -1262,17 +1263,18 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ko.js"></script>
     <script src="nicepay.js?v=20261030-card-bank"></script>
-    <script src="app.js?v=20261118-budget-settlement"></script>
+    <script src="stay-booking-window.js?v=20261119"></script>
+    <script src="app.js?v=20261119-booking-window"></script>
     <script src="budget-model.js?v=20261118-budget-settlement"></script>
-    <script src="budget-export.js?v=20261118-budget-settlement"></script>
+    <script src="budget-export.js?v=20261119-receipt-pdf"></script>
     <script src="/identity-flow.js?v=20261117-auth-rooms"></script>
 <script src="auth.js?v=20261117-account-sites"></script>
-    <script src="catalog.js?v=20261117-onsite-final"></script>
-    <script src="transactions.js?v=20261116-reset"></script>
+    <script src="catalog.js?v=20261119-stay-policy"></script>
+    <script src="transactions.js?v=20261119-booking-window"></script>
     <script src="chat-data.js?v=20261116-reset"></script>
     <script src="support-data.js?v=20260621-support1"></script>
     <script src="reviews-data.js?v=20260829-hotfix3"></script>
-    <script src="product-refresh.js?v=20261117-mobile"></script>
+    <script src="product-refresh.js?v=20261119-booking-window"></script>
     <script src="mt-project-data.js?v=20261116-launch"></script>
     <script src="content-data.js?v=20261116-launch"></script>
     <script src="site-metadata.js?v=20261106"></script>
@@ -1283,7 +1285,7 @@
     <script src="/mt-workflow-model.js?v=20261113-recent"></script>
     <script src="mt-selection.js?v=20261116-launch"></script>
     <script src="product-reviews.js?v=20261116-market-combined"></script>
-    <script src="mobile-polish.js?v=20261117a"></script>
+    <script src="mobile-polish.js?v=20261119-booking-window"></script>
     <script src="/workflow-ui.js?v=20261116-desktop"></script>
     <script src="/desktop-ui.js?v=20261116-market-combined"></script>
     <script src="/desktop-replies.js?v=20261116"></script>

@@ -2,13 +2,14 @@ const { json, env, requireEnv, authenticatedUser, supabaseRequest: db, requireTo
 const pg = require("./_nicepay");
 const rt = require("./_nicepay-runtime");
 
-function refundPercent(transaction, kind, now = new Date()) {
+function refundPercent(transaction, kind, now = new Date(), policyVersion = null) {
   if (transaction.status === "pending") return 100;
   if (kind === "market") throw rt.error("CONTACT_SELLER", "확정된 상품 주문 취소는 판매자에게 문의해주세요.");
   const today = new Date(now.getTime() + 9 * 3600000).toISOString().slice(0, 10);
   const day = String(transaction.check_in_date || transaction.event_date || "").slice(0, 10);
   const days = (Date.parse(day + "T00:00:00Z") - Date.parse(today + "T00:00:00Z")) / 86400000;
   if (!Number.isFinite(days)) throw rt.error("INVALID_BOOKING_DATE", "예약 날짜를 확인해주세요.");
+  if (kind === "stay" && policyVersion === "30_15_v1") return days >= 30 ? 100 : days >= 15 ? 50 : 0;
   const fallback = [{ days_before: 14, refund_percent: 100 }, { days_before: 7, refund_percent: 50 }, { days_before: 3, refund_percent: 20 }];
   const policy = Array.isArray(transaction.businesses?.refund_policy) && transaction.businesses.refund_policy.length ? transaction.businesses.refund_policy : fallback;
   const value = Number([...policy].sort((a, b) => Number(b.days_before) - Number(a.days_before)).find(row => days >= Number(row.days_before))?.refund_percent || 0);
@@ -55,7 +56,7 @@ module.exports = async function handler(req, res) {
     }
     if (!intent || !["toss", "nicepay"].includes(intent.provider) || !intent.payment_key) throw rt.error("MANUAL_REVIEW_REQUIRED", "자동 환불할 원결제 내역이 없습니다. 운영팀 확인이 필요합니다.");
     if (intent.status !== "confirmed") throw rt.error("PAYMENT_ALREADY_PROCESSED", "이미 취소 처리된 결제입니다. 원장을 확인해주세요.");
-    const percent = action === "user_cancel" ? refundPercent(transaction, kind) : 100;
+    const percent = action === "user_cancel" ? refundPercent(transaction, kind, new Date(), intent.draft?.stay_refund_policy_version) : 100;
     const requestedStatus = action === "reject" ? "rejected" : "cancelled";
     const reason = rt.truncateEuc(String(input.reason || (action === "reject" ? "판매자 예약 취소" : "예약 취소")), 100);
     const cash = Math.floor(intent.amount * percent / 100);

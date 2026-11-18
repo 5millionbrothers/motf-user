@@ -16,13 +16,14 @@
       if (input._flatpickr) return;
       const initialValue = input.value;
       const dialog = input.closest("dialog");
-      const isStayDate = input.matches("[data-stay-search-field], #stayCheckInDate, #stayCheckOutDate");
+      const isStayDate = input.matches('[data-stay-search-field="checkIn"], [data-stay-search-field="checkOut"], #stayCheckInDate, #stayCheckOutDate');
+      const stayBounds = isStayDate ? window.motfStayDateBounds(input) : null;
       flatpickr(input, {
         dateFormat: "Y-m-d",
         altInput: true,
         altFormat: "Y년 m월 d일",
-        minDate: input.id?.includes("usage") || input.id === 'mtNoticeDate' ? null : "today",
-        maxDate: isStayDate ? new Date().fp_incr(90) : null,
+        minDate: stayBounds?.min ?? (input.id?.includes("usage") || input.id === 'mtNoticeDate' ? null : "today"),
+        maxDate: stayBounds?.max ?? null,
         disableMobile: true,
         monthSelectorType: "static",
         position: dialog ? positionDialogCalendar : "below left",
@@ -36,6 +37,10 @@
         },
         ...(dialog ? { appendTo: dialog } : {}),
         onOpen: (_dates, _value, instance) => {
+          if (isStayDate) {
+            const {min, max} = window.motfStayDateBounds(input);
+            instance.set({minDate: min, maxDate: max});
+          }
           if (!dialog) return;
           requestAnimationFrame(() => positionDialogCalendar(instance));
         },

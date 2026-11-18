@@ -14,7 +14,7 @@
     const report = options(), hasData = budget ? report.budget.length > 0 : report.sources.length > 0;
     const check = (name, title, detail, disabled = false) => `<label class="budget-option"><input type="checkbox" data-budget-option="${name}" ${state.options[name] ? 'checked' : ''} ${disabled || state.busy ? 'disabled' : ''}><span><strong>${title}</strong><small>${detail}</small></span></label>`;
     modal.innerHTML = `<div class="budget-dialog-head"><span class="budget-dialog-icon"><i data-lucide="file-spreadsheet"></i></span><button type="button" class="budget-icon-button" data-budget-close aria-label="닫기"><i data-lucide="x"></i></button></div><h2 id="budgetExportTitle">${budget ? '예산 엑셀 받기' : '결산·증빙 받기'}</h2><p class="budget-context">${escape(state.context.project?.title || '선택한 실결제 내역')}</p>
-      ${state.loading ? '<p class="budget-status" role="status">실제 결제 내역을 확인하고 있어요.</p>' : `<div class="budget-options">${check('stay', '숙소 비용', `${count('stay')}건`, !count('stay'))}${check('market', '장보기 비용', `${count('market')}건`, !count('market'))}${budget ? check('other', '기타 예상 비용', '내 MT에 직접 추가한 항목') : check('evidence', '영수증 링크·주문 내역서 함께 받기', '엑셀과 증빙을 ZIP으로 · 공식 영수증은 연결된 결제사에서 확인')}</div>`}
+      ${state.loading ? '<p class="budget-status" role="status">실제 결제 내역을 확인하고 있어요.</p>' : `<div class="budget-options">${check('stay', '숙소 비용', `${count('stay')}건`, !count('stay'))}${check('market', '장보기 비용', `${count('market')}건`, !count('market'))}${budget ? check('other', '기타 예상 비용', '내 MT에 직접 추가한 항목') : check('evidence', '영수증·주문 내역서 함께 받기', '등록된 공식 영수증 PDF와 결산을 ZIP으로 받기')}</div>`}
       ${state.error ? `<p class="budget-error" role="alert">${escape(state.error)} <button type="button" data-budget-retry>다시 시도</button></p>` : !state.loading && !hasData ? '<p class="budget-status">내 MT나 이용 내역에서 포함할 항목을 선택해주세요.</p>' : ''}
       ${!state.loading && hasData ? `<div class="budget-total"><span>${budget ? '예상 지출 합계' : '확인된 실제 결제액'}</span><strong>${(budget ? report.totals.budgetExpense : report.totals.cashOut).toLocaleString('ko-KR')}원</strong></div>` : ''}
       <p class="budget-footnote">${budget ? '내 MT에 예산 반영한 비용만 담아요. 결제나 영수증 없이도 만들 수 있는 참고용 예산안이에요.' : '결제가 확인된 내역만 담아요. 현장 추가금은 포함되지 않아요. 주문 내역서는 세금계산서·카드 매출전표·현금영수증을 대신하지 않아요.'}</p><button type="button" class="budget-download" data-budget-download ${state.loading || state.busy || state.error || !hasData ? 'disabled' : ''}><i data-lucide="${state.busy ? 'loader-circle' : 'download'}"></i>${state.busy ? '파일 만드는 중' : state.options.evidence ? '결산 + 증빙 받기' : '엑셀 다운로드'}</button>${!state.loading && !hasData && !state.error ? '<button type="button" class="budget-usage-link" data-budget-usage>이용 내역 선택하기</button>' : ''}`;
@@ -68,6 +68,33 @@
   function saveFile(blob, name) {
     const url = URL.createObjectURL(blob), link = document.createElement('a'); link.href = url; link.download = name; document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
+  async function addReceiptFiles(zip, attachments, included, token) {
+    const labels = {card: '카드매출전표', cash: '현금영수증'};
+    const queue = attachments.filter(file => included.has(file.id) && Object.hasOwn(labels, file.type));
+    const received = new Set();
+    const controller = new AbortController();
+    let index = 0, size = 0;
+    const timeout = setTimeout(() => controller.abort(), 90000);
+    try {
+      await Promise.all(Array.from({length: Math.min(4, queue.length)}, async () => {
+        while (index < queue.length && token === state.token) {
+          const file = queue[index++];
+          const response = await fetch(file.url, { cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer', signal: controller.signal });
+          if (!response.ok) throw new Error('등록된 영수증을 불러오지 못했습니다. 다시 시도해주세요.');
+          const pdf = new Uint8Array(await response.arrayBuffer());
+          if (new TextDecoder().decode(pdf.subarray(0, 5)) !== '%PDF-') throw new Error('첨부된 영수증 파일 형식이 올바르지 않습니다.');
+          size += pdf.length;
+          if (size > 64 * 1024 * 1024) throw new Error('영수증이 많습니다. 이용 내역을 나누어 다운로드해주세요.');
+          zip.file(`공식영수증/${file.id}_${labels[file.type]}.pdf`, pdf);
+          received.add(file.id);
+        }
+      }));
+      return received;
+    } catch (error) {
+      controller.abort();
+      throw error.name === 'AbortError' ? new Error('영수증 다운로드 시간이 초과되었습니다. 다시 시도해주세요.') : error;
+    } finally { clearTimeout(timeout); }
+  }
   async function download() {
     if (state.loading || state.busy || state.error) return;
     const token = state.token, selectedOptions = { ...state.options }, context = structuredClone(state.context);
@@ -86,7 +113,11 @@
         zip.file(`${name}.xlsx`, bytes);
         const included = new Set(report.sources.map(row => row.evidenceId));
         result.documents.filter(doc => included.has(doc.id)).forEach(doc => zip.file(`증빙자료/${doc.fileName}`, doc.html));
-        zip.file('안내.txt', '모티프 실결제 원장 기준 결산과 주문·결제내역서입니다.\n내역서 자체는 세금계산서·현금영수증·카드 매출전표가 아닙니다.\n공식 영수증은 증빙 목록의 결제사 링크에서 확인·인쇄·PDF 저장해주세요. 링크는 온라인 연결이 필요합니다.\n현금영수증은 결제사에서 발급 완료된 경우에만 제공됩니다. 현장 결제는 포함하지 않습니다.\n');
+        const received = await addReceiptFiles(zip, result.attachments || [], included, token);
+        if (token !== state.token) return;
+        const missing = [...included].filter(id => !received.has(id));
+        zip.file('안내.txt', '모티프 실결제 원장 기준 결산입니다.\n공식영수증 폴더에는 해당 거래에 등록된 카드 매출전표·현금영수증 PDF 원본이 포함됩니다.\n증빙자료 폴더의 모티프 내역서는 세금계산서·현금영수증·카드 매출전표가 아닙니다.\n등록된 PDF가 없는 거래는 증빙 목록의 결제사 링크(있는 경우) 또는 카드사·결제사에서 확인해주세요. 현장 결제는 포함하지 않습니다.\n'
+          + (missing.length ? `\n등록된 공식 PDF가 없는 증빙번호 (${missing.length}건):\n${missing.join('\n')}\n` : ''));
         blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' }); extension = 'zip';
       } else blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       if (token !== state.token) return;

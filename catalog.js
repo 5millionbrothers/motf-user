@@ -114,7 +114,7 @@
       fees: Array.isArray(business.extra_fees) && business.extra_fees.length
         ? business.extra_fees.map((fee) => text(`${fee.label || "추가요금"}${fee.amount ? ` ${Number(fee.amount).toLocaleString("ko-KR")}원` : ""}${fee.detail ? ` · ${fee.detail}` : ""}`))
         : ["추가금은 현장에서 확인 후 숙소 현장에서 직접 결제합니다."],
-      policy: ["이용 14일 전까지 전액 환불", "이용 7일 전까지 50% 환불", "이용 3일 전까지 20% 환불", "이후 및 당일 취소는 환불 불가"],
+      policy: [...STANDARD_REFUND_POLICY],
       rooms,
     };
   }

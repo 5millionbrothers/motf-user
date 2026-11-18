@@ -73,6 +73,20 @@ body.design-main { font-family:SUIT,Arial,sans-serif; background:#fff; color:#27
 .design-main .catalog-stay .stay-review-chip { color:#8b9e7a; font-size:9px; font-weight:450; padding:4px 0; border:0; background:none; }
 .design-main .catalog-stay .stay-card-facts { font-size:10px; color:#87957a; margin-top:8px; }
 .design-main .catalog-stay .stay-card-intro { font-size:10px; }
+#bookingForm[hidden] { display:none; }
+@media (max-width:1023px) {
+  .stay-desktop-only { display:none !important; }
+}
+@media (min-width:1024px) {
+  .public-stay-calendar { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .stay-mobile-only,
+  .home-stays .home-stay-image > span,
+  .design-main #stayList .stay-card-intro,
+  #stayDetail .amenity-checklist .unavailable,
+  #roomDetail .amenity-checklist .unavailable,
+  #stayDetail .amenity-checklist:not(:has(.available)),
+  #roomDetail .amenity-checklist:not(:has(.available)) { display:none !important; }
+}
 .design-main .catalog-stay .stay-card-availability { display:block; font-size:9px; color:#92a180; margin-top:5px; }
 .design-main .product-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:20px 16px; }
 .design-main .product-card { display:block; border:0; padding:0; border-radius:0; background:none; box-shadow:none; min-width:0; }

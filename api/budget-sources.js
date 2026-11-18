@@ -1,4 +1,4 @@
-const { json, requireEnv, authenticatedUser, supabaseRequest: db } = require('./_server');
+const { json, env, requireEnv, authenticatedUser, supabaseRequest: db } = require('./_server');
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const number = value => value !== null && value !== undefined && value !== '' && Number.isSafeInteger(Number(value)) && Number(value) >= 0 ? Number(value) : null;
@@ -23,6 +23,33 @@ function officialReceipt(intent) {
     return `https://npg.nicepay.co.kr/issue/IssueLoader.do?type=0&innerWin=Y&TID=${encodeURIComponent(tid)}`;
   }
   return null;
+}
+async function receiptAttachments(byIntent, request = db, supabase = env('SUPABASE_URL')) {
+  if (!byIntent.size) return [];
+  const bucket = 'settlement-receipts';
+  const attachments = await request('/rest/v1/rpc/list_settlement_receipt_attachments', {
+    method: 'POST', body: JSON.stringify({ target_intent_ids: [...byIntent.keys()] }),
+  });
+  const files = new Map();
+  for (const item of attachments) {
+    const evidenceId = byIntent.get(item.intent_id);
+    if (!evidenceId) continue;
+    const type = ['card', 'cash'].find(key => item.object_path === `${item.intent_id}/${key}.pdf`);
+    if (type) files.set(item.object_path, { id: evidenceId, type });
+  }
+  if (!files.size) return [];
+  const urls = await request(`/storage/v1/object/sign/${bucket}`, {
+    method: 'POST', body: JSON.stringify({ expiresIn: 300, paths: [...files.keys()] }),
+  });
+  const signed = new Map(urls.map(row => [row.path, row]));
+  return [...files].map(([path, file]) => {
+    const row = signed.get(path), signedPath = row?.signedURL;
+    const prefix = `/object/sign/${bucket}/${path}?token=`;
+    if (row?.error || typeof signedPath !== 'string' || !signedPath.startsWith(prefix) || signedPath.length <= prefix.length) {
+      throw new Error('첨부된 영수증을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
+    }
+    return { ...file, url: `${supabase.replace(/\/$/, '')}/storage/v1${signedPath}` };
+  });
 }
 function source(row, intent, kind) {
   const paid = !!intent && intent.provider !== 'mock' && ['confirmed', 'cancelled', 'partial_cancelled'].includes(intent.status) && !!intent.paid_at && number(intent.amount) !== null;
@@ -82,6 +109,7 @@ module.exports = async function handler(req, res) {
     if (transactionIds !== undefined && (!Array.isArray(transactionIds) || transactionIds.length > 200 || transactionIds.some(id => !UUID.test(id)))) throw new Error('선택한 거래를 확인해주세요. 한 번에 최대 200건입니다.');
     if (selections !== undefined && (!Array.isArray(selections) || selections.length > 200 || selections.some(item => !['stay', 'market'].includes(item.kind) || !UUID.test(item.id)))) throw new Error('선택한 거래를 확인해주세요. 한 번에 최대 200건입니다.');
     const all = [];
+    const receiptIntents = new Map();
     for (const kind of ['stay', 'market']) {
       const ids = transactionIds || selections?.filter(item => item.kind === kind).map(item => item.id);
       if (ids && !ids.length) continue;
@@ -92,14 +120,21 @@ module.exports = async function handler(req, res) {
       if (!rows.length) continue;
       const intents = [];
       for (let index = 0; index < rows.length; index += 100) {
-        intents.push(...await db(`/rest/v1/payment_intents?kind=eq.${kind}&transaction_id=in.(${rows.slice(index, index + 100).map(row => row.id).join(',')})&paid_at=not.is.null&status=in.(confirmed,cancelled,partial_cancelled)&select=transaction_id,order_id,status,amount,points_used,coupon_discount,paid_at,refund_status,refund_amount,refunded_at,refund_response,payment_method,provider,payment_key,payment_response&order=created_at.desc&limit=1000`));
+        intents.push(...await db(`/rest/v1/payment_intents?kind=eq.${kind}&transaction_id=in.(${rows.slice(index, index + 100).map(row => row.id).join(',')})&paid_at=not.is.null&status=in.(confirmed,cancelled,partial_cancelled)&select=id,transaction_id,order_id,status,amount,points_used,coupon_discount,paid_at,refund_status,refund_amount,refunded_at,refund_response,payment_method,provider,payment_key,payment_response&order=created_at.desc,id.desc&limit=1000`));
       }
-      for (const row of rows) all.push(source(row, intents.find(intent => intent.transaction_id === row.id && !!intent.paid_at && ['confirmed','cancelled','partial_cancelled'].includes(intent.status) && intent.provider !== 'mock'), kind));
+      for (const row of rows) {
+        const intent = intents.find(intent => intent.transaction_id === row.id && !!intent.paid_at && ['confirmed','cancelled','partial_cancelled'].includes(intent.status) && intent.provider !== 'mock');
+        const item = source(row, intent, kind);
+        all.push(item);
+        if (item.paid && item.cashPaid > 0 && ['nicepay','toss'].includes(intent.provider) && UUID.test(intent.id)) receiptIntents.set(intent.id, item.evidenceId);
+      }
     }
     if (transactionIds && new Set(all.map(row => row.id)).size !== new Set(transactionIds).size) return json(res, 403, { ok: false, message: '접근할 수 없는 거래가 포함되어 있습니다.' });
     const issuedAt = new Date().toISOString();
     const output = input.mode === 'settlement' ? all.filter(row => row.paid) : all;
-    return json(res, 200, { ok: true, issuedAt, sources: output, documents: input.includeEvidence === true ? output.filter(row => row.paid).map(item => ({ id: item.evidenceId, fileName: `${item.evidenceId}.html`, html: evidenceDocument(item, issuedAt) })) : [] });
+    const includeEvidence = input.includeEvidence === true;
+    const attachments = includeEvidence ? await receiptAttachments(receiptIntents) : [];
+    return json(res, 200, { ok: true, issuedAt, sources: output, attachments, documents: includeEvidence ? output.filter(row => row.paid).map(item => ({ id: item.evidenceId, fileName: `${item.evidenceId}.html`, html: evidenceDocument(item, issuedAt) })) : [] });
   } catch (error) {
     return json(res, error.statusCode || 400, { ok: false, message: error.message || '거래 내역을 확인하지 못했습니다.' });
   }
@@ -108,3 +143,4 @@ module.exports.source = source;
 module.exports.receiptUrl = receiptUrl;
 module.exports.evidenceDocument = evidenceDocument;
 module.exports.officialReceipt = officialReceipt;
+module.exports.receiptAttachments = receiptAttachments;

@@ -347,6 +347,8 @@
       if (submitButton) { submitButton.disabled = true; submitButton.textContent = "결제 금액 확인 중..."; }
       window.motfCheckoutPending = true;
       try {
+        const range = window.MotfStayBookingWindow.range(draft.event_date, draft.check_out_date);
+        if (!range.ok) throw new Error(range.opens ? `선택한 일정은 ${range.opens} 한국시간 00:00에 예약이 열립니다.` : '숙박 일정을 다시 확인해주세요.');
         const verified = await window.motfEnsureIdentityVerified?.();
         if (verified === false) throw new Error("로그인과 예약·주문에 필요한 기본정보를 확인해주세요.");
         const checkoutAmount = Number(window.motfGetCheckoutPreviewContext?.("stay")?.originalAmount || 0);

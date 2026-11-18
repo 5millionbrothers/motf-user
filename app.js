@@ -53,7 +53,8 @@ const PAYMENT_LIMIT_MESSAGE = "단건 결제는 10,000,000원까지 가능합니
 const DEFAULT_STAY_REGION = "가평";
 const DEFAULT_STAY_PEOPLE = 10;
 const LAUNCH_STAY_REGION = "가평";
-const STANDARD_REFUND_POLICY = ["이용 14일 전까지 전액 환불", "이용 7일 전까지 50% 환불", "이용 3일 전까지 20% 환불", "이후 및 당일 취소는 환불 불가"];
+const STANDARD_REFUND_POLICY = ["체크인 30일 전까지: 100% 환불", "체크인 29~15일 전: 50% 환불", "체크인 14일 전부터 당일까지: 환불 불가"];
+const STAY_REFUND_NOTE = "예약 확정 후 이용자 사정으로 취소하는 신규 예약 기준입니다. 확정 전에는 전액 환불되며, 숙소 귀책·불가항력 등은 관계 법령과 적용 기준에 따릅니다.";
 
 function normalizeStayRegion(value = "", address = "") {
   const region = String(value || "").trim();
@@ -456,10 +457,11 @@ const state = {
 };
 
 window.motfApplyCatalog = function applyCatalog(nextStays, nextStores, options = {}) {
+  const route = currentRoute();
   if (Array.isArray(nextStays)) {
     const currentParams = new URLSearchParams(window.location.search);
-    const requestedStayId = currentParams.get("stay") || initialLocationParams.get("stay") || state.selectedStay?.id || "";
-    const requestedRoomId = currentParams.get("room") || initialLocationParams.get("room") || state.selectedRoom?.id || "";
+    const requestedStayId = currentParams.get("stay") || state.selectedStay?.id;
+    const requestedRoomId = currentParams.get("room") || state.selectedRoom?.id;
     stays = nextStays.map((stay) => ({
       ...stay,
       region: normalizeStayRegion(stay.region, stay.distance),
@@ -471,8 +473,8 @@ window.motfApplyCatalog = function applyCatalog(nextStays, nextStores, options =
       regionSelect.innerHTML = regions.map((region) => `<option value="${escapeHtml(region)}">${escapeHtml(region)}</option>`).join("");
       regionSelect.value = regions.includes(selectedRegion) ? selectedRegion : (regions[0] || "");
     }
-    state.selectedStay = stays.find((stay) => String(stay.id) === String(requestedStayId)) || stays[0] || null;
-    state.selectedRoom = state.selectedStay?.rooms?.find((room) => String(room.id) === String(requestedRoomId)) || state.selectedStay?.rooms?.[0] || null;
+    if (["stayDetail", "roomDetail", "booking"].includes(route)) applyRouteSelection(route);
+    else setStaySelection(requestedStayId, requestedRoomId);
   }
   if (Array.isArray(nextStores)) {
     stores = nextStores;
@@ -482,16 +484,17 @@ window.motfApplyCatalog = function applyCatalog(nextStays, nextStores, options =
   }
   state.catalogLoading = false;
   state.catalogError = options.error ? "catalog_load_failed" : "";
-  const route = currentRoute();
   if (route === "home") renderHome();
   if (route === "stays") renderStays();
   if (route === "stayDetail") renderStayDetail();
   if (route === "roomDetail") renderRoomDetail();
+  if (route === "booking") renderBooking();
   if (route === "market") renderStores();
   if (route === "storeDetail") renderStoreDetail();
 };
 
 window.motfGetReservationDraft = function getReservationDraft() {
+  if (!state.selectedStay || !state.selectedRoom) return null;
   const requestDetails = [
     stayDateRangeLabel(),
     `체크인 ${qs("#bookingCheckIn").value}`,
@@ -1019,28 +1022,35 @@ function stayShareUrl(stay) {
   return `${window.location.origin}/stays/detail?stay=${encodeURIComponent(stay.id)}`;
 }
 
+function setStaySelection(stayId, roomId) {
+  state.selectedStay = stays.find((stay) => String(stay.id) === String(stayId)) || null;
+  const rooms = state.selectedStay?.rooms || [];
+  state.selectedRoom = roomId
+    ? rooms.find((room) => String(room.id) === String(roomId)) || null
+    : rooms[0] || null;
+}
+
+function openStayDetail(stayId) {
+  if (!stays.some(stay => String(stay.id) === String(stayId))) {
+    toast("현재 볼 수 없는 숙소입니다. 목록을 다시 확인해주세요.");
+    return false;
+  }
+  setStaySelection(stayId);
+  navigate("stayDetail", {params: new URLSearchParams({stay: stayId})});
+  return true;
+}
+
 function applyRouteSelection(route) {
   const currentParams = new URLSearchParams(window.location.search);
   const routePath = routePaths[route] || "/";
   const params = currentParams.toString()
     ? currentParams
     : (initialLocationPath === routePath ? initialLocationParams : currentParams);
-  if (route === "stayDetail") {
-    const stayId = params.get("stay");
-    if (stayId) {
-      const sharedStay = stays.find((stay) => String(stay.id) === String(stayId));
-      if (sharedStay) {
-        state.selectedStay = sharedStay;
-        state.selectedRoom = sharedStay.rooms?.[0] || null;
-      }
-    }
-  }
-  if (route === "roomDetail") {
-    const stayId = params.get("stay");
-    const roomId = params.get("room");
-    const stay = stays.find((item) => String(item.id) === String(stayId));
-    const room = stay?.rooms?.find((item) => String(item.id) === String(roomId));
-    if (stay && room) { state.selectedStay = stay; state.selectedRoom = room; }
+  if (["stayDetail", "roomDetail", "booking"].includes(route)) {
+    const stayId = currentParams.get("stay");
+    const roomId = currentParams.get("room");
+    setStaySelection(stayId, route === "stayDetail" ? null : roomId);
+    if (route !== "stayDetail" && !roomId) state.selectedRoom = null;
   }
   if (route === "eventDetail") {
     const eventId = params.get("event");
@@ -1082,10 +1092,10 @@ function routeUrl(route, optionParams = null) {
     : new URLSearchParams();
   const currentPath = window.location.pathname.replace(/\/+$/, "") || "/";
   const initialParam = (name) => initialLocationPath === path && currentPath === path ? initialLocationParams.get(name) : "";
-  const selectedStayId = initialParam("stay") || state.selectedStay?.id || "";
-  const selectedRoomId = initialParam("room") || state.selectedRoom?.id || "";
+  const selectedStayId = state.selectedStay?.id || "";
+  const selectedRoomId = state.selectedRoom?.id || "";
   if (route === "stayDetail" && !params.has("stay") && selectedStayId) params.set("stay", selectedStayId);
-  if (route === "roomDetail") {
+  if (route === "roomDetail" || route === "booking") {
     if (!params.has("stay") && selectedStayId) params.set("stay", selectedStayId);
     if (!params.has("room") && selectedRoomId) params.set("room", selectedRoomId);
   }
@@ -1133,8 +1143,8 @@ function navigate(route, options = {}) {
   document.body.dataset.currentRoute = route;
   const activeNav = routeParents[route] ?? route;
   qsa(".nav-link").forEach((link) => link.classList.toggle("active", link.dataset.route === activeNav));
-  renderRoute(route);
   updateBrowserRoute(route, options);
+  renderRoute(route);
   window.dispatchEvent(new CustomEvent("motf:routechange", {
     detail: { route, previousRoute },
   }));
@@ -1534,9 +1544,7 @@ function clearNaverMarkers(kind) {
 
 function openListingFromMap(kind, itemId) {
   if (kind === "stays") {
-    state.selectedStay = stays.find((stay) => stay.id === itemId) || stays[0];
-    state.selectedRoom = state.selectedStay.rooms[0];
-    navigate("stayDetail");
+    openStayDetail(itemId);
     return;
   }
 
@@ -1820,15 +1828,32 @@ function amenityDescription(detail, available) {
 }
 
 function amenityChecklist(stay, room = null) {
-  const details = [...(stay.amenityDetails || []), ...(room?.amenityDetails || [])];
+  const details = [...(room?.amenityDetails || []), ...(stay.amenityDetails || [])];
   const tags = new Set((stay.detailTags || []).map((tag) => ({ outdoor: "barbecue", mic: "karaoke" }[tag] || tag)));
   const rows = STANDARD_AMENITIES.map(([key, label]) => {
     const detail = details.find((item) => item.key === key || item.label === label);
     const available = detail ? detail.available !== false : tags.has(key);
-    return { available, label, description: amenityDescription(detail, available) };
+    const description = amenityDescription(detail, available);
+    return { available, label, description: /화장실|욕실/.test(description) ? "이용 가능" : description };
   });
   rows.sort((a, b) => Number(b.available) - Number(a.available));
   return `<ul class="amenity-checklist">${rows.map((item) => `<li class="${item.available ? "available" : "unavailable"}"><i data-lucide="${item.available ? "check" : "x"}"></i><span><strong>${escapeHtml(item.label)}</strong><small>${escapeHtml(item.description)}</small></span></li>`).join("")}</ul>`;
+}
+
+function stayFacilitySection(stay, desktop) {
+  return `<section class="stay-facility-showcase ${desktop ? "stay-desktop-only" : "stay-mobile-only"}">
+    <div class="section-toolbar"><div><p class="eyebrow">FACILITIES</p><h2>단체 이용 시설</h2><span>${desktop ? "시설 이용 조건이나 요금 등 자세한 사항은 숙소에 문의해주세요." : "강당·바베큐장 등은 일별 수용 인원이 달라 예약 전 확인이 필요합니다."}</span></div><button class="secondary-btn" data-open-chat="${stay.name}"><i data-lucide="message-circle"></i>이용 가능 여부 문의</button></div>
+    ${amenityChecklist(stay)}
+    <p class="facility-onsite-note"><i data-lucide="info"></i>모티프에서는 객실 기본금만 결제합니다. 추가 인원·부대시설 요금은 현장에서 확인 후 숙소 현장에서 직접 결제합니다.</p>
+  </section>`;
+}
+
+function hideBathroomMentions(description) {
+  return String(description || "").split(/(?<=[.!?])\s+|\n/).filter(line => !/화장실|욕실/.test(line)).join("\n").trim();
+}
+
+function stayRefundDetails() {
+  return `${dashList(STANDARD_REFUND_POLICY)}<p>${STAY_REFUND_NOTE}</p>`;
 }
 
 function roomCapacityMax(room) {
@@ -1958,13 +1983,14 @@ function renderStayDetail() {
   const insight = stayReviewInsight(stay);
   const stayReviews = matchingStayReviews(stay);
   const reviewSummary = stayReviewSummary(stay);
+  const fullIntro = hideBathroomMentions(stay.fullIntro || stay.intro);
   qs("#stayDetailContent").innerHTML = `
     <section class="stay-detail-top">
       <div>
         <p class="eyebrow">${stay.region} · ${stay.distance}</p>
         <h1 class="stay-detail-title">${stay.name}</h1>
-        <p class="stay-detail-intro">${stay.intro}</p>
-        ${stay.fullIntro && stay.fullIntro !== stay.intro ? `<details class="stay-description-more"><summary>숙소 소개 더보기</summary><p>${stay.fullIntro}</p></details>` : ""}
+        <p class="stay-detail-intro stay-mobile-only">${hideBathroomMentions(stay.intro)}</p>
+        ${fullIntro ? `<details class="stay-description-more ${stay.fullIntro && stay.fullIntro !== stay.intro ? "" : "stay-desktop-only"}"><summary>숙소 소개 더보기</summary><p>${fullIntro}</p></details>` : ""}
         <div class="detail-meta">
           <span class="pill success">최대 ${stay.maxPeople}명</span>
           <span class="pill">방 ${stay.roomCount}개</span>
@@ -2000,11 +2026,7 @@ function renderStayDetail() {
         : '<div class="stay-review-empty"><i data-lucide="message-square-text"></i><span>아직 등록된 리뷰가 없습니다.</span></div>'}
     </section>
 
-    <section class="stay-facility-showcase">
-      <div class="section-toolbar"><div><p class="eyebrow">FACILITIES</p><h2>단체 이용 시설</h2><span>강당·바베큐장 등은 일별 수용 인원이 달라 예약 전 확인이 필요합니다.</span></div><button class="secondary-btn" data-open-chat="${stay.name}"><i data-lucide="message-circle"></i>이용 가능 여부 문의</button></div>
-      ${amenityChecklist(stay)}
-      <p class="facility-onsite-note"><i data-lucide="info"></i>모티프에서는 객실 기본금만 결제합니다. 추가 인원·부대시설 요금은 현장에서 확인 후 숙소 현장에서 직접 결제합니다.</p>
-    </section>
+    ${stayFacilitySection(stay, false)}
 
     ${insight ? `<section class="stay-review-insight"><i data-lucide="users-round"></i><div><small>실제 이용팀 리뷰 기준</small><strong>등록 정원은 최대 ${stay.maxPeople}명이지만, 쾌적 인원은 ${insight.min}~${insight.max}명입니다.</strong><span>${insight.count}개 검증 후기에서 계산한 MT 전용 정보입니다.</span></div></section>` : ""}
 
@@ -2013,7 +2035,7 @@ function renderStayDetail() {
     </section>
 
     <section class="public-availability-section">
-      <div class="section-toolbar"><div><p class="eyebrow">예약 현황</p><h2>객실 예약 달력</h2><span>날짜를 누르면 이미 예약된 객실을 확인할 수 있어요.</span></div><button class="secondary-btn" type="button" data-toggle-public-calendar><i data-lucide="calendar-days"></i>3개월 달력 보기</button></div>
+      <div class="section-toolbar"><div><p class="eyebrow">예약 현황</p><h2>객실 예약 달력</h2><span>숙박일 3개월 전 1일 00:00(한국시간) 오픈 · 연박은 숙박일이 모두 열리면 예약할 수 있어요.</span></div><button class="secondary-btn" type="button" data-toggle-public-calendar><i data-lucide="calendar-days"></i>예약 달력 보기</button></div>
       <div id="publicStayCalendarWrap" hidden>
         <div id="publicStayCalendar" class="public-stay-calendar"><div class="empty-state">예약 현황을 확인하는 중입니다.</div></div>
         <div id="publicCalendarDayDetail" class="public-calendar-day-detail">확인할 날짜를 선택해주세요.</div>
@@ -2030,19 +2052,20 @@ function renderStayDetail() {
       </div>
     </section>
 
+    ${stayFacilitySection(stay, true)}
     <div class="detail-sections detail-sections-bottom">
-      <section class="info-panel">
+      <section class="info-panel stay-mobile-only">
         <h2>편의시설</h2>
         <p>상단 단체 이용 시설에서 제공 여부와 세부 조건을 확인해주세요.</p>
       </section>
       <section class="info-panel">
         <h2>추가요금</h2>
-        ${dashList(stay.fees)}
+        ${dashList(safeArray(stay.fees).filter(fee => !/화장실|욕실/.test(fee)))}
         <p>추가금은 현장에서 확인 후 숙소 현장에서 직접 결제하며, 사이트 결제금액에는 포함되지 않습니다.</p>
       </section>
       <section class="info-panel">
         <h2>환불 및 규칙</h2>
-        ${dashList(STANDARD_REFUND_POLICY)}
+        ${stayRefundDetails()}
       </section>
     </div>
   `;
@@ -2061,10 +2084,9 @@ function renderPublicStayCalendar(stay) {
   const container = qs("#publicStayCalendar");
   if (!container || state.selectedStay?.id !== stay.id) return;
   const blocks = state.publicStayCalendar.blocks || [];
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = new Date(`${window.MotfStayBookingWindow.limits().today}T00:00:00`);
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-  container.innerHTML = Array.from({ length: 3 }, (_, monthOffset) => {
+  container.innerHTML = Array.from({ length: 4 }, (_, monthOffset) => {
     const first = new Date(monthStart.getFullYear(), monthStart.getMonth() + monthOffset, 1);
     const last = new Date(first.getFullYear(), first.getMonth() + 1, 0);
     const blanks = Array.from({ length: first.getDay() }, () => '<span class="calendar-empty" aria-hidden="true"></span>').join("");
@@ -2103,13 +2125,11 @@ async function loadPublicStayCalendar(stay) {
   }
   if (state.publicStayCalendar.loading && state.publicStayCalendar.businessId === String(stay.id)) return;
   state.publicStayCalendar = { businessId: String(stay.id), blocks: [], loading: true };
-  const start = new Date();
-  start.setDate(1);
-  const end = new Date(start.getFullYear(), start.getMonth() + 3, 1);
+  const windowDates = window.MotfStayBookingWindow.limits();
   const { data, error } = await client.rpc("get_public_stay_calendar", {
     target_business_id: stay.id,
-    range_start: localDateKey(start),
-    range_end: localDateKey(end),
+    range_start: `${windowDates.today.slice(0, 7)}-01`,
+    range_end: windowDates.lastCheckout,
   });
   state.publicStayCalendar = { businessId: String(stay.id), blocks: error ? [] : (data || []), loading: false };
   renderPublicStayCalendar(stay);
@@ -2131,7 +2151,7 @@ function renderRoomDetail() {
     return;
   }
   const roomFeatures = safeArray(room.features).filter(item => !/화장실|욕실/.test(item));
-  const stayFees = safeArray(stay.fees);
+  const stayFees = safeArray(stay.fees).filter(fee => !/화장실|욕실/.test(fee));
   const unavailable = isRoomUnavailable(room);
   const gallery = roomGalleryImages(stay, room);
   state.gallery = { images: gallery, index: 0, alt: `${stay.name} ${room.name}` };
@@ -2180,13 +2200,15 @@ function renderRoomDetail() {
         ])}
       </section>
       <section class="info-panel">
-        <h2>포함 편의시설</h2>
+        <h2><span class="stay-mobile-only">포함 편의시설</span><span class="stay-desktop-only">부대시설 안내</span></h2>
         ${amenityChecklist(stay, room)}
+        <p class="stay-desktop-only">시설 이용 조건이나 요금 등 자세한 사항은 숙소에 문의해주세요.</p>
       </section>
       <section class="info-panel">
         <h2>추가요금 및 환불</h2>
         <p>추가 인원·부대시설 요금은 현장 확인 후 숙소 현장에서 직접 결제합니다. 아래 요금은 사이트 결제금액에 포함되지 않습니다.</p>
-        ${dashList([...stayFees.slice(0, 3), ...STANDARD_REFUND_POLICY])}
+        ${dashList(stayFees.slice(0, 3))}
+        ${stayRefundDetails()}
       </section>
     </div>
   `;
@@ -2267,6 +2289,12 @@ function renderBooking() {
   ensureStayAvailability();
   const stay = state.selectedStay;
   const room = state.selectedRoom;
+  const form = qs("#bookingForm");
+  form.hidden = !stay || !room;
+  if (!stay || !room) {
+    qs("#bookingSummary").innerHTML = '<p>예약할 객실을 다시 선택해주세요.</p><button class="secondary-btn" type="button" data-route="stays">숙소 목록으로</button>';
+    return;
+  }
   const unavailable = isRoomUnavailable(room);
   const values = staySearchValues();
   const bookingPeopleInput = qs("#bookingPeople");
@@ -2295,6 +2323,7 @@ function renderBooking() {
       ${unavailable ? `<div class="summary-line"><span>예약 가능 여부</span><strong>선택 날짜 품절</strong></div>` : ""}
       ${exceedsPaymentLimit ? `<div class="summary-line payment-limit-warning"><span>결제 한도</span><strong>최대 ${money(MAX_SINGLE_PAYMENT_AMOUNT)}</strong></div>` : ""}
       <div class="separate-charge-note"><i data-lucide="info"></i><span>모티프에서는 객실 기본금만 결제합니다. 추가 인원·바비큐 등 부대시설 요금은 현장에서 확인 후 숙소 현장에서 직접 결제합니다. 사이트에서 별도 결제하지 않습니다.</span></div>
+      <details class="stay-description-more"><summary>숙소 취소·환불 규정</summary>${stayRefundDetails()}</details>
       <div class="summary-line total"><span>지금 결제할 금액</span><strong>${money(payableAmount)}</strong></div>
     `;
     const submitButton = qs('#bookingForm [type="submit"]');
@@ -2792,21 +2821,39 @@ function formatDateInput(date) {
   return `${year}-${month}-${day}`;
 }
 
+function stayDateBounds(input) {
+  const policy = window.MotfStayBookingWindow;
+  const dates = policy.limits();
+  const isCheckout = input.id === 'stayCheckOutDate' || input.dataset.staySearchField === 'checkOut';
+  const currentCheckIn = qs('#stayCheckInDate')?.value;
+  const checkIn = policy.valid(currentCheckIn) && currentCheckIn >= dates.today && currentCheckIn <= dates.lastNight ? currentCheckIn : dates.today;
+  return isCheckout ? {min: policy.shiftDay(checkIn, 1), max: dates.lastCheckout} : {min: dates.today, max: dates.lastNight};
+}
+
+function applyStayDateBounds(input) {
+  const {min, max} = stayDateBounds(input);
+  input.min = min;
+  input.max = max;
+  const picker = input._flatpickr;
+  if (picker && (!picker.config.minDate || localDateKey(picker.config.minDate) !== min
+    || !picker.config.maxDate || localDateKey(picker.config.maxDate) !== max)) {
+    picker.set({minDate: min, maxDate: max});
+  }
+  return {min, max};
+}
+
 function normalizeStaySearchDates() {
   const checkInInput = qs("#stayCheckInDate");
   const checkOutInput = qs("#stayCheckOutDate");
   if (!checkInInput || !checkOutInput) return;
-  const today = new Date();
-  if (!checkInInput.value || checkInInput.value === "2026-06-12") {
-    checkInInput.value = formatDateInput(today);
-  }
-  if (!checkOutInput.value || checkOutInput.value === "2026-06-12") {
-    checkOutInput.value = formatDateInput(addDays(today, 1));
-  }
-  if (checkOutInput.value <= checkInInput.value) {
-    checkOutInput.value = formatDateInput(addDays(new Date(`${checkInInput.value}T00:00:00`), 1));
-  }
-  checkOutInput.min = checkInInput.value;
+  const normalize = input => {
+    const value = input.value;
+    const {min, max} = applyStayDateBounds(input);
+    const next = !window.MotfStayBookingWindow.valid(value) || value < min ? min : value > max ? max : value;
+    if (input.value !== next) setDateInputValue(input, next);
+  };
+  normalize(checkInInput);
+  normalize(checkOutInput);
 }
 
 function initializeStaySearchDefaults() {
@@ -2900,8 +2947,10 @@ function syncStaySearchPanel(container = document) {
   const values = staySearchValues();
   container.querySelectorAll("[data-stay-search-field]").forEach((input) => {
     const field = input.dataset.staySearchField;
-    if (field === "checkIn") setDateInputValue(input, values.checkIn);
-    if (field === "checkOut") setDateInputValue(input, values.checkOut);
+    if (field === "checkIn" || field === "checkOut") {
+      applyStayDateBounds(input);
+      setDateInputValue(input, values[field]);
+    }
     if (field === "region") input.value = values.region;
     if (field === "people") input.value = values.people;
   });
@@ -4636,9 +4685,7 @@ document.addEventListener("click", async (event) => {
 
   const stayReviewButton = event.target.closest("[data-stay-review-id]");
   if (stayReviewButton) {
-    state.selectedStay = stays.find((stay) => String(stay.id) === String(stayReviewButton.dataset.stayReviewId)) || stays[0];
-    state.selectedRoom = state.selectedStay.rooms[0];
-    navigate("stayDetail");
+    if (!openStayDetail(stayReviewButton.dataset.stayReviewId)) return;
     window.requestAnimationFrame(() => qs("#stayReviewsSection")?.scrollIntoView({ behavior: "smooth", block: "start" }));
     return;
   }
@@ -4682,17 +4729,13 @@ document.addEventListener("click", async (event) => {
 
   const stayCardButton = event.target.closest("[data-stay-card-id]");
   if (stayCardButton && !event.target.closest("button, a, input, select, textarea, label")) {
-    state.selectedStay = stays.find((stay) => String(stay.id) === String(stayCardButton.dataset.stayCardId)) || stays[0];
-    state.selectedRoom = state.selectedStay.rooms[0];
-    navigate("stayDetail");
+    openStayDetail(stayCardButton.dataset.stayCardId);
     return;
   }
 
   const stayButton = event.target.closest("[data-stay-id]");
   if (stayButton) {
-    state.selectedStay = stays.find((stay) => stay.id === stayButton.dataset.stayId) || stays[0];
-    state.selectedRoom = state.selectedStay.rooms[0];
-    navigate("stayDetail");
+    openStayDetail(stayButton.dataset.stayId);
     return;
   }
 
@@ -5448,9 +5491,7 @@ document.addEventListener("keydown", (event) => {
   const stayCard = event.target.closest?.("[data-stay-card-id]");
   if (stayCard && !event.target.closest("button, a, input, select, textarea, label") && (event.key === "Enter" || event.key === " ")) {
     event.preventDefault();
-    state.selectedStay = stays.find((stay) => String(stay.id) === String(stayCard.dataset.stayCardId)) || stays[0];
-    state.selectedRoom = state.selectedStay.rooms[0];
-    navigate("stayDetail");
+    openStayDetail(stayCard.dataset.stayCardId);
     return;
   }
   const dialog = qs("#photoGalleryDialog");
@@ -5478,6 +5519,7 @@ window.addEventListener("motf:auth-ready", async () => {
   if (currentRoute() === "eventDetail") renderEventDetail();
 });
 
+window.motfStayDateBounds = stayDateBounds;
 (async function boot() {
   preservePendingMtInvite();
   // DB 연결 전 데모 숙소도 1차 운영 지역인 가평 목록에 함께 표시합니다.
