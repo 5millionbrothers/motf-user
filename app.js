@@ -3906,7 +3906,7 @@ function renderMypage() {
   const selectedBudgetButton = qs("[data-selected-budget-file]");
   if (selectedBudgetButton) {
     selectedBudgetButton.disabled = state.selectedUsageIds.size === 0;
-    selectedBudgetButton.innerHTML = `<i data-lucide="file-spreadsheet"></i>${state.selectedUsageIds.size ? `${state.selectedUsageIds.size}건 예결산 생성` : "선택 내역 예결산"}`;
+    selectedBudgetButton.innerHTML = `<i data-lucide="file-spreadsheet"></i>${state.selectedUsageIds.size ? `${state.selectedUsageIds.size}건 결산·증빙 받기` : "선택 내역 결산·증빙"}`;
   }
   renderPointHistory();
   refreshIcons();
@@ -4201,7 +4201,7 @@ function reservationCard(item) {
   const schedule = [item.date, item.checkOutDate].filter(Boolean).join(" ~ ") || item.date || "";
   return `
     <article class="listing-card usage-history-card ${item.isPendingVirtualAccount ? "pending-payment-card" : ""} ${item.isExtraCharge ? "extra-charge-usage-card" : ""}">
-      ${item.isPaymentReview ? "" : `<label class="usage-select"><input type="checkbox" data-usage-select="${item.id}" ${state.selectedUsageIds.has(String(item.id)) ? "checked" : ""}><span>예결산에 포함</span></label>`}
+      ${item.isPaymentReview ? "" : `<label class="usage-select"><input type="checkbox" data-usage-select="${item.id}" ${state.selectedUsageIds.has(String(item.id)) ? "checked" : ""}><span>결산에 포함</span></label>`}
       <div class="listing-body">
         <div class="listing-meta">
           <span class="pill ${item.isPendingVirtualAccount || item.isPaymentReview ? "warning" : "success"}">${item.status}</span>
@@ -4217,7 +4217,7 @@ function reservationCard(item) {
         ${item.refundAmount ? `<p class="muted">환불 예정 금액 ${money(item.refundAmount)}</p>` : ""}
         <div class="button-row">
           ${!item.isExtraCharge && item.rawStatus === "confirmed" ? `<button class="ghost-btn" data-cancel-reservation="${item.id}"><i data-lucide="rotate-ccw"></i>예약 취소</button>` : ""}
-          ${item.isPaymentReview ? `<button class="secondary-btn" data-check-payment="${escapeHtml(item.id)}"><i data-lucide="refresh-cw"></i>결제 상태 확인</button>` : `<button class="secondary-btn" data-budget-file="${item.id}"><i data-lucide="file-spreadsheet"></i>예결산 엑셀 생성</button><button class="ghost-btn" data-route="review"><i data-lucide="star"></i>리뷰</button>`}
+          ${item.isPaymentReview ? `<button class="secondary-btn" data-check-payment="${escapeHtml(item.id)}"><i data-lucide="refresh-cw"></i>결제 상태 확인</button>` : `<button class="secondary-btn" data-budget-file="${item.id}"><i data-lucide="file-spreadsheet"></i>결산·증빙 받기</button><button class="ghost-btn" data-route="review"><i data-lucide="star"></i>리뷰</button>`}
         </div>
       </div>
     </article>
@@ -4229,7 +4229,7 @@ function orderCard(item) {
   const dueDate = pendingAccountDueDate(item);
   return `
     <article class="listing-card usage-history-card ${item.isPendingVirtualAccount ? "pending-payment-card" : ""}">
-      ${item.isPaymentReview ? "" : `<label class="usage-select"><input type="checkbox" data-usage-select="${item.id}" ${state.selectedUsageIds.has(String(item.id)) ? "checked" : ""}><span>예결산에 포함</span></label>`}
+      ${item.isPaymentReview ? "" : `<label class="usage-select"><input type="checkbox" data-usage-select="${item.id}" ${state.selectedUsageIds.has(String(item.id)) ? "checked" : ""}><span>결산에 포함</span></label>`}
       <div class="listing-body">
         <div class="listing-meta">
           <span class="pill ${item.isPendingVirtualAccount || item.isPaymentReview ? "warning" : "success"}">${item.status}</span>
@@ -4242,7 +4242,7 @@ function orderCard(item) {
         ${item.isPaymentReview ? `<p class="muted">중복 결제하지 말고 상태를 확인해주세요. 해결되지 않으면 주문번호 ${escapeHtml(item.id)}로 문의해주세요.</p>` : ""}
         ${item.refundAmount ? `<p class="muted">환불 예정 금액 ${money(item.refundAmount)}</p>` : ""}
         <div class="button-row">
-          ${item.isPaymentReview ? `<button class="secondary-btn" data-check-payment="${escapeHtml(item.id)}"><i data-lucide="refresh-cw"></i>결제 상태 확인</button>` : `<button class="secondary-btn" data-budget-file="${item.id}"><i data-lucide="file-spreadsheet"></i>예결산 엑셀 생성</button><button class="ghost-btn" data-route="review"><i data-lucide="star"></i>리뷰</button>`}
+          ${item.isPaymentReview ? `<button class="secondary-btn" data-check-payment="${escapeHtml(item.id)}"><i data-lucide="refresh-cw"></i>결제 상태 확인</button>` : `<button class="secondary-btn" data-budget-file="${item.id}"><i data-lucide="file-spreadsheet"></i>결산·증빙 받기</button><button class="ghost-btn" data-route="review"><i data-lucide="star"></i>리뷰</button>`}
         </div>
       </div>
     </article>
@@ -5088,7 +5088,7 @@ document.addEventListener("change", (event) => {
     const button = qs("[data-selected-budget-file]");
     if (button) {
       button.disabled = state.selectedUsageIds.size === 0;
-      button.innerHTML = `<i data-lucide="file-spreadsheet"></i>${state.selectedUsageIds.size ? `${state.selectedUsageIds.size}건 예결산 생성` : "선택 내역 예결산"}`;
+      button.innerHTML = `<i data-lucide="file-spreadsheet"></i>${state.selectedUsageIds.size ? `${state.selectedUsageIds.size}건 결산·증빙 받기` : "선택 내역 결산·증빙"}`;
       refreshIcons();
     }
     return;

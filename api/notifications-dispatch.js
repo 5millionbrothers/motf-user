@@ -41,6 +41,7 @@ const ALIGO_TEMPLATE_CODES = {
 };
 
 let aligoTemplateCache = { expiresAt: 0, templates: new Map() };
+let aligoTemplateRequest = null;
 
 function supabaseBaseUrl() {
   const configured = String(process.env.SUPABASE_URL || "").trim();
@@ -53,7 +54,7 @@ function supabaseBaseUrl() {
   }
 }
 
-async function requestJson(url, options = {}, timeoutMs = 8000) {
+async function requestJson(url, options = {}, timeoutMs = 8000, retryTransport = true) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(new Error("fetch timed out")), timeoutMs);
   try {
@@ -61,6 +62,7 @@ async function requestJson(url, options = {}, timeoutMs = 8000) {
     const data = await response.json().catch(() => null);
     return { ok: response.ok, status: response.status, data };
   } catch (error) {
+    if (!retryTransport) throw error;
     return requestJsonWithHttps(url, options, timeoutMs);
   } finally {
     clearTimeout(timeout);
@@ -156,6 +158,11 @@ function validateAligoConfiguration(credentials) {
 }
 
 async function aligoRequest(path, params) {
+  const sending = path === '/akv10/alimtalk/send/';
+  const request = async (...args) => {
+    try { return await requestJson(...args, false); }
+    catch (error) { if (sending) error.deliveryUnknown = true; throw error; }
+  };
   const relay = aligoRelayConfig();
   if (relay.url && relay.secret) {
     const relayParams = { ...params };
@@ -164,7 +171,7 @@ async function aligoRequest(path, params) {
     delete relayParams.senderkey;
     delete relayParams.sender;
 
-    const result = await requestJson(`${relay.url}/v1/aligo/request`, {
+    const result = await request(`${relay.url}/v1/aligo/request`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -176,13 +183,14 @@ async function aligoRequest(path, params) {
       const error = new Error(errorMessage(result.data, `Aligo relay request failed (${result.status}).`));
       error.statusCode = result.status || 502;
       error.providerResponse = result.data;
+      error.deliveryUnknown = sending && (result.status >= 500 || result.status === 408 || !result.data);
       throw error;
     }
     return result.data;
   }
 
   const body = new URLSearchParams(params).toString();
-  const result = await requestJson(`${ALIGO_API_BASE}${path}`, {
+  const result = await request(`${ALIGO_API_BASE}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
     body,
@@ -191,6 +199,7 @@ async function aligoRequest(path, params) {
     const error = new Error(errorMessage(result.data, `Aligo request failed (${result.status}).`));
     error.statusCode = result.status || 502;
     error.providerResponse = result.data;
+    error.deliveryUnknown = sending && (result.status >= 500 || result.status === 408 || !result.data);
     throw error;
   }
   return result.data;
@@ -200,6 +209,8 @@ async function approvedAligoTemplates(credentials) {
   if (aligoTemplateCache.expiresAt > Date.now() && aligoTemplateCache.templates.size) {
     return aligoTemplateCache.templates;
   }
+  if (aligoTemplateRequest) return aligoTemplateRequest;
+  aligoTemplateRequest = (async () => {
   const data = await aligoRequest("/akv10/template/list/", {
     apikey: credentials.apikey,
     userid: credentials.userid,
@@ -212,6 +223,8 @@ async function approvedAligoTemplates(credentials) {
   }
   aligoTemplateCache = { expiresAt: Date.now() + 5 * 60 * 1000, templates };
   return templates;
+  })();
+  try { return await aligoTemplateRequest; } finally { aligoTemplateRequest = null; }
 }
 
 function templateValue(value, item, buttonName = "") {
@@ -253,7 +266,7 @@ async function supabaseRequest(path, options = {}) {
       "Content-Type": "application/json",
       ...(options.headers || {}),
     },
-  });
+  }, 5000, false);
   if (!result.ok) {
     const error = new Error(errorMessage(result.data, "Supabase request failed."));
     error.statusCode = result.status;
@@ -360,11 +373,7 @@ async function runNotificationMaintenance(source) {
     ["enqueue_delayed_chat_notifications", { threshold_minutes: 30 }],
   ];
 
-  const results = [];
-  for (const [functionName, payload] of jobs) {
-    results.push(await optionalRpc(functionName, payload));
-  }
-  return results;
+  return Promise.all(jobs.map(([functionName, payload]) => optionalRpc(functionName, payload)));
 }
 
 function buildMockRequestPayload(item) {
@@ -410,6 +419,7 @@ async function sendAligoAlimtalk(item) {
   }
   // Only use the DB-verified destination, never an environment-variable override.
   const receiver = notificationRecipient({ ...item, recipient_phone: route.recipient_phone });
+  item.verifiedDeliveryPhone = receiver;
   const credentials = aligoCredentials();
   validateAligoConfiguration(credentials);
 
@@ -438,7 +448,7 @@ async function sendAligoAlimtalk(item) {
 
   const responsePayload = await aligoRequest("/akv10/alimtalk/send/", params);
   const providerMessageId = String(responsePayload.info?.mid || "");
-  if (!providerMessageId) throw new Error("알리고 발송 요청은 성공했지만 메시지 ID가 없습니다.");
+  if (!providerMessageId) throw Object.assign(new Error("알리고 발송 요청은 성공했지만 메시지 ID가 없습니다."), { deliveryUnknown: true });
 
   return {
     status: "sent",
@@ -496,15 +506,18 @@ module.exports = async function handler(req, res) {
     const queryLimit = Number(requestUrl.searchParams.get("limit"));
     const source = String(body.source || requestUrl.searchParams.get("source") || "");
     const maintenance = await runNotificationMaintenance(source);
-    const limit = Math.max(1, Math.min(Number(body.limit || queryLimit || 20), 100));
+    const requestedLimit = Number(body.limit || queryLimit || 4);
+    const limit = Number.isFinite(requestedLimit) ? Math.max(1, Math.min(Math.floor(requestedLimit), 4)) : 4;
     const items = await claimBatch(limit);
     const results = [];
 
-    for (const item of items) {
+    await Promise.all(items.map(async (item) => {
+      let accepted = null;
       try {
         const result = envFlag("ALIGO_LIVE_ENABLED")
           ? await sendAligoAlimtalk(item)
           : await sendMockAlimtalk(item);
+        accepted = result;
         await completeNotification(
           item,
           result.status,
@@ -520,6 +533,12 @@ module.exports = async function handler(req, res) {
           providerMessageId: result.providerMessageId,
         });
       } catch (error) {
+        // Never turn a successful provider acceptance into a queued second send.
+        if (accepted) {
+          console.error('Notification accepted but DB completion failed', item.id);
+          results.push({ id: item.id, status: 'processing', message: '발송 접수 후 기록 저장 확인 필요. 자동 재발송하지 않습니다.' });
+          return;
+        }
         const liveProvider = envFlag("ALIGO_LIVE_ENABLED");
         const requestPayload = liveProvider
           ? {
@@ -527,11 +546,18 @@ module.exports = async function handler(req, res) {
               provider: "aligo",
               templateKey: item.template_key,
               templateCode: ALIGO_TEMPLATE_CODES[item.template_key] || null,
-              recipientPhone: normalizePhone(item.recipient_phone),
+              recipientPhone: item.verifiedDeliveryPhone || null,
               recipientRole: item.recipient_role,
               testRecipientOverride: false,
             }
           : buildMockRequestPayload(item);
+        if (error.deliveryUnknown) {
+          await supabaseRequest('/rest/v1/rpc/mark_notification_delivery_unknown', {
+            method: 'POST', body: JSON.stringify({ target_outbox_id: item.id, target_request_payload: requestPayload, target_error_message: error.message }),
+          });
+          results.push({ id: item.id, status: 'failed', message: '수신 결과 확인 필요. 중복 방지를 위해 자동 재발송하지 않습니다.' });
+          return;
+        }
         await completeNotification(
           item,
           "failed",
@@ -548,7 +574,11 @@ module.exports = async function handler(req, res) {
           message: error.message || "Alimtalk dispatch failed.",
         });
       }
-    }
+    }).map((pending, index) => pending.catch(error => {
+      console.error('Notification outcome requires review', items[index].id, error.message);
+      results.push({ id: items[index].id, status: 'processing', message: '처리 기록 확인 필요. 자동 재발송하지 않습니다.' });
+    })));
+    if (items.length === limit) maintenance.push(await optionalRpc('request_notification_dispatch_followup'));
 
     return json(res, 200, {
       ok: true,

@@ -95,7 +95,7 @@ function publicResult(intent) {
   return { ok: true, orderId: intent.order_id, kind: intent.kind, amount: intent.amount, itemName: intent.order_name, status: intent.status === "confirmed" ? "paid" : intent.status === "virtual_account_issued" ? "awaiting_deposit" : intent.status, transactionId: intent.transaction_id || null, virtualAccount: intent.virtual_account || null, expiresAt: intent.expires_at };
 }
 function receipt(data) {
-  const keys = ["ResultCode", "MID", "Moid", "TID", "Amt", "PayMethod", "AuthCode", "AuthDate", "VbankBankCode", "VbankBankName", "VbankNum", "VbankExpDate", "VbankExpTime", "CancelAmt", "CancelNum", "RemainAmt", "CancelDate", "CancelTime", "Signature"];
+  const keys = ["ResultCode", "MID", "Moid", "TID", "Amt", "PayMethod", "AuthCode", "AuthDate", "VbankBankCode", "VbankBankName", "VbankNum", "VbankExpDate", "VbankExpTime", "CancelAmt", "CancelNum", "RemainAmt", "CancelDate", "CancelTime", "Signature", "receiptUrl", "ReceiptUrl"];
   return Object.fromEntries(keys.filter(key => data[key] != null).map(key => [key, data[key]]));
 }
 async function finalize(intent, data) {

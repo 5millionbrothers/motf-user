@@ -170,7 +170,7 @@
             <aside class="mt-project-side">
               <section class="mt-side-section"><div class="section-toolbar"><h2>일정</h2><button class="icon-action" type="button" data-add-mt-itinerary aria-label="일정 추가"><i data-lucide="plus"></i></button></div><ol class="mt-timeline" id="mtTimeline"></ol></section>
               <section class="mt-side-section"><div class="section-toolbar"><h2>공지 메모</h2><button class="icon-action" type="button" data-add-mt-notice aria-label="공지 작성"><i data-lucide="square-pen"></i></button></div><div id="mtNoticeList"></div></section>
-              <nav class="mt-side-links" aria-label="MT 도구"><button data-route="chat"><i data-lucide="messages-square"></i><span><strong>문의 채팅</strong><small>숙소·장보기 문의 모아보기</small></span><i data-lucide="chevron-right"></i></button><button type="button" data-mt-budget-export><i data-lucide="file-spreadsheet"></i><span><strong>예결산 파일</strong><small>실제 이용 내역으로 생성</small></span><i data-lucide="chevron-right"></i></button></nav>
+              <nav class="mt-side-links" aria-label="MT 도구"><button data-route="chat"><i data-lucide="messages-square"></i><span><strong>문의 채팅</strong><small>숙소·장보기 문의 모아보기</small></span><i data-lucide="chevron-right"></i></button><button type="button" data-mt-budget-export><i data-lucide="file-spreadsheet"></i><span><strong>예산 파일</strong><small>내 MT 예상 비용으로 생성</small></span><i data-lucide="chevron-right"></i></button></nav>
             </aside>
           </div>
         </div>
@@ -673,7 +673,7 @@
           <div>
             <h1>우리 MT 이용 내역 관리</h1>
           </div>
-          <div class="button-row"><button class="secondary-btn" data-route="review"><i data-lucide="star"></i>리뷰 남기기</button><button class="primary-btn" type="button" data-selected-budget-file disabled><i data-lucide="file-spreadsheet"></i>선택 내역 예결산</button></div>
+          <div class="button-row"><button class="secondary-btn" data-route="review"><i data-lucide="star"></i>리뷰 남기기</button><button class="primary-btn" type="button" data-selected-budget-file disabled><i data-lucide="file-spreadsheet"></i>선택 내역 결산·증빙</button></div>
         </div>
         <form class="usage-period-filter" id="usagePeriodFilter">
           <label>조회 시작일<input type="date" id="usageFrom" /></label>
@@ -1262,9 +1262,9 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ko.js"></script>
     <script src="nicepay.js?v=20261030-card-bank"></script>
-    <script src="app.js?v=20261117-onsite-final"></script>
-    <script src="budget-model.js?v=20261109-clean"></script>
-    <script src="budget-export.js?v=20261109-clean"></script>
+    <script src="app.js?v=20261118-budget-settlement"></script>
+    <script src="budget-model.js?v=20261118-budget-settlement"></script>
+    <script src="budget-export.js?v=20261118-budget-settlement"></script>
     <script src="/identity-flow.js?v=20261117-auth-rooms"></script>
 <script src="auth.js?v=20261117-account-sites"></script>
     <script src="catalog.js?v=20261117-onsite-final"></script>

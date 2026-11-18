@@ -9,11 +9,23 @@ const methodLabels = { CARD: '카드', BANK: '계좌이체', VBANK: '가상계�
 function receiptUrl(value) {
   try {
     const url = new URL(value);
-    return url.protocol === 'https:' && /(^|\.)(tosspayments\.com|nicepay\.co\.kr)$/.test(url.hostname) ? url.href : null;
+    return url.protocol === 'https:' && !url.username && !url.password && (!url.port || url.port === '443') && /(^|\.)(tosspayments\.com|nicepay\.co\.kr)$/.test(url.hostname) ? url.href : null;
   } catch { return null; }
 }
+function officialReceipt(intent) {
+  const stored = intent?.payment_response || {};
+  const supplied = receiptUrl(stored.receipt?.url || stored.receiptUrl || stored.ReceiptUrl);
+  if (supplied) return supplied;
+  // NICEPAY's official receipt viewer uses the original approved TID, never a client-provided one.
+  const tid = intent?.payment_key;
+  if (intent?.provider === 'nicepay' && String(intent.payment_method).toUpperCase() === 'CARD' && /^[a-z0-9]{30}$/i.test(tid || '')
+      && (!stored.TID || stored.TID === tid)) {
+    return `https://npg.nicepay.co.kr/issue/IssueLoader.do?type=0&innerWin=Y&TID=${encodeURIComponent(tid)}`;
+  }
+  return null;
+}
 function source(row, intent, kind) {
-  const paid = !!intent && ['confirmed', 'cancelled', 'partial_cancelled'].includes(intent.status) && !!intent.paid_at && number(intent.amount) !== null;
+  const paid = !!intent && intent.provider !== 'mock' && ['confirmed', 'cancelled', 'partial_cancelled'].includes(intent.status) && !!intent.paid_at && number(intent.amount) !== null;
   const refunded = paid && intent.refund_status === 'refunded' && !!intent.refunded_at;
   const response = intent?.refund_response || {};
   // The stored total refund includes restored points. Never count those as cash returned.
@@ -43,7 +55,7 @@ function source(row, intent, kind) {
     orderId: intent?.order_id || null, method: intent?.payment_method || null,
     methodLabel: methodLabels[intent?.payment_method] || intent?.payment_method || null,
     provider: intent?.provider || null,
-    receiptUrl: paid ? receiptUrl(intent.payment_response?.receipt?.url || intent.payment_response?.receiptUrl) : null,
+    receiptUrl: paid ? officialReceipt(intent) : null,
     evidenceId: `${kind === 'stay' ? 'S' : 'M'}-${row.id}`,
   };
 }
@@ -80,13 +92,14 @@ module.exports = async function handler(req, res) {
       if (!rows.length) continue;
       const intents = [];
       for (let index = 0; index < rows.length; index += 100) {
-        intents.push(...await db(`/rest/v1/payment_intents?kind=eq.${kind}&transaction_id=in.(${rows.slice(index, index + 100).map(row => row.id).join(',')})&select=transaction_id,order_id,status,amount,points_used,coupon_discount,paid_at,refund_status,refund_amount,refunded_at,refund_response,payment_method,provider,payment_response&order=created_at.desc&limit=300`));
+        intents.push(...await db(`/rest/v1/payment_intents?kind=eq.${kind}&transaction_id=in.(${rows.slice(index, index + 100).map(row => row.id).join(',')})&paid_at=not.is.null&status=in.(confirmed,cancelled,partial_cancelled)&select=transaction_id,order_id,status,amount,points_used,coupon_discount,paid_at,refund_status,refund_amount,refunded_at,refund_response,payment_method,provider,payment_key,payment_response&order=created_at.desc&limit=1000`));
       }
-      for (const row of rows) all.push(source(row, intents.find(intent => intent.transaction_id === row.id), kind));
+      for (const row of rows) all.push(source(row, intents.find(intent => intent.transaction_id === row.id && !!intent.paid_at && ['confirmed','cancelled','partial_cancelled'].includes(intent.status) && intent.provider !== 'mock'), kind));
     }
     if (transactionIds && new Set(all.map(row => row.id)).size !== new Set(transactionIds).size) return json(res, 403, { ok: false, message: '접근할 수 없는 거래가 포함되어 있습니다.' });
     const issuedAt = new Date().toISOString();
-    return json(res, 200, { ok: true, issuedAt, sources: all, documents: input.includeEvidence === true ? all.map(item => ({ id: item.evidenceId, fileName: `${item.evidenceId}.html`, html: evidenceDocument(item, issuedAt) })) : [] });
+    const output = input.mode === 'settlement' ? all.filter(row => row.paid) : all;
+    return json(res, 200, { ok: true, issuedAt, sources: output, documents: input.includeEvidence === true ? output.filter(row => row.paid).map(item => ({ id: item.evidenceId, fileName: `${item.evidenceId}.html`, html: evidenceDocument(item, issuedAt) })) : [] });
   } catch (error) {
     return json(res, error.statusCode || 400, { ok: false, message: error.message || '거래 내역을 확인하지 못했습니다.' });
   }
@@ -94,3 +107,4 @@ module.exports = async function handler(req, res) {
 module.exports.source = source;
 module.exports.receiptUrl = receiptUrl;
 module.exports.evidenceDocument = evidenceDocument;
+module.exports.officialReceipt = officialReceipt;

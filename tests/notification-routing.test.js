@@ -14,24 +14,27 @@ test('recipient validation checks template role and mobile without any fallback'
   assert.throws(() => notificationRecipient({recipient_role:'user',template_key:'OWNER_CHAT_RECEIVED_V1',recipient_phone:'01024681357'}), /역할/);
 });
 
-async function dispatch({routeError=false,wrongRole=false}={}) {
+async function dispatch({routeError=false,wrongRole=false,sendTimeout=false,completionError=false,fullBatch=false,claimTimeout=false}={}) {
   const calls=[], completions=[];
   const items=[
     {id:'owner-event',template_key:'OWNER_CHAT_RECEIVED_V1',recipient_role:'owner',recipient_user_id:'owner-id',recipient_phone:'01024681357'},
     {id:'user-event',template_key:'USER_CHAT_RECEIVED_V1',recipient_role:'user',recipient_user_id:'user-id',recipient_phone:'01035792468'},
     {id:'admin-event',template_key:'ADMIN_NEW_ORDER_V1',recipient_role:'admin',recipient_user_id:'admin-id',recipient_phone:'01046813579'},
   ];
+  if(fullBatch)items.push({...items[0],id:'owner-event-2'});
   const codes=['UJ_4566','UJ_4563','UJ_4578'];
   const fakeFetch=async (url, options) => {
     const body=JSON.parse(options.body || '{}'); calls.push({url,body});
     let data; let ok=true;
-    if (url.endsWith('/claim_notification_batch')) data=items;
+    if (url.endsWith('/claim_notification_batch')) {if(claimTimeout)throw Error('claim response lost');data=items;}
     else if (url.endsWith('/notification_delivery_route')) {
       if(routeError) {ok=false;data={message:'수신번호 미확인'};}
       else {const item=items.find(row=>row.id===body.target_outbox_id); data={...item,routing_source:'outbox',...(wrongRole?{recipient_role:'admin'}:{})};}
-    } else if(url.endsWith('/complete_notification')) {completions.push(body);data=null;}
+    } else if(url.endsWith('/complete_notification')) {completions.push(body);data=completionError?{message:'DB completion unavailable'}:null;ok=!completionError;}
+    else if(url.endsWith('/mark_notification_delivery_unknown')) {completions.push({...body,review:true});data=null;}
+    else if(url.endsWith('/request_notification_dispatch_followup'))data=null;
     else if(body.path==='/akv10/template/list/') data={code:0,list:codes.map(templtCode=>({templtCode,inspStatus:'APR',status:'A',templtContent:'검증 메시지'}))};
-    else if(body.path==='/akv10/alimtalk/send/') data={code:0,info:{mid:'mock-provider-id'}};
+    else if(body.path==='/akv10/alimtalk/send/') {if(sendTimeout)throw Error('provider response lost');data={code:0,info:{mid:'mock-provider-id'}};}
     else throw Error('Unexpected network call: '+url);
     return {ok,status:ok?200:400,json:async()=>data};
   };
@@ -62,4 +65,26 @@ test('unconfirmed DB route prevents provider calls, without a fallback number', 
 test('route with a different user or role cannot be sent', async () => {
   const {calls}=await dispatch({wrongRole:true});
   assert.equal(calls.filter(row=>row.body.path==='/akv10/alimtalk/send/').length,1);
+});
+test('send timeout never falls back to a second provider request or automatic failed retry',async()=>{
+  const {calls,completions}=await dispatch({sendTimeout:true});
+  assert.equal(calls.filter(row=>row.body.path==='/akv10/alimtalk/send/').length,3);
+  assert.equal(completions.length,3);assert.ok(completions.every(row=>row.review));
+});
+test('successful provider acceptance followed by DB failure never requeues a second send',async()=>{
+  const {calls,completions,response}=await dispatch({completionError:true});
+  assert.equal(calls.filter(row=>row.body.path==='/akv10/alimtalk/send/').length,3);
+  assert.ok(completions.every(row=>row.final_status==='sent'));
+  assert.ok(response.results.every(row=>row.status==='processing'));
+});
+test('bounded four-job dispatch shares one template lookup and schedules an immediate next batch',async()=>{
+  const {calls,response}=await dispatch({fullBatch:true});
+  assert.equal(calls.find(row=>row.url.endsWith('/claim_notification_batch')).body.batch_limit,4);
+  assert.equal(calls.filter(row=>row.body.path==='/akv10/template/list/').length,1);
+  assert.equal(calls.filter(row=>row.url.endsWith('/request_notification_dispatch_followup')).length,1);
+  assert.equal(response.results.length,4);
+});
+test('lost claim response is not retried against a second transport, so another batch is not orphaned',async()=>{
+  const {calls,response}=await dispatch({claimTimeout:true});
+  assert.equal(calls.length,1);assert.equal(response.ok,false);
 });

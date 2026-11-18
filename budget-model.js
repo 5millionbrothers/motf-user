@@ -222,7 +222,65 @@
     }
     return [s, ...extras];
   }
-  function specs(report) { return report.meta.referenceOnly ? referenceSpecs(report) : standardSpecs(report); }
+  function exportReport(context = {}, sources = [], selected = {}, mode = context.project ? 'budget' : 'settlement') {
+    const project = context.project || {}, include = { stay: true, market: true, other: true, ...selected };
+    const plans = mode === 'budget' ? (project.items || []).filter(row => row.status !== 'cancelled'
+      && (row.item_kind === 'stay' ? include.stay : row.item_kind === 'shopping' ? include.market : include.other)) : [];
+    const purchases = mode === 'settlement' ? sources.filter(row => row.paid && Number.isSafeInteger(row.cashPaid)
+      && (row.kind === 'stay' ? include.stay : include.market)) : [];
+    return build({ meta: { exportMode: mode, title: mode === 'budget' ? `${project.title || 'MT'} 예산안` : '모티프 이용 결산',
+      organization: context.organizationName || project.organization_name || '', people: project.guest_count || '',
+      reportDate: day(new Date().toISOString()), travelPeriod: project.starts_on ? `${project.starts_on} ~ ${project.ends_on || ''}` : '' },
+      options: { ...defaults, budget: mode === 'budget', summary: false, ledger: mode === 'settlement', checklist: false,
+        evidence: mode === 'settlement' && !!include.evidence, links: false },
+      selected: purchases.map(row => `${row.kind}:${row.id}`), planned: plans.map(row => String(row.id)), entries: [] }, purchases, plans);
+  }
+  function exportSpecs(report) {
+    const budget = report.meta.exportMode === 'budget';
+    const headers = budget ? ['분류', '#', '항목', '단가', '수량', '예상 금액', '비고']
+      : ['결제일', '분류', '주문·예약 / 품목', '상품 금액', '포인트 사용', '쿠폰 할인', '실제 결제액', '확인된 환불액', '순지출', '상태', '증빙번호'];
+    const s = sheet(budget ? '예산안' : '결산', headers, budget ? [12, 6, 42, 16, 9, 18, 28] : [15, 10, 45, 17, 15, 15, 18, 18, 18, 26, 44], report);
+    s.compact = true;
+    if (budget) {
+      report.budget.forEach((row, index) => {
+        const n = s.rows.length + 1;
+        s.rows.push([row.category, index + 1, row.name, row.price, row.quantity,
+          F(`IF(COUNT(D${n}:E${n})=2,ROUND(D${n}*E${n},0),"")`, row.budget ?? ''), '내 MT에 반영한 예상 비용']);
+      });
+      const end = s.rows.length, total = end + 1;
+      s.rows.push(['예상 지출 합계', null, null, null, null, F(end >= 7 ? `SUM(F7:F${end})` : '0', report.totals.budgetExpense)]);
+      s.merges.push(`A${total}:E${total}`); s.totals.push(total); s.numeric = [4, 5, 6];
+    } else {
+      report.sources.forEach(row => {
+        const n = s.rows.length + 1, refund = row.refundedAt ? row.cashRefund : row.refundStatus === 'none' ? 0 : null;
+        s.rows.push([new Date(`${day(row.paidAt)}T00:00:00Z`), row.kind === 'stay' ? '숙소' : '장보기',
+          `${row.name} / ${row.items.map(item => `${item.name} × ${item.quantity ?? '?'}`).join(', ')}`, row.gross,
+          row.points, row.coupon, row.cashPaid, refund,
+          F(`IF(COUNT(G${n}:H${n})=2,G${n}-H${n},"")`, refund === null ? '' : row.cashPaid - refund),
+          `${row.statusLabel || row.status} / ${row.refundLabel || row.refundStatus}`, report.options.evidence ? row.evidenceId : '']);
+      });
+      const end = s.rows.length, total = end + 1;
+      const values = ['합계', null, null];
+      for (const col of ['D', 'E', 'F', 'G', 'H', 'I']) {
+        const index = col.charCodeAt(0) - 65, data = s.rows.slice(6).map(row => row[index]?.formula ? row[index].result : row[index]);
+        const complete = data.every(value => typeof value === 'number' && Number.isFinite(value));
+        values.push(F(end>=7 ? `IF(COUNT(${col}7:${col}${end})=ROWS(${col}7:${col}${end}),SUM(${col}7:${col}${end}),"")` : '0', complete ? data.reduce((a,b) => a+b,0) : ''));
+      }
+      s.rows.push(values); s.merges.push(`A${total}:C${total}`); s.totals.push(total);
+      s.numeric = [4, 5, 6, 7, 8, 9]; s.dates = [1];
+    }
+    s.rows.push([], [budget ? '참고용 예산' : '집계 기준', budget
+      ? '결제 여부와 무관한 예상 비용입니다. 결산·영수증이 아닙니다. 현장 추가금은 별도입니다.'
+      : '모티프에서 결제가 확인된 원장만 포함합니다. 현장 결제는 미포함이며, 확인 전 환불액·순지출은 공란입니다.']);
+    s.merges.push(`B${s.rows.length}:${column(headers.length)}${s.rows.length}`);
+    const extras = report.options.evidence ? standardSpecs({ ...report, options: { ...report.options, budget: false, ledger: false, summary: false, checklist: false } }) : [];
+    for (const spec of [s, ...extras]) {
+      spec.rows[2] = [`${report.meta.organization || 'MT 준비'}${report.meta.people ? ` · ${report.meta.people}명` : ''}${report.meta.travelPeriod ? ` · ${report.meta.travelPeriod}` : ''}`];
+      spec.rows[3] = [`작성일 ${report.meta.reportDate} · 단위: 원`];
+    }
+    return [s, ...extras];
+  }
+  function specs(report) { return report.meta.exportMode ? exportSpecs(report) : report.meta.referenceOnly ? referenceSpecs(report) : standardSpecs(report); }
   async function workbook(report, ExcelJS) {
     if (report.errors.length) throw new Error(report.errors.join('\n'));
     const wb = new ExcelJS.Workbook(); wb.creator = '모티프(moTF)'; wb.calcProperties.fullCalcOnLoad = true;
@@ -277,7 +335,7 @@
             if (n > 6 && n < spec.totals.at(-1) && !band && !total && [1, 2, 3, 6, 10].includes(cell.col)) cell.alignment = { ...cell.alignment, horizontal: 'center', indent: 0 };
           });
         }
-        for (const n of [8, 9]) for (const col of ['E', 'F']) {
+        for (const n of report.meta.exportMode ? [] : [8, 9]) for (const col of ['E', 'F']) {
           ws.getCell(`${col}${n}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFAEB' } };
         }
         ws.getCell('A4').font = { name: '맑은 고딕', size: 10, color: { argb: 'FF77806E' } };
@@ -288,5 +346,5 @@
     }
     return wb;
   }
-  return { defaults, sheets, amount, day, blankEntry, build, quickReport, specs, workbook };
+  return { defaults, sheets, amount, day, blankEntry, build, quickReport, exportReport, specs, workbook };
 });
