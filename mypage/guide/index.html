@@ -34,11 +34,11 @@
     <link rel="stylesheet" href="local-reset.css?v=20261103-local2" />
     <link rel="stylesheet" href="local-design.css?v=20261103-local2" />
     <link rel="stylesheet" href="local-adapter.css?v=20261119-settlement-polish" />
-    <link rel="stylesheet" href="screen-polish.css?v=20261106" />
+    <link rel="stylesheet" href="screen-polish.css?v=20261119-mt-refresh" />
     <link rel="stylesheet" href="preparation-workflows.css?v=20261108" />
     <link rel="stylesheet" href="budget-export.css?v=20261119-settlement-polish" />
     <link rel="stylesheet" href="loading.css?v=20261103-symbol" />
-    <link rel="stylesheet" href="mobile-polish.css?v=20261117a" />
+    <link rel="stylesheet" href="mobile-polish.css?v=20261119-mt-refresh" />
     <script src="loading.js?v=20260904-loader1"></script>
     <script async src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" onload="window.__motfRefreshIcons && window.__motfRefreshIcons()"></script>
     <meta name="naver-site-verification" content="471f0dd87fee0f68c5867db10cc9fec20706cc7c" />
@@ -145,10 +145,19 @@
         </div>
 
         <div id="mtProjectWorkspace" hidden>
+          <dialog id="mtResetDialog" class="motf-dialog" aria-labelledby="mtResetTitle" aria-describedby="mtResetDescription">
+            <form id="mtResetForm">
+              <h2 id="mtResetTitle">이 MT의 준비 항목을 초기화할까요?</h2>
+              <p id="mtResetDescription"><strong id="mtResetProjectName"></strong>에 담아둔 숙소·장보기 후보와 미확정 비용을 지워요. 되돌릴 수 없어요.</p>
+              <p>기본 정보, 총예산, 일정·공지, 실제 예약·주문·결제 내역은 그대로 유지돼요.</p>
+              <p id="mtResetError" role="alert" hidden></p>
+              <div class="button-row"><button type="button" class="secondary-btn" data-close-motf-dialog autofocus>취소</button><button type="submit" class="primary-btn">초기화</button></div>
+            </form>
+          </dialog>
           <button class="text-link mt-directory-back" type="button" data-mt-directory><i data-lucide="arrow-left"></i>내 MT 목록</button>
           <div class="mt-project-hero">
             <div><p class="eyebrow">준비 중인 여행</p><h1 id="mtProjectTitle"></h1><p class="mt-project-meta"></p></div>
-            <div class="button-row"><span class="mt-readonly-badge" id="mtReadonlyBadge" hidden><i data-lucide="eye"></i>보기 전용</span><button class="ghost-btn" type="button" data-invite-mt-companion><i data-lucide="user-plus"></i>동행 초대</button><button class="ghost-btn" type="button" data-share-mt-project><i data-lucide="share-2"></i>공유</button><button class="ghost-btn" type="button" data-edit-mt-project><i data-lucide="settings-2"></i>기본 정보 수정</button><button class="secondary-btn" type="button" data-complete-mt-project><i data-lucide="check-circle-2"></i>MT 완료</button></div>
+            <div class="button-row"><span class="mt-readonly-badge" id="mtReadonlyBadge" hidden><i data-lucide="eye"></i>보기 전용</span><button class="ghost-btn" type="button" data-invite-mt-companion><i data-lucide="user-plus"></i>동행 초대</button><button class="ghost-btn" type="button" data-share-mt-project><i data-lucide="share-2"></i>공유</button><button class="ghost-btn" type="button" data-edit-mt-project><i data-lucide="settings-2"></i>기본 정보 수정</button><button class="ghost-btn mt-plan-reset" type="button" data-reset-mt-project hidden><i data-lucide="rotate-ccw"></i>초기화</button><button class="secondary-btn" type="button" data-complete-mt-project><i data-lucide="check-circle-2"></i>MT 완료</button></div>
           </div>
 
           <section class="mt-budget-panel" aria-label="MT 예산 현황">
@@ -1267,18 +1276,18 @@
     <script src="nicepay.js?v=20261030-card-bank"></script>
     <script src="stay-booking-window.js?v=20261119"></script>
     <script src="stay-refund-policy.js?v=20261119-settlement-polish"></script>
-    <script src="app.js?v=20261119-settlement-polish"></script>
+    <script src="app.js?v=20261119-mt-refresh"></script>
     <script src="budget-model.js?v=20261119-settlement-polish"></script>
     <script src="budget-export.js?v=20261119-settlement-polish"></script>
     <script src="/identity-flow.js?v=20261117-auth-rooms"></script>
 <script src="auth.js?v=20261117-account-sites"></script>
     <script src="catalog.js?v=20261119-settlement-polish"></script>
-    <script src="transactions.js?v=20261119-booking-window"></script>
+    <script src="transactions.js?v=20261119-mt-refresh"></script>
     <script src="chat-data.js?v=20261119-settlement-polish"></script>
     <script src="support-data.js?v=20260621-support1"></script>
     <script src="reviews-data.js?v=20260829-hotfix3"></script>
     <script src="product-refresh.js?v=20261119-booking-window"></script>
-    <script src="mt-project-data.js?v=20261116-launch"></script>
+    <script src="mt-project-data.js?v=20261119-mt-refresh"></script>
     <script src="content-data.js?v=20261116-launch"></script>
     <script src="site-metadata.js?v=20261106"></script>
     <script src="desktop-model.js?v=20261116-market-combined"></script>
@@ -1288,7 +1297,7 @@
     <script src="/mt-workflow-model.js?v=20261113-recent"></script>
     <script src="mt-selection.js?v=20261116-launch"></script>
     <script src="product-reviews.js?v=20261116-market-combined"></script>
-    <script src="mobile-polish.js?v=20261119-settlement-polish"></script>
+    <script src="mobile-polish.js?v=20261119-mt-refresh"></script>
     <script src="/workflow-ui.js?v=20261116-desktop"></script>
     <script src="/desktop-ui.js?v=20261116-market-combined"></script>
     <script src="/desktop-replies.js?v=20261116"></script>

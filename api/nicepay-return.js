@@ -19,6 +19,7 @@ module.exports = async function handler(req, res) {
     const config = pg.merchantConfig(intent.kind);
     if (config.mid !== intent.provider_merchant_id || input.PayMethod !== intent.payment_method) throw runtime.error("MERCHANT_MISMATCH", "결제 가맹점 또는 수단이 일치하지 않습니다.");
     pg.verifyAuthentication(input, intent, config);
+    if (intent.status === "prepared") await runtime.assertCurrentStayQuote(intent);
     const op = await runtime.operation(intent, "approve", `approve-${intent.id}`, intent.amount, pg.sha256(input.TxTid + input.Signature));
     if (!op.claimed) return redirect(res, orderId);
     await db(`/rest/v1/payment_intents?id=eq.${intent.id}`, { method: "PATCH", body: JSON.stringify({ status: "in_progress", payment_key: input.TxTid, provider_payment_id: input.TxTid }) });

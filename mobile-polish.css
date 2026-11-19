@@ -1112,7 +1112,9 @@
   #marketIntro .market-intro > .button-row > .merchant-info-link svg:last-child { display: none; }
 
   /* 상품 영역: 안내 문구 숨기고 정렬 줄 */
-  #marketProducts > .section-toolbar { display: none !important; }
+  #marketProducts > .market-page-toolbar { display:flex !important;justify-content:flex-end;padding:12px 0 0 !important;margin:0 !important; }
+  #marketProducts > .market-page-toolbar > div { display:none; }
+  .market-product-search input[type="search"] { font-size:16px; }
   #marketProducts .category-tabs { margin: 0 -18px 0 !important; padding: 12px 18px 0 !important; border-bottom: 1px solid var(--mp-line) !important; }
   #marketProducts .mp-sort-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 12px 0 6px; }
   #marketProducts .product-grid { margin-top: 0 !important; padding-top: 0 !important; }

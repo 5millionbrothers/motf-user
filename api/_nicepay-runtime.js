@@ -76,6 +76,13 @@ async function ownerAccess(intent, userId, allowOrganizationMember = false) {
   if (intent.customer_id !== userId && !(allowOrganizationMember && member)) throw error("ORDER_NOT_FOUND", "결제 준비 내역을 찾을 수 없습니다.", 404);
   if (intent.organization_id && !member) throw error("ORGANIZATION_ACCESS", "단체 결제 권한이 해제되었습니다.", 403);
 }
+async function assertCurrentStayQuote(intent) {
+  if (intent.kind !== "stay" || intent.draft?.business_id !== "50e5c710-3310-4eaa-8f09-9f7c768ff066") return;
+  const valid = await db("/rest/v1/rpc/check_mozart_checkout_quote", {
+    method: "POST", body: JSON.stringify({ target_intent_id: intent.id }),
+  });
+  if (valid !== true) throw error("STAY_RATE_UNAVAILABLE", "선택한 날짜에는 이 객실을 예약할 수 없거나 요금이 변경됐어요. 객실과 날짜를 다시 선택해주세요.", 409);
+}
 async function operation(intent, kind, key, amount, fingerprint) {
   const rows = await db("/rest/v1/rpc/claim_payment_provider_operation", { method: "POST", body: JSON.stringify({ target_provider: intent.provider, target_operation_key: key, target_operation_kind: kind, target_merchant_id: intent.provider_merchant_id || "legacy-toss", target_amount: amount, target_fingerprint: fingerprint, target_payment_intent_id: intent.id }) });
   return rows[0];
@@ -101,4 +108,4 @@ function receipt(data) {
 async function finalize(intent, data) {
   return db("/rest/v1/rpc/finalize_provider_payment_intent", { method: "POST", body: JSON.stringify({ target_provider: "nicepay", target_customer_id: intent.customer_id, target_order_id: intent.order_id, target_payment_key: intent.payment_key, verified_payment: { order_id: intent.order_id, payment_key: intent.payment_key, amount: intent.amount, status: "paid", method: intent.payment_method, receipt: receipt(data) } }) });
 }
-module.exports = { METHODS, methods, siteOrigin, returnOrigin, truncateEuc, formEncode, nicePost, body, intentByOrder, profile, ownerAccess, operation, operationState, queryPayment, publicResult, receipt, finalize, error, nonce: () => randomBytes(32).toString("hex") };
+module.exports = { METHODS, methods, siteOrigin, returnOrigin, truncateEuc, formEncode, nicePost, body, intentByOrder, profile, ownerAccess, assertCurrentStayQuote, operation, operationState, queryPayment, publicResult, receipt, finalize, error, nonce: () => randomBytes(32).toString("hex") };

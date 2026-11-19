@@ -53,6 +53,11 @@ const PAYMENT_LIMIT_MESSAGE = "단건 결제는 10,000,000원까지 가능합니
 const DEFAULT_STAY_REGION = "가평";
 const DEFAULT_STAY_PEOPLE = 10;
 const LAUNCH_STAY_REGION = "가평";
+const MOZART_STAY_ID = "50e5c710-3310-4eaa-8f09-9f7c768ff066";
+const MOZART_SATURDAY_RATE_ROOMS = new Set([
+  "5667ef8e-e75c-455f-88c3-caa00a556054", "f1fcc0a1-9e7d-4604-a249-bf5692175d41",
+  "28b1ade5-1d61-4f15-9c24-8ae915f79dd2", "aef1a0d3-fede-4c8f-8066-ec5928f3a961",
+]);
 const DAESUNG_MARKET_INTRO = "단체 행사에 필요한 고기, 쌈채소, 주류, 음료 등의 식자재를 합리적인 가격에 구매할 수 있는 지역 공판장입니다! 현장 수령 시 상황에 따라 숙소까지 픽업이 가능할 수 있습니다.";
 
 function normalizeStayRegion(value = "", address = "") {
@@ -374,6 +379,7 @@ const state = {
   selectedStore: null,
   selectedProduct: null,
   activeCategory: "전체",
+  marketQuery: "",
   cart: [],
   directPurchase: null,
   reservations: [],
@@ -572,6 +578,7 @@ window.motfGetMarketOrderDraft = function getMarketOrderDraft() {
     items,
   };
 };
+
 
 window.motfStartPreparedPayment = function startPreparedPayment(intent, draft) {
   const type = intent.kind;
@@ -1874,7 +1881,7 @@ function roomDetailFacts(stay, room) {
   const features = safeArray(room?.features).filter(item => !/화장실|욕실/.test(item));
   return [
     ["정원", room?.capacity || "확인 필요"],
-    ["객실 금액", money(room?.price || 0)],
+    ["객실 금액", roomPriceLabel(stay, room)],
     ["숙소 위치", `${stay?.region || "지역 확인 필요"} · ${stay?.distance || "거리 확인 필요"}`],
     ["공간 구성", features.length ? features.join(" · ") : "객실 구성은 예약 전 사장님에게 확인해주세요."],
   ];
@@ -1895,7 +1902,8 @@ function renderStayGallery(images, alt, expanded = false) {
 }
 
 function roomOptionCard(room, index, stay) {
-  const unavailable = isRoomUnavailable(room);
+  const rateBlocked = isRoomRateBlocked(stay, room);
+  const unavailable = isRoomUnavailable(room, stay);
   const features = safeArray(room?.features).filter(item => !/화장실|욕실/.test(item));
   return `
     <article class="room-option-card ${unavailable ? "sold-out" : ""}">
@@ -1904,7 +1912,7 @@ function roomOptionCard(room, index, stay) {
         <div>
           <p class="eyebrow">객실 유형 ${index + 1}</p>
           <h3>${room.name}</h3>
-          <p class="muted">${room.capacity} · ${money(room.price)}</p>
+          <p class="muted">${room.capacity} · ${roomPriceLabel(stay, room)}</p>
         </div>
         <div class="mini-detail-grid">
           ${roomDetailFacts(stay, room)
@@ -1919,7 +1927,7 @@ function roomOptionCard(room, index, stay) {
             .join("")}
         </div>
         <div class="detail-meta">${features.map((feature) => `<span class="pill">${feature}</span>`).join("")}</div>
-        <div class="room-option-actions"><button class="secondary-btn" ${unavailable ? "disabled" : `data-room-index="${index}"`}><i data-lucide="${unavailable ? "ban" : "door-open"}"></i>${unavailable ? "품절" : "객실 자세히 보기"}</button><button class="text-button" data-add-mt-candidate="${stay.id}" data-preferred-room="${room.id}" ${unavailable ? "disabled" : ""}><i data-lucide="folder-plus"></i>내 MT 담기</button></div>
+        <div class="room-option-actions"><button class="secondary-btn" ${unavailable && !rateBlocked ? "disabled" : `data-room-index="${index}"`}><i data-lucide="${unavailable && !rateBlocked ? "ban" : "door-open"}"></i>${unavailable && !rateBlocked ? "품절" : "객실 자세히 보기"}</button><button class="text-button" data-add-mt-candidate="${stay.id}" data-preferred-room="${room.id}" ${unavailable ? "disabled" : ""}><i data-lucide="folder-plus"></i>내 MT 담기</button></div>
       </div>
     </article>
   `;
@@ -2155,11 +2163,12 @@ function renderRoomDetail() {
   }
   const roomFeatures = safeArray(room.features).filter(item => !/화장실|욕실/.test(item));
   const stayFees = safeArray(stay.fees).filter(fee => !/화장실|욕실/.test(fee));
-  const unavailable = isRoomUnavailable(room);
+  const rateBlocked = isRoomRateBlocked(stay, room);
+  const unavailable = isRoomUnavailable(room, stay);
   const gallery = roomGalleryImages(stay, room);
   state.gallery = { images: gallery, index: 0, alt: `${stay.name} ${room.name}` };
   const maxPeople = roomCapacityMax(room);
-  const selectedBasePrice = bookingBaseRoomFee(stay, room);
+  const selectedPrice = rateBlocked ? "선택 날짜 예약 불가" : money(bookingBaseRoomFee(stay, room));
   qs("#roomDetailContent").innerHTML = `
     <section class="room-detail-hero">
       <div>
@@ -2169,9 +2178,9 @@ function renderRoomDetail() {
       </div>
       <aside class="room-reserve-card">
         <span>선택 일정 기본 숙박비</span>
-        <strong>${money(selectedBasePrice)}</strong>
+        <strong>${selectedPrice}</strong>
         <p>최대 ${maxPeople || stay.maxPeople}명까지 선택 가능</p>
-        <button class="primary-btn" ${unavailable ? "disabled" : `data-route="booking"`}><i data-lucide="${unavailable ? "ban" : "calendar-check"}"></i>${unavailable ? "선택 날짜 품절" : "바로 예약하기"}</button>
+        <button class="primary-btn" ${unavailable ? "disabled" : `data-route="booking"`}><i data-lucide="${unavailable ? "ban" : "calendar-check"}"></i>${rateBlocked ? "예약 불가" : unavailable ? "선택 날짜 품절" : "바로 예약하기"}</button>
         <button class="secondary-btn" data-add-mt-candidate="${stay.id}" data-preferred-room="${room.id}" ${unavailable ? "disabled" : ""}><i data-lucide="folder-plus"></i>내 MT에 담기</button>
       </aside>
     </section>
@@ -2189,7 +2198,7 @@ function renderRoomDetail() {
         <h2>객실 세부사항</h2>
         ${dashList([
           `정원 ${room.capacity}`,
-          `선택 일정 기본 숙박비 ${money(selectedBasePrice)}`,
+          rateBlocked ? selectedPrice : `선택 일정 기본 숙박비 ${selectedPrice}`,
           roomFeatures.length ? `객실 장점: ${roomFeatures.slice(0, 3).join(" · ")}` : "객실 구성은 예약 전 사장님에게 확인해주세요.",
           "체크인 15:00 이후, 체크아웃 11:00 이전",
         ])}
@@ -2224,12 +2233,29 @@ function dateInSeasonRanges(dateText, ranges = []) {
 
 function roomPriceForDate(stay, room, dateText) {
   const prices = room.seasonalPrices || {};
-  const date = new Date(`${dateText}T12:00:00`);
-  const weekend = [5, 6].includes(date.getDay());
+  const day = new Date(`${dateText}T00:00:00Z`).getUTCDay();
+  const weekend = stay?.id === MOZART_STAY_ID && MOZART_SATURDAY_RATE_ROOMS.has(room.id) ? day === 6 : [5, 6].includes(day);
   const season = dateInSeasonRanges(dateText, stay.peakSeasonRanges) ? "peak"
     : dateInSeasonRanges(dateText, stay.shoulderSeasonRanges) ? "shoulder" : "offseason";
   const key = `${season}${weekend ? "Weekend" : "Weekday"}`;
   return Number(prices[key] ?? room.price) || 0;
+}
+
+function isRoomRateBlocked(stay, room, checkIn = qs("#stayCheckInDate")?.value, checkOut = qs("#stayCheckOutDate")?.value) {
+  if (stay?.id !== MOZART_STAY_ID || !room || !checkIn || !checkOut) return false;
+  const dates = window.MotfStayBookingWindow;
+  if (!dates.valid(checkIn) || !dates.valid(checkOut)) return true;
+  for (let day = checkIn; day < checkOut; day = dates.shiftDay(day, 1)) {
+    if (roomPriceForDate(stay, room, day) === 999999) return true;
+  }
+  return false;
+}
+
+window.motfIsSelectedRoomRateBlocked = () => isRoomRateBlocked(state.selectedStay, state.selectedRoom);
+
+function roomPriceLabel(stay, room) {
+  if (stay?.id !== MOZART_STAY_ID) return money(room?.price || 0);
+  return isRoomRateBlocked(stay, room) ? "선택 날짜 예약 불가" : money(bookingBaseRoomFee(stay, room));
 }
 
 function bookingBaseRoomFee(stay, room) {
@@ -2298,7 +2324,12 @@ function renderBooking() {
     qs("#bookingSummary").innerHTML = '<p>예약할 객실을 다시 선택해주세요.</p><button class="secondary-btn" type="button" data-route="stays">숙소 목록으로</button>';
     return;
   }
-  const unavailable = isRoomUnavailable(room);
+  if (isRoomRateBlocked(stay, room)) {
+    form.hidden = true;
+    qs("#bookingSummary").innerHTML = '<p>선택한 날짜에는 이 객실을 예약할 수 없어요.</p><button class="secondary-btn" type="button" data-route="stayDetail">다른 객실·날짜 선택</button>';
+    return;
+  }
+  const unavailable = isRoomUnavailable(room, stay);
   const values = staySearchValues();
   const bookingPeopleInput = qs("#bookingPeople");
   bookingPeopleInput.max = room.maxPeople || roomCapacityMax(room) || stay.maxPeople;
@@ -2353,6 +2384,24 @@ function marketProductCategories(products) {
   return ["전체", ...preferred.filter(category => available.includes(category)), ...available.filter(category => !preferred.includes(category))];
 }
 
+function marketSearchField() {
+  return `<label class="market-product-search"><i data-lucide="search" aria-hidden="true"></i><input type="search" maxlength="80" data-market-search aria-label="상품 검색" placeholder="상품 검색" value="${escapeHtml(state.marketQuery)}"></label>`;
+}
+
+function marketProductResults(store) {
+  const normalize = value => String(value || "").normalize("NFKC").toLocaleLowerCase("ko-KR").replace(/\s+/g, "");
+  const terms = state.marketQuery.trim().split(/\s+/).map(normalize).filter(Boolean);
+  const selected = state.activeCategory;
+  const products = selected === "전체" ? store.products : store.products.filter(product => product.category === selected);
+  const groups = groupProductVariants(products).filter(group => !terms.length || group.variants.some(product => {
+    const text = normalize([product.name, product.variantLabel, product.manufacturer, product.category].filter(Boolean).join(" "));
+    return terms.every(term => text.includes(term));
+  }));
+  if (groups.length) return groups.map(productCard).join("");
+  const message = terms.length ? "검색 결과가 없습니다." : selected === "전체" ? "등록된 상품이 아직 없습니다." : "이 분류에 등록된 상품이 없습니다.";
+  return `<div class="empty-state catalog-error" role="status"><strong>${message}</strong></div>`;
+}
+
 function renderStores() {
   const intro = qs("#marketIntro");
   const productSection = qs("#marketProducts");
@@ -2370,10 +2419,6 @@ function renderStores() {
   ensureMarketBundleProducts(store);
   const categories = marketProductCategories(store.products);
   if (!categories.includes(state.activeCategory)) state.activeCategory = "전체";
-  const products = state.activeCategory === "전체"
-    ? store.products
-    : store.products.filter((product) => product.category === state.activeCategory);
-  const productGroups = groupProductVariants(products);
   intro.innerHTML = `
     ${stores.length > 1 ? `<nav class="market-store-tabs" aria-label="제휴 마트 선택">${stores.map((item) => `<button type="button" class="category-tab ${item.id === store.id ? "active" : ""}" data-market-select="${item.id}">${escapeHtml(item.name)}</button>`).join("")}</nav>` : ""}
     <section class="market-intro retained-merchant">
@@ -2400,13 +2445,12 @@ function renderStores() {
   productSection.innerHTML = `
     <div class="section-toolbar market-page-toolbar">
       <div><p class="eyebrow">제휴 마트 등록 상품</p><h2>상품 둘러보기</h2></div>
+      ${marketSearchField()}
     </div>
     <div class="category-tabs">
       ${categories.map((cat) => `<button class="category-tab ${cat === state.activeCategory ? "active" : ""}" data-category="${escapeHtml(cat)}">${escapeHtml(cat)}</button>`).join("")}
     </div>
-    <div class="product-grid">
-      ${productGroups.length ? productGroups.map(productCard).join("") : `<div class="empty-state catalog-error"><strong>${state.activeCategory === "전체" ? "등록된 상품이 아직 없습니다." : "이 분류에 등록된 상품이 없습니다."}</strong><span>마트 사장님이 상품을 공개하면 바로 주문할 수 있습니다.</span></div>`}
-    </div>
+    <div class="product-grid" data-market-results>${marketProductResults(store)}</div>
   `;
   updateCartBadge();
   refreshIcons();
@@ -2449,10 +2493,6 @@ function renderStoreDetail() {
   ensureMarketBundleProducts(store);
   const categories = marketProductCategories(store.products);
   if (!categories.includes(state.activeCategory)) state.activeCategory = "전체";
-  const products = state.activeCategory === "전체"
-    ? store.products
-    : store.products.filter((product) => product.category === state.activeCategory);
-  const productGroups = groupProductVariants(products);
   qs("#storeDetailContent").innerHTML = `
     <div class="store-header">
       <img src="${store.image}" alt="${store.name} 매장 사진" />
@@ -2470,12 +2510,11 @@ function renderStoreDetail() {
         </div>
       </div>
     </div>
+    <div class="section-toolbar market-page-toolbar"><h2>상품 둘러보기</h2>${marketSearchField()}</div>
     <div class="category-tabs">
       ${categories.map((cat) => `<button class="category-tab ${cat === state.activeCategory ? "active" : ""}" data-category="${escapeHtml(cat)}">${escapeHtml(cat)}</button>`).join("")}
     </div>
-    <div class="product-grid">
-      ${productGroups.length ? productGroups.map(productCard).join("") : `<div class="empty-state catalog-error"><strong>등록된 상품이 아직 없습니다.</strong><span>상품이 공개되면 바로 주문할 수 있습니다.</span></div>`}
-    </div>
+    <div class="product-grid" data-market-results>${marketProductResults(store)}</div>
   `;
   refreshIcons();
 }
@@ -2794,6 +2833,7 @@ function paymentBackRoute() {
 
 window.motfGetCheckoutPreviewContext = function getCheckoutPreviewContext(kind) {
   if (kind === "stay") {
+    if (isRoomRateBlocked(state.selectedStay, state.selectedRoom)) return null;
     return {
       originalAmount: bookingAmount().total,
       businessId: state.selectedStay?.id || null,
@@ -2890,12 +2930,12 @@ function stayAvailabilityKey(values = staySearchValues()) {
   return `${values.checkIn}|${values.checkOut}`;
 }
 
-function isRoomUnavailable(room) {
-  return state.stayAvailability.unavailableOfferingIds.has(String(room?.id || ""));
+function isRoomUnavailable(room, stay = state.selectedStay) {
+  return state.stayAvailability.unavailableOfferingIds.has(String(room?.id || "")) || isRoomRateBlocked(stay, room);
 }
 
 function availableRoomsForStay(stay) {
-  return (stay.rooms || []).filter((room) => !isRoomUnavailable(room));
+  return (stay.rooms || []).filter((room) => !isRoomUnavailable(room, stay));
 }
 
 function stayHasAvailableRoom(stay) {
@@ -2992,18 +3032,19 @@ function estimateMtStayCost(stay, people = selectedStayPeople()) {
     return { people, room: null, rooms: [], confirmed, optional, onSite, deposit, total, extraPeople: Number(source.extra_people || 0), extraPersonTotal: Number(source.extra_person_total || 0), perPerson: Number(source.per_person ?? Math.ceil(total / people / 100) * 100) };
   }
   const rooms = availableRoomsForStay(stay);
+  const price = room => stay.id === MOZART_STAY_ID ? bookingBaseRoomFee(stay, room) : Number(room.price || 0);
   let selectedRooms = [];
   if (rooms.length && rooms.length <= 15) {
     let best = null;
     for (let mask = 1; mask < (1 << rooms.length); mask += 1) {
       const choice = rooms.filter((_, index) => mask & (1 << index));
       const capacity = choice.reduce((sum, room) => sum + parseCapacityMax(room), 0);
-      const price = choice.reduce((sum, room) => sum + Number(room.price || 0), 0);
-      if (capacity >= people && (!best || price < best.price || (price === best.price && choice.length < best.rooms.length))) best = { rooms: choice, price };
+      const total = choice.reduce((sum, room) => sum + price(room), 0);
+      if (capacity >= people && (!best || total < best.price || (total === best.price && choice.length < best.rooms.length))) best = { rooms: choice, price: total };
     }
     selectedRooms = best?.rooms || [...rooms].sort((a, b) => parseCapacityMax(b) - parseCapacityMax(a));
   } else {
-    selectedRooms = [...rooms].sort((a, b) => (Number(a.price || 0) / Math.max(1, parseCapacityMax(a))) - (Number(b.price || 0) / Math.max(1, parseCapacityMax(b))));
+    selectedRooms = [...rooms].sort((a, b) => (price(a) / Math.max(1, parseCapacityMax(a))) - (price(b) / Math.max(1, parseCapacityMax(b))));
     let capacity = 0;
     selectedRooms = selectedRooms.filter((room) => {
       if (capacity >= people) return false;
@@ -3011,7 +3052,7 @@ function estimateMtStayCost(stay, people = selectedStayPeople()) {
       return true;
     });
   }
-  const roomTotal = selectedRooms.reduce((sum, room) => sum + Number(room.price || 0), 0) || Number(stay.price || 0);
+  const roomTotal = selectedRooms.reduce((sum, room) => sum + price(room), 0) || Number(stay.price || 0);
   const baseCapacity = selectedRooms.reduce((sum, room) => sum + Number(room.basePeople || room.maxPeople || parseCapacityMax(room) || 0), 0);
   const extraPeople = Math.max(0, people - baseCapacity);
   const extraPersonSlots = selectedRooms.flatMap((room) => {
@@ -3156,6 +3197,8 @@ function renderMtProjectSummary() {
   if (title) title.textContent = project.title || "우리 MT";
   const completeButton = qs("[data-complete-mt-project]");
   if (completeButton) completeButton.hidden = project.status === "completed" || readOnly;
+  const resetButton = qs("[data-reset-mt-project]");
+  if (resetButton) resetButton.hidden = !project.id || readOnly || ["completed", "cancelled"].includes(project.status);
   qsa("[data-edit-mt-project], [data-invite-mt-companion], [data-add-mt-itinerary], [data-add-mt-notice]").forEach((button) => { button.hidden = readOnly; });
   qsa("[data-invite-mt-companion]").forEach((button) => { button.hidden = readOnly || Boolean(project.organization_id); });
   const readOnlyBadge = qs("#mtReadonlyBadge");
@@ -4182,13 +4225,14 @@ async function handleTossRedirect() {
         setPaymentResult("success");
       } else {
         const waiting = result.status === "awaiting_deposit";
-        const cancelled = ["cancelled", "expired", "failed"].includes(result.status);
+        const rateUnavailable = result.status === "prepared" && params.get("paymentError") === "STAY_RATE_UNAVAILABLE";
+        const cancelled = rateUnavailable || ["cancelled", "expired", "failed"].includes(result.status);
         state.paymentResult = {
           ...payment, status: waiting ? "virtual_account_issued" : cancelled ? "cancel" : "review",
           eyebrow: waiting ? "입금 대기" : cancelled ? "결제 미완료" : "결제 확인 필요",
           title: waiting ? "아래 계좌로 입금해주세요" : cancelled ? "결제가 완료되지 않았습니다" : "결제 상태를 확인하고 있습니다",
-          text: waiting ? "기한 내 입금이 확인되면 예약·주문 요청이 접수됩니다." : cancelled ? "다시 예약·주문을 준비해주세요." : "중복 결제하지 말고 마이페이지 또는 운영팀을 통해 확인해주세요.",
-          virtualAccount: waiting ? result.virtualAccount : null, className: cancelled ? "cancel" : "", icon: waiting ? "landmark" : "info", backRoute: "mypage",
+          text: waiting ? "기한 내 입금이 확인되면 예약·주문 요청이 접수됩니다." : rateUnavailable ? "선택한 날짜의 예약 가능 여부나 요금이 바뀌었어요. 객실과 날짜를 다시 선택해주세요." : cancelled ? "다시 예약·주문을 준비해주세요." : "중복 결제하지 말고 마이페이지 또는 운영팀을 통해 확인해주세요.",
+          virtualAccount: waiting ? result.virtualAccount : null, className: cancelled ? "cancel" : "", icon: waiting ? "landmark" : "info", backRoute: rateUnavailable ? "stays" : "mypage",
         };
         navigate("paymentResult", { replace: true });
       }
@@ -4661,6 +4705,18 @@ document.addEventListener("click", async (event) => {
     return;
   }
 
+  if (event.target.closest("[data-reset-mt-project]")) {
+    const project = state.mtProject;
+    if (!project.id || project.is_owner === false || ["completed", "cancelled"].includes(project.status)) return;
+    const dialog = qs("#mtResetDialog");
+    if (!dialog || dialog.open) return;
+    dialog.dataset.projectId = project.id;
+    qs("#mtResetProjectName").textContent = project.title || "선택한 MT";
+    qs("#mtResetError").hidden = true;
+    dialog.showModal();
+    return;
+  }
+
   if (event.target.closest("[data-complete-mt-project]")) {
     if (!window.confirm("이 MT를 완료 처리할까요? 완료된 MT는 목록에 보관됩니다.")) return;
     try {
@@ -4777,7 +4833,7 @@ document.addEventListener("click", async (event) => {
       navigate("stays");
       return;
     }
-    if (isRoomUnavailable(room)) {
+    if (isRoomUnavailable(room) && !isRoomRateBlocked(state.selectedStay, room)) {
       toast("선택한 날짜에는 이미 품절된 객실입니다.");
       return;
     }
@@ -5192,6 +5248,42 @@ document.addEventListener("submit", (event) => {
   event.preventDefault();
   syncStaySearchPanel();
   navigate("stays");
+});
+
+document.addEventListener("input", event => {
+  if (!event.target.matches("[data-market-search]")) return;
+  state.marketQuery = event.target.value;
+  const root = event.target.closest("#marketProducts, #storeDetailContent");
+  const results = root?.querySelector("[data-market-results]");
+  if (!results || !state.selectedStore) return;
+  results.innerHTML = marketProductResults(state.selectedStore);
+  refreshIcons();
+});
+
+qs("#mtResetDialog")?.addEventListener("cancel", event => {
+  if (qs("#mtResetForm [type='submit']").disabled) event.preventDefault();
+});
+qs("#mtResetForm")?.addEventListener("submit", async event => {
+  event.preventDefault();
+  const dialog = qs("#mtResetDialog");
+  const projectId = dialog.dataset.projectId;
+  const confirm = event.target.querySelector("[type='submit']");
+  const cancel = event.target.querySelector("[data-close-motf-dialog]");
+  const message = qs("#mtResetError");
+  if (confirm.disabled || !projectId || state.mtProject.id !== projectId) return;
+  confirm.disabled = cancel.disabled = true;
+  message.hidden = true;
+  try {
+    if (typeof window.motfResetMtProjectPlan !== "function") throw new Error("로그인 후 다시 시도해주세요.");
+    await window.motfResetMtProjectPlan(projectId);
+    dialog.close();
+    toast("이 MT의 후보와 미확정 비용을 초기화했어요.");
+  } catch (error) {
+    message.textContent = error.message || "초기화하지 못했어요. 다시 시도해주세요.";
+    message.hidden = false;
+  } finally {
+    confirm.disabled = cancel.disabled = false;
+  }
 });
 
 document.addEventListener("click", async (event) => {

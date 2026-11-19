@@ -6,17 +6,33 @@ const source=fs.readFileSync(require.resolve('../app.js'),'utf8');
 const dateFunctions=source.slice(source.indexOf('function addDays('),source.indexOf('function normalizeStaySearchDates('));
 const prices=source.slice(source.indexOf('function dateInSeasonRanges('),source.indexOf('function checkoutPreviewContextKey('));
 const amount=source.slice(source.indexOf('function bookingAmount('),source.indexOf('function renderBooking('));
+const rateConstants=source.slice(source.indexOf('const MOZART_STAY_ID'),source.indexOf('const DAESUNG_MARKET_INTRO'));
 function calculate(people,nightly=600000){
  const room={price:nightly,basePeople:10,maxPeople:40,extraPersonFee:20000};
  const inputs={'#stayCheckInDate':{value:'2026-12-01'},'#stayCheckOutDate':{value:'2026-12-03'},'#bookingPeople':{value:people}};
- const context=vm.createContext({state:{selectedRoom:room,selectedStay:{extraFees:[{amount:120000,category:'optional'}]}},qs:selector=>inputs[selector],selectedStayPeople:()=>people,roomCapacityMax:()=>40});
- vm.runInContext(dateFunctions+prices+amount,context);
+ const context=vm.createContext({window:{},state:{selectedRoom:room,selectedStay:{extraFees:[{amount:120000,category:'optional'}]}},qs:selector=>inputs[selector],selectedStayPeople:()=>people,roomCapacityMax:()=>40});
+ vm.runInContext(rateConstants+dateFunctions+prices+amount,context);
  return JSON.parse(JSON.stringify(vm.runInContext('bookingAmount()',context)));
 }
 test('additional guests never increase the platform checkout amount',()=>{
  const normal=calculate(10),group=calculate(32);
  assert.equal(group.extraPersonTotal,440000);assert.equal(group.extraPeople,22);
  assert.equal(group.nights,2);assert.equal(group.total,1200000);assert.equal(group.total,normal.total);
+});
+test('Mozart A/B slots honor Saturday-only rates and reject any unavailable night in a range',()=>{
+ const context=vm.createContext({window:{MotfStayBookingWindow:require('../stay-booking-window')}});
+ vm.runInContext(rateConstants+prices,context);
+ const result=vm.runInContext(`(() => {
+   const mozart={id:MOZART_STAY_ID};
+   const weekday={id:[...MOZART_SATURDAY_RATE_ROOMS][0],price:298000,seasonalPrices:{offseasonWeekday:298000,offseasonWeekend:999999}};
+   const saturday={id:[...MOZART_SATURDAY_RATE_ROOMS][1],price:999999,seasonalPrices:{offseasonWeekday:999999,offseasonWeekend:500000}};
+   const chalet={id:"chalet",price:490000,seasonalPrices:{offseasonWeekday:490000,offseasonWeekend:590000}};
+   return [roomPriceForDate(mozart,weekday,"2026-11-20"),roomPriceForDate(mozart,saturday,"2026-11-21"),
+     roomPriceForDate(mozart,weekday,"2026-11-22"),roomPriceForDate(mozart,chalet,"2026-11-20"),
+     isRoomRateBlocked(mozart,weekday,"2026-11-20","2026-11-22"),isRoomRateBlocked(mozart,saturday,"2026-11-20","2026-11-21"),
+     isRoomRateBlocked(mozart,saturday,"2026-11-21","2026-11-22"),isRoomRateBlocked({id:"other"},saturday,"2026-11-20","2026-11-21")];
+ })()`,context);
+ assert.deepEqual(Array.from(result),[298000,500000,298000,590000,true,true,false,false]);
 });
 test('onsite extras do not turn a below-limit room payment into an above-limit payment',()=>{
  const group=calculate(40,4900000);

@@ -27,6 +27,7 @@ function fixture(options = {}) {
       if (target.pathname.endsWith("/is_organization_member")) return response(options.organizationMember === true);
       if (target.pathname.endsWith("/payment_intents")) { if (request.method === "PATCH") Object.assign(intent, payload); return response([intent]); }
       if (target.pathname.endsWith("/nicepay_checkout_sessions")) return response(session ? [session] : []);
+      if (target.pathname.endsWith("/check_mozart_checkout_quote")) return response(options.mozartQuote());
       if (target.pathname.endsWith("/reservations")) return response([{ id: txId, customer_id: user, status: "confirmed", event_date: "2099-01-01", business_id: "business", businesses: {refund_policy: options.policy ?? [{days_before:10,refund_percent:100},{days_before:0,refund_percent:0}]} }]);
       if (target.pathname.endsWith("/bind_nicepay_checkout")) { session = { nonce_hash: payload.target_nonce_hash, expires_at: "2099-01-01" }; Object.assign(intent, { provider: "nicepay", provider_merchant_id: payload.target_mid, payment_method: payload.target_method }); return response(null); }
       if (target.pathname.endsWith("/claim_payment_provider_operation")) {
@@ -95,6 +96,21 @@ test("API: checkout requires login and does not expose MerchantKey", async () =>
   assert.equal(result.data.fields.Moid, "order-test"); assert.equal(f.intent.provider, "nicepay");
 }));
 test("API: another account cannot start the order", async () => using({ actor: "another-user" }, async () => assert.equal((await invoke(start, { orderId: "order-test", method: "CARD" })).code, 404)));
+test("API: Mozart payment start and existing payment window both reject unavailable or stale quotes", async () => {
+  let valid = false;
+  await using({ mozartQuote: () => valid, intent: { draft: { business_id: "50e5c710-3310-4eaa-8f09-9f7c768ff066" } } }, async f => {
+    const failed = await invoke(start, { orderId: "order-test", method: "CARD" });
+    assert.equal(failed.data.code, "STAY_RATE_UNAVAILABLE");
+    assert.equal(f.calls.some(path => path.endsWith("/bind_nicepay_checkout")), false);
+    valid = true;
+    const auth = await authentication();
+    valid = false;
+    const returned = await invoke(callback, auth, "");
+    assert.match(returned.headers.Location, /paymentError=STAY_RATE_UNAVAILABLE/);
+    assert.equal(f.calls.some(path => path.endsWith("/pay_process.jsp")), false);
+    assert.equal(f.intent.status, "prepared");
+  });
+});
 test("API: VBANK is not enabled by default", async () => using({}, async () => assert.equal((await invoke(start, { orderId: "order-test", method: "VBANK" })).code, 409)));
 test("API: accommodation bank transfer uses the common MID by default", async () => using({}, async () => {
   const result = await invoke(start, { orderId: "order-test", method: "BANK" });

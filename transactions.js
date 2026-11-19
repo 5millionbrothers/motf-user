@@ -333,6 +333,12 @@
 
   document.addEventListener("submit", async (event) => {
     if (event.target.id === "bookingForm") {
+      if (window.motfIsSelectedRoomRateBlocked?.()) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        window.toast?.("선택한 날짜에는 이 객실을 예약할 수 없어요.");
+        return;
+      }
       const draft = window.motfGetReservationDraft?.();
       if (!draft || !isUuid(draft.business_id)) {
         event.preventDefault();

@@ -135,6 +135,21 @@
     return currentProject;
   }
 
+  window.motfResetMtProjectPlan = async function resetMtProjectPlan(projectId) {
+    const project = ensureProject();
+    const userId = currentUser.id;
+    if (project.id !== projectId) throw new Error("초기화할 MT를 다시 선택해주세요.");
+    const { error } = await client.rpc("reset_mt_project_plan", { target_project_id: projectId });
+    if (error) throw error;
+    if (currentUser?.id !== userId) return;
+    if (currentProject?.id === projectId && canEdit(currentProject)) {
+      currentProject = { ...currentProject, items: (currentProject.items || []).filter(item => item.status !== "planned") };
+      window.motfApplyMtProject(currentProject, []);
+    }
+    window.dispatchEvent(new CustomEvent("motf:mt-items-changed", { detail: { projectId } }));
+    void loadProjects().catch(error => console.warn("MT 목록 새로고침에 실패했습니다.", error));
+  };
+
   window.motfCreateMtInvite = async function createMtInvite() {
     const project = ensureProject();
     if (project.organization_id) throw new Error("단체 관리에서 담당자를 초대해주세요.");

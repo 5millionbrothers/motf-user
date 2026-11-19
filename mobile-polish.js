@@ -667,25 +667,26 @@
       const info = document.createElement('div');
       info.className = 'mp-room-info';
       // 금액: 기본 금액 ~ 최대 인원까지 추가 인원 요금을 더한 금액
-      const base = Number(room.price) || 0;
+      const rateBlocked = isRoomRateBlocked(stay, room);
+      const base = stay.id === MOZART_STAY_ID ? bookingBaseRoomFee(stay, room) : Number(room.price) || 0;
       const basePeople = Number(room.basePeople) || 0;
       const maxPeople = Number(room.maxPeople) || 0;
       const extraFee = Number(room.extraPersonFee) || 0;
       const top = basePeople && maxPeople > basePeople && extraFee ? base + (maxPeople - basePeople) * extraFee : base;
-      const priceText = top > base ? `${esc(M()?.won(base))} ~ ${esc(M()?.won(top))}` : esc(M()?.won(base) || base);
+      const priceText = rateBlocked ? '선택 날짜 예약 불가' : top > base ? `${esc(M()?.won(base))} ~ ${esc(M()?.won(top))}` : esc(M()?.won(base) || base);
       const peopleText = basePeople && maxPeople > basePeople ? `기준 ${basePeople}명 · 최대 ${maxPeople}명` : (room.capacity || '인원 확인 필요');
-      info.innerHTML = `<p>${M()?.svg.user || ''}<span>${esc(peopleText)}</span></p>${features.length ? `<p><span>${features.map(esc).join(' · ')}</span></p>` : ''}<div class="mp-room-price">${top > base ? '' : '<small>숙박</small>'}<strong>${priceText}</strong></div>${top > base ? `<p class="mp-room-price-note">기준 인원 초과 시 1인당 ${esc(M()?.won(extraFee))} 추가</p>` : ''}`;
+      info.innerHTML = `<p>${M()?.svg.user || ''}<span>${esc(peopleText)}</span></p>${features.length ? `<p><span>${features.map(esc).join(' · ')}</span></p>` : ''}<div class="mp-room-price">${rateBlocked || top > base ? '' : '<small>숙박</small>'}<strong>${priceText}</strong></div>${!rateBlocked && top > base ? `<p class="mp-room-price-note">기준 인원 초과 시 1인당 ${esc(M()?.won(extraFee))} 추가</p>` : ''}`;
       head?.after(info);
       // 버튼은 [내 MT 담기 | 바로 예약하기], 카드(사진·객실명)를 누르면 객실 자세히 보기
       const actions = $('.room-option-actions', card);
       const detail = $('[data-room-index]', actions || card);
       if (actions && !$('.mp-room-book', actions)) {
-        const unavailable = typeof isRoomUnavailable === 'function' && isRoomUnavailable(room);
+        const unavailable = isRoomUnavailable(room, stay);
         const book = document.createElement('button');
         book.type = 'button';
         book.className = 'mp-room-book';
         book.disabled = unavailable;
-        book.textContent = unavailable ? '품절' : '바로 예약하기';
+        book.textContent = rateBlocked ? '예약 불가' : unavailable ? '품절' : '바로 예약하기';
         book.addEventListener('click', event => {
           event.preventDefault();
           event.stopPropagation();
@@ -778,7 +779,8 @@
   window.addEventListener('motf:routechange', closeFullMap);
 
   function minPrice(stay) {
-    const prices = (stay.rooms || []).filter(room => !(typeof isRoomUnavailable === 'function' && isRoomUnavailable(room))).map(room => Number(room.price) || 0).filter(Boolean);
+    const prices = (stay.rooms || []).filter(room => !isRoomUnavailable(room, stay))
+      .map(room => stay.id === MOZART_STAY_ID ? bookingBaseRoomFee(stay, room) : Number(room.price) || 0).filter(Boolean);
     return prices.length ? Math.min(...prices) : 0;
   }
 
@@ -1022,7 +1024,7 @@
     const amount = $('.room-reserve-card > strong', root)?.textContent?.trim();
     bar({
       price: amount ? `기본 숙박비 <strong>${esc(amount)}</strong>` : '',
-      label: primary?.disabled ? '품절' : '바로 예약하기',
+      label: primary?.disabled ? primary.textContent.trim() : '바로 예약하기',
       disabled: !primary || primary.disabled,
       onGo: () => primary?.click(),
     });

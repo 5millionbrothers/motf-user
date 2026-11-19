@@ -12,6 +12,7 @@ module.exports = async function handler(req, res) {
     const input = await runtime.body(req);
     const intent = await runtime.intentByOrder(input.orderId);
     await runtime.ownerAccess(intent, user.id);
+    await runtime.assertCurrentStayQuote(intent);
     const config = pg.merchantConfig(intent.kind);
     if (!runtime.methods(intent.kind).includes(input.method)) throw runtime.error("METHOD_DISABLED", "사용할 수 없는 결제수단입니다.");
     const nonce = runtime.nonce();
