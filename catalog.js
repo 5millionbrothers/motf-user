@@ -87,6 +87,7 @@
       rating: 0,
       reviews: 0,
       distance: text(business.address || "주소 문의"),
+      address: text(business.address || ""),
       location: locationOf(business),
       detailTags: [...new Set([
         ...(business.nearby_tags || []),
@@ -114,7 +115,7 @@
       fees: Array.isArray(business.extra_fees) && business.extra_fees.length
         ? business.extra_fees.map((fee) => text(`${fee.label || "추가요금"}${fee.amount ? ` ${Number(fee.amount).toLocaleString("ko-KR")}원` : ""}${fee.detail ? ` · ${fee.detail}` : ""}`))
         : ["추가금은 현장에서 확인 후 숙소 현장에서 직접 결제합니다."],
-      policy: [...STANDARD_REFUND_POLICY],
+      refundPolicy: business.refund_policy,
       rooms,
     };
   }

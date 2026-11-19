@@ -238,7 +238,7 @@
   function exportSpecs(report) {
     const budget = report.meta.exportMode === 'budget';
     const headers = budget ? ['분류', '#', '항목', '단가', '수량', '예상 금액', '비고']
-      : ['결제일', '분류', '주문·예약 / 품목', '상품 금액', '포인트 사용', '쿠폰 할인', '실제 결제액', '확인된 환불액', '순지출', '상태', '증빙번호'];
+      : ['결제일', '분류', '주문·예약 / 품목', '상품 금액', '포인트 사용', '쿠폰 할인', '실제 결제액', '확인된 환불액', '순지출', '상태', ...(report.options.evidence ? ['증빙번호'] : [])];
     const s = sheet(budget ? '예산안' : '결산', headers, budget ? [12, 6, 42, 16, 9, 18, 28] : [15, 10, 45, 17, 15, 15, 18, 18, 18, 26, 44], report);
     s.compact = true;
     if (budget) {

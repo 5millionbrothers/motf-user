@@ -1283,7 +1283,7 @@
       const facts = document.createElement('dl');
       facts.className = 'mp-product-facts';
       const isAlcohol = typeof isAlcoholProduct === 'function' && isAlcoholProduct(product);
-      facts.innerHTML = `<div><dt>수령</dt><dd>${esc(store?.name || '제휴 마트')} 픽업${isAlcohol ? ' · <b>성인 본인 수령</b>' : ''}</dd></div><div><dt>판매자</dt><dd>${esc(store?.name || '제휴 마트')}</dd></div><div><dt>용량</dt><dd>${esc(product.unit || '-')}</dd></div><div><dt>안내</dt><dd>수령 전까지 주문 변경 가능</dd></div>`;
+      facts.innerHTML = `<div><dt>수령</dt><dd>${esc(store?.name || '제휴 마트')} 픽업${isAlcohol ? ' · <b>성인 본인 수령</b>' : ''}</dd></div><div><dt>판매자</dt><dd>${esc(store?.name || '제휴 마트')}</dd></div><div><dt>용량</dt><dd>${esc(product.unit || '-')}</dd></div>`;
       (price || panel.lastElementChild).after(facts);
       const qty = $('.quantity-control', panel);
       if (qty && !qty.parentElement.classList.contains('mp-qty-row')) {

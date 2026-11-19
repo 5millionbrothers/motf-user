@@ -23,13 +23,14 @@ test('refund awaiting confirmation does not fabricate a zero refund or a net spe
   const spec=M.specs(r)[0];assert.equal(spec.rows[6][7],null);assert.equal(spec.rows[6][8].result,'');
   const totals=spec.rows.find(row=>row[0]==='합계');assert.equal(totals[8].result,'');
 });
-test('NICE card receipts use server-bound original TID; unpaid and mock payments are not evidence',()=>{
+test('NICE slips use the approved original TID and never imply a cash receipt',()=>{
   const tid='nice00000m01012611180000000001';
   assert.equal(tid.length,30);
   const intent={provider:'nicepay',payment_method:'CARD',payment_key:tid,status:'confirmed',paid_at:'2026-11-18',amount:10000,payment_response:{TID:tid}};
   assert.match(officialReceipt(intent),/npg\.nicepay\.co\.kr/);
   assert.equal(officialReceipt({...intent,payment_response:{TID:'wrong'}}),null);
-  assert.equal(officialReceipt({...intent,payment_method:'VBANK'}),null);
+  assert.match(source({}, {...intent,payment_method:'VBANK'},'stay').receiptUrl,/type=0/);
+  assert.equal(source({}, {...intent,amount:0},'stay').receiptUrl,null);
   assert.equal(source({}, {...intent,status:'virtual_account_issued'},'stay').receiptUrl,null);
   assert.equal(source({}, {...intent,provider:'mock'},'stay').paid,false);
 });

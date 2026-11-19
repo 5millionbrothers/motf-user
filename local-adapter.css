@@ -73,12 +73,37 @@ body.design-main { font-family:SUIT,Arial,sans-serif; background:#fff; color:#27
 .design-main .catalog-stay .stay-review-chip { color:#8b9e7a; font-size:9px; font-weight:450; padding:4px 0; border:0; background:none; }
 .design-main .catalog-stay .stay-card-facts { font-size:10px; color:#87957a; margin-top:8px; }
 .design-main .catalog-stay .stay-card-intro { font-size:10px; }
+.design-main #stayList .stay-card-address { margin:3px 0 5px;color:#687260;font-size:11px;font-weight:400;line-height:1.45;overflow-wrap:anywhere; }
+.design-main #stayList .retained-stay-copy > .stay-review-chip { align-self:start;margin-top:auto;padding-bottom:2px; }
+.design-main #stayList .retained-stay-copy { min-width:0;display:flex;flex-direction:column; }
+.design-main #stayList .catalog-stay-name { text-align:left;align-self:start; }
+#stayPagination button[aria-current="page"], #reviewKeywordList button[aria-pressed="true"] { color:#fff !important;background:var(--olive); }
+#structuredStayReviewFields[hidden] { display:none; }
+#stayReviewsSection .stay-reviews-heading { gap:12px;align-items:center;margin-bottom:16px; }
+#stayReviewsSection .stay-reviews-score-block { gap:4px;min-width:0; }
+#stayReviewsSection .stay-reviews-score-block strong { font-size:14px;font-weight:550; }
+#stayReviewsSection .stay-reviews-score-block svg { width:16px;height:16px;color:#e6a525; }
+.stay-policy-panel .dash-list,.stay-policy-panel p,.market-refund-section .dash-list,.market-refund-section p { font-size:14px;line-height:1.6;font-weight:400; }
+.stay-policy-panel .dash-list,.market-refund-section .dash-list { margin:8px 0; }
+.stay-policy-panel .dash-list li,.market-refund-section .dash-list li { padding-block:0;margin:0; }
+.stay-policy-panel .dash-list li + li,.market-refund-section .dash-list li + li { margin-top:6px; }
+.stay-policy-panel p.stay-policy-note { margin:12px 0 0;font-size:13px;line-height:1.6;color:#606d58; }
+.stay-policy-block { margin-top:16px;padding-top:14px;border-top:1px solid var(--line); }
+.market-refund-section { margin-top:20px; }
+.market-refund-section .terms-inline-link { margin-top:8px; }
+.meal-estimate-dialog #communityOrderRecommend { border:0;box-shadow:none;padding:0; }
+.meal-estimate-dialog #communityOrderRecommend > h2 { display:none; }
+#recommendResult .recommend-row { gap:12px;align-items:baseline; }
+#recommendResult .recommend-row > span { flex-shrink:0; }
+#recommendResult .recommend-row > strong { text-align:right; }
+#recommendDrinkers + small { display:block;margin-top:4px;color:var(--muted); }
 #bookingForm[hidden] { display:none; }
 @media (max-width:1023px) {
   .stay-desktop-only { display:none !important; }
 }
 @media (min-width:1024px) {
   .public-stay-calendar { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  #stayDetail .detail-sections-bottom { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .stay-mobile-only,
   .home-stays .home-stay-image > span,
   .design-main #stayList .stay-card-intro,

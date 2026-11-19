@@ -12,6 +12,7 @@
   let chatContext = "";
   let linkHandled = false;
   const contactChecks = new Map();
+  const contactReminders = new Set();
   function renderContactNotice(thread) {
     const form = document.querySelector('#chatForm');
     if (!form) return;
@@ -21,11 +22,10 @@
     const key = `${window.motfCurrentUserId}:${thread?.id}:${phone}`;
     const old = notice.querySelector('input');
     if (old && notice.dataset.key === key) contactChecks.set(key,old.checked);
-    const alreadyShared = thread?.contactShares?.some(share => share.user_id === window.motfCurrentUserId && share.phone === phone);
     notice.dataset.key = key;
     notice.hidden = !thread;
     const escape = value => window.motfEscapeHtml?.(value) || '';
-    notice.innerHTML = phone ? `<label class="chat-contact-consent"><input type="checkbox" id="chatContactConsent" ${contactChecks.get(key) ?? alreadyShared ? 'checked' : ''}><span><strong>문의 연락처 ${escape(phone)}</strong>를 ${escape(thread?.title || '해당 업장')}의 문의 담당자에게 공유합니다. 예약·상품 상담을 위해 전화로 답변받을 수 있으며, 이 대화의 연락 내역으로 보관됩니다. <button class="text-button" type="button" data-route="privacy">개인정보 안내</button></span></label>` : '<p>메시지를 보내려면 연락 가능한 전화번호가 필요해요. <button class="text-button" type="button" data-route="myAccount">계정에서 연락처 등록</button></p>';
+    notice.innerHTML = /^0[0-9]{8,10}$/.test(phone) ? `<label class="chat-contact-consent"><input type="checkbox" id="chatContactConsent" ${contactChecks.get(key) ? 'checked' : ''}><span><strong>문의 연락처 ${escape(phone)} 공유 (선택)</strong> · ${escape(thread?.title || '해당 업장')}에서 전화로 답변할 수 있고, 공유한 번호는 이 대화에 보관됩니다. <button class="text-button" type="button" data-route="privacy">개인정보 안내</button></span></label>` : '';
   }
   window.motfRenderChatContactNotice = renderContactNotice;
 
@@ -224,9 +224,13 @@
     const attachmentInput = document.querySelector("#chatAttachment");
     const attachments = attachmentInput?.files ? [...attachmentInput.files].map((file) => file.name) : [];
     const body = messageBody(input?.value.trim() || "", attachments);
-    if (!body) return;
-    if (!document.querySelector('#chatContactConsent')?.checked) {
-      window.toast?.('문의 전화번호 공유 안내를 확인해주세요.');
+    if (!body || window.motfChatPending) return;
+    const checkbox = document.querySelector('#chatContactConsent');
+    const consent = !!checkbox?.checked;
+    const reminderKey = `${window.motfCurrentUserId}:${conversationId}`;
+    if (checkbox && !consent && !contactReminders.has(reminderKey)) {
+      contactReminders.add(reminderKey);
+      window.toast?.('전화 답변이 편하다면 연락처 공유를 선택해주세요. 다시 전송하면 연락처를 공유하지 않고 보냅니다.');
       return;
     }
     const button = event.target.querySelector('[type="submit"]');
@@ -237,7 +241,7 @@
       ({ error } = await client.rpc("send_chat_message_with_contact", {
         target_conversation_id: conversationId,
         message_body: body,
-        contact_consent: true,
+        contact_consent: consent,
       }));
     } catch (failure) { error = failure; }
     finally { window.motfChatPending = false; if (button) button.disabled = false; }

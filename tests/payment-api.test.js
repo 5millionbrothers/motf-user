@@ -27,7 +27,7 @@ function fixture(options = {}) {
       if (target.pathname.endsWith("/is_organization_member")) return response(options.organizationMember === true);
       if (target.pathname.endsWith("/payment_intents")) { if (request.method === "PATCH") Object.assign(intent, payload); return response([intent]); }
       if (target.pathname.endsWith("/nicepay_checkout_sessions")) return response(session ? [session] : []);
-      if (target.pathname.endsWith("/reservations")) return response([{ id: txId, customer_id: user, status: "confirmed", event_date: "2099-01-01", business_id: "business" }]);
+      if (target.pathname.endsWith("/reservations")) return response([{ id: txId, customer_id: user, status: "confirmed", event_date: "2099-01-01", business_id: "business", businesses: {refund_policy: options.policy ?? [{days_before:10,refund_percent:100},{days_before:0,refund_percent:0}]} }]);
       if (target.pathname.endsWith("/bind_nicepay_checkout")) { session = { nonce_hash: payload.target_nonce_hash, expires_at: "2099-01-01" }; Object.assign(intent, { provider: "nicepay", provider_merchant_id: payload.target_mid, payment_method: payload.target_method }); return response(null); }
       if (target.pathname.endsWith("/claim_payment_provider_operation")) {
         let op = ops.get(payload.target_operation_key);
@@ -167,6 +167,12 @@ test("API: refund performs one NICE cancellation; second request cannot double r
   assert.equal((await invoke(refund, request)).code, 409);
   assert.equal(f.calls.filter(x => x.endsWith("/cancel_process.jsp")).length, 1);
 }));
+test("API: unconfigured stay policy never calls the payment provider or cancels the reservation", async () => using({ policy: [], intent: { provider: "nicepay", status: "confirmed", payment_key: tid, payment_method: "CARD", transaction_id: txId } }, async f => {
+  const result = await invoke(refund, { kind: "stay", id: txId });
+  assert.equal(result.data.code, "MANUAL_REVIEW_REQUIRED");
+  assert.equal(f.intent.status, "confirmed");
+  assert.equal(f.calls.some(x => x.endsWith("/record_provider_refund") || x.endsWith("/cancel_process.jsp")), false);
+}));
 test("Korean form text is encoded as EUC-KR rather than UTF-8", () => assert.equal(rt.formEncode({ CancelMsg: "취소" }), "CancelMsg=%C3%EB%BC%D2"));
 test("API: account issuance waits for deposit, verified webhook creates the booking", async () => using({ methods: "CARD,VBANK" }, async f => {
   const auth = await authentication("VBANK"); await invoke(callback, auth, "");
@@ -203,7 +209,7 @@ test("return URL preserves the approved www session origin, never an arbitrary h
   assert.equal(rt.returnOrigin({ headers: { origin: "https://evil.example" } }), "https://motf.co.kr");
 });
 test("refund date boundaries use Korea time", () => {
-  const transaction = { status: "confirmed", event_date: "2026-11-12" };
+  const transaction = { status: "confirmed", event_date: "2026-11-12", businesses: { refund_policy: [{days_before:14,refund_percent:100},{days_before:7,refund_percent:50}] } };
   assert.equal(refundPercent(transaction, "stay", new Date("2026-10-28T15:30:00Z")), 100);
   transaction.event_date = "2026-11-05"; assert.equal(refundPercent(transaction, "stay", new Date("2026-10-28T15:30:00Z")), 50);
 });

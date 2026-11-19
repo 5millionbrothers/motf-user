@@ -53,8 +53,7 @@ const PAYMENT_LIMIT_MESSAGE = "단건 결제는 10,000,000원까지 가능합니
 const DEFAULT_STAY_REGION = "가평";
 const DEFAULT_STAY_PEOPLE = 10;
 const LAUNCH_STAY_REGION = "가평";
-const STANDARD_REFUND_POLICY = ["체크인 30일 전까지: 100% 환불", "체크인 29~15일 전: 50% 환불", "체크인 14일 전부터 당일까지: 환불 불가"];
-const STAY_REFUND_NOTE = "예약 확정 후 이용자 사정으로 취소하는 신규 예약 기준입니다. 확정 전에는 전액 환불되며, 숙소 귀책·불가항력 등은 관계 법령과 적용 기준에 따릅니다.";
+const DAESUNG_MARKET_INTRO = "단체 행사에 필요한 고기, 쌈채소, 주류, 음료 등의 식자재를 합리적인 가격에 구매할 수 있는 지역 공판장입니다! 현장 수령 시 상황에 따라 숙소까지 픽업이 가능할 수 있습니다.";
 
 function normalizeStayRegion(value = "", address = "") {
   const region = String(value || "").trim();
@@ -276,7 +275,7 @@ const legacyDemoStores = [
     rating: 4.9,
     location: { lat: 37.6844, lng: 127.3797 },
     image: photo("photo-1542838132-92c53300491e"),
-    intro: "MT에 필요한 식자재와 일회용품을 일정에 맞춰 한 번에 준비하는 공판장입니다.",
+    intro: DAESUNG_MARKET_INTRO,
     products: [
       {
         id: "daesung-water-500",
@@ -1668,7 +1667,10 @@ function getStayDetailFilters() {
 
 function stayMatchesDetailFilters(stay, filters) {
   const tags = stay.detailTags || [];
-  const tagsOk = filters.tags.every((tag) => tags.includes(tag));
+  const tagsOk = filters.tags.every((tag) => {
+    const amenity = STANDARD_AMENITIES.find(([key]) => key === tag);
+    return amenity ? stayAmenity(stay, ...amenity).available : tags.includes(tag);
+  });
   const roomsOk = Number(stay.roomCount || 0) >= filters.minRooms;
   return tagsOk && roomsOk;
 }
@@ -1736,8 +1738,7 @@ function stayCard(stay) {
       <div class="retained-stay-copy">
         <div class="catalog-tags"><span>${escapeHtml(stay.region)}</span><span>최대 ${stay.maxPeople}명</span><span>${availableCount}/${stay.rooms.length} 객실 가능</span></div>
         <button class="catalog-stay-name" data-stay-id="${stay.id}">${catalogLabel(stay.name)}</button>
-        <p class="stay-card-intro">${catalogLabel(stay.intro)}</p>
-        <div class="catalog-tags"><span>객실 ${stay.roomCount || stay.rooms.length}개</span>${(stay.highlights || []).filter(item=>!/화장실|욕실/.test(item)).slice(0,2).map(item=>`<span>${escapeHtml(item)}</span>`).join('')}</div>
+        ${stay.address ? `<p class="stay-card-address">${catalogLabel(stay.address)}</p>` : ""}
         <button class="stay-review-chip" type="button" data-stay-review-id="${stay.id}" aria-label="${escapeHtml(stay.name)} 리뷰 보기"><i data-lucide="star"></i>${reviewRatingLabel(reviewSummary)}</button>
       </div>
       <div class="catalog-stay-bottom retained-stay-price"><strong>${money(estimate.total)}<span>${estimate.people}명 예상 총액</span></strong><div><button class="secondary candidate-button ${selected?'active':''}" data-add-mt-candidate="${stay.id}"><i data-lucide="${selected?'check':'folder-plus'}"></i>${selected?'담김':'내 MT에 담기'}</button><button class="text-button" data-stay-id="${stay.id}">바로 예약 <i data-lucide="chevron-right"></i></button><button class="icon-button" data-open-chat="${escapeHtml(stay.name)}" aria-label="숙소 문의"><i data-lucide="message-circle"></i></button></div></div>
@@ -1827,12 +1828,17 @@ function amenityDescription(detail, available) {
   return parts.filter(Boolean).join(" · ") || (available ? "이용 가능" : "제공되지 않음");
 }
 
-function amenityChecklist(stay, room = null) {
+function stayAmenity(stay, key, label, room = null) {
   const details = [...(room?.amenityDetails || []), ...(stay.amenityDetails || [])];
-  const tags = new Set((stay.detailTags || []).map((tag) => ({ outdoor: "barbecue", mic: "karaoke" }[tag] || tag)));
+  const detail = details.find(item => item?.key === key || item?.label === label);
+  const available = detail ? detail.available !== false && detail.available !== "false"
+    : (stay.detailTags || []).some(tag => ({ outdoor: "barbecue", mic: "karaoke" }[tag] || tag) === key);
+  return { detail, available };
+}
+
+function amenityChecklist(stay, room = null) {
   const rows = STANDARD_AMENITIES.map(([key, label]) => {
-    const detail = details.find((item) => item.key === key || item.label === label);
-    const available = detail ? detail.available !== false : tags.has(key);
+    const { detail, available } = stayAmenity(stay, key, label, room);
     const description = amenityDescription(detail, available);
     return { available, label, description: /화장실|욕실/.test(description) ? "이용 가능" : description };
   });
@@ -1852,8 +1858,10 @@ function hideBathroomMentions(description) {
   return String(description || "").split(/(?<=[.!?])\s+|\n/).filter(line => !/화장실|욕실/.test(line)).join("\n").trim();
 }
 
-function stayRefundDetails() {
-  return `${dashList(STANDARD_REFUND_POLICY)}<p>${STAY_REFUND_NOTE}</p>`;
+function stayRefundDetails(stay) {
+  const rules = window.MotfStayRefundPolicy.describe(stay?.refundPolicy);
+  if (!rules.length) return '<p>이 숙소에 적용되는 취소·환불 규정은 예약 전에 숙소에 확인해주세요.</p>';
+  return `${dashList(rules)}<p class="stay-policy-note">해당 숙소의 취소·환불 규정입니다. 숙소 귀책·불가항력 등에는 관계 법령과 적용 기준이 우선합니다.</p>`;
 }
 
 function roomCapacityMax(room) {
@@ -2009,26 +2017,7 @@ function renderStayDetail() {
       ${renderStayGallery(gallery, stay.name, true)}
     </section>
 
-    <section id="stayReviewsSection" class="stay-reviews-section" aria-labelledby="stayReviewsTitle">
-      <header class="stay-reviews-heading">
-        <div class="stay-reviews-score-block">
-          <i data-lucide="star"></i>
-          <strong>${reviewRatingLabel(reviewSummary)}</strong>
-        </div>
-        <div>
-          <p class="eyebrow">VERIFIED REVIEWS</p>
-          <h2 id="stayReviewsTitle">실제 이용팀 리뷰 ${reviewSummary.count ? `${reviewSummary.count}개` : ""}</h2>
-          <p>${reviewSummary.count ? "예약과 이용이 확인된 팀의 후기를 모았어요." : "이용 완료 후 작성된 첫 리뷰가 곧 이곳에 표시됩니다."}</p>
-        </div>
-      </header>
-      ${stayReviews.length
-        ? `<div class="stay-review-preview-grid">${stayReviews.slice(0, 6).map(stayReviewPreviewCard).join("")}</div>${stayReviews.length > 6 ? `<button class="secondary-btn stay-review-more" type="button" data-route="review"><i data-lucide="list"></i>리뷰 전체 보기</button>` : ""}`
-        : '<div class="stay-review-empty"><i data-lucide="message-square-text"></i><span>아직 등록된 리뷰가 없습니다.</span></div>'}
-    </section>
-
     ${stayFacilitySection(stay, false)}
-
-    ${insight ? `<section class="stay-review-insight"><i data-lucide="users-round"></i><div><small>실제 이용팀 리뷰 기준</small><strong>등록 정원은 최대 ${stay.maxPeople}명이지만, 쾌적 인원은 ${insight.min}~${insight.max}명입니다.</strong><span>${insight.count}개 검증 후기에서 계산한 MT 전용 정보입니다.</span></div></section>` : ""}
 
     <section>
       ${renderStaySearchPanel("이 숙소 예약 조건")}
@@ -2053,19 +2042,33 @@ function renderStayDetail() {
     </section>
 
     ${stayFacilitySection(stay, true)}
+    <section id="stayReviewsSection" class="stay-reviews-section" aria-labelledby="stayReviewsTitle">
+      <header class="stay-reviews-heading">
+        <h2 id="stayReviewsTitle">이용 후기</h2>
+        <div class="stay-reviews-score-block">
+          <i data-lucide="star"></i>
+          <strong>${reviewRatingLabel(reviewSummary)}</strong>
+        </div>
+      </header>
+      ${insight ? `<div class="stay-review-insight"><i data-lucide="users-round"></i><div><strong>후기에서 꼽은 쾌적 인원 ${insight.min}~${insight.max}명</strong><span>후기 ${insight.count}개 기준</span></div></div>` : ""}
+      ${stayReviews.length
+        ? `<div class="stay-review-preview-grid">${stayReviews.slice(0, 6).map(stayReviewPreviewCard).join("")}</div>${stayReviews.length > 6 ? `<button class="secondary-btn stay-review-more" type="button" data-route="review"><i data-lucide="list"></i>리뷰 전체 보기</button>` : ""}`
+        : '<div class="stay-review-empty"><i data-lucide="message-square-text"></i><span>아직 등록된 리뷰가 없습니다.</span></div>'}
+    </section>
+
     <div class="detail-sections detail-sections-bottom">
       <section class="info-panel stay-mobile-only">
         <h2>편의시설</h2>
         <p>상단 단체 이용 시설에서 제공 여부와 세부 조건을 확인해주세요.</p>
       </section>
-      <section class="info-panel">
+      <section class="info-panel stay-policy-panel">
         <h2>추가요금</h2>
         ${dashList(safeArray(stay.fees).filter(fee => !/화장실|욕실/.test(fee)))}
-        <p>추가금은 현장에서 확인 후 숙소 현장에서 직접 결제하며, 사이트 결제금액에는 포함되지 않습니다.</p>
+        <p class="stay-policy-note">추가요금은 사이트 결제금액에 포함되지 않으며, 숙소에서 직접 결제합니다.</p>
       </section>
-      <section class="info-panel">
+      <section class="info-panel stay-policy-panel">
         <h2>환불 및 규칙</h2>
-        ${stayRefundDetails()}
+        ${stayRefundDetails(stay)}
       </section>
     </div>
   `;
@@ -2204,11 +2207,11 @@ function renderRoomDetail() {
         ${amenityChecklist(stay, room)}
         <p class="stay-desktop-only">시설 이용 조건이나 요금 등 자세한 사항은 숙소에 문의해주세요.</p>
       </section>
-      <section class="info-panel">
-        <h2>추가요금 및 환불</h2>
-        <p>추가 인원·부대시설 요금은 현장 확인 후 숙소 현장에서 직접 결제합니다. 아래 요금은 사이트 결제금액에 포함되지 않습니다.</p>
+      <section class="info-panel stay-policy-panel">
+        <h2>추가요금</h2>
         ${dashList(stayFees.slice(0, 3))}
-        ${stayRefundDetails()}
+        <p class="stay-policy-note">추가요금은 사이트 결제금액에 포함되지 않으며, 숙소에서 직접 결제합니다.</p>
+        <div class="stay-policy-block"><h2>환불 및 규칙</h2>${stayRefundDetails(stay)}</div>
       </section>
     </div>
   `;
@@ -2323,7 +2326,7 @@ function renderBooking() {
       ${unavailable ? `<div class="summary-line"><span>예약 가능 여부</span><strong>선택 날짜 품절</strong></div>` : ""}
       ${exceedsPaymentLimit ? `<div class="summary-line payment-limit-warning"><span>결제 한도</span><strong>최대 ${money(MAX_SINGLE_PAYMENT_AMOUNT)}</strong></div>` : ""}
       <div class="separate-charge-note"><i data-lucide="info"></i><span>모티프에서는 객실 기본금만 결제합니다. 추가 인원·바비큐 등 부대시설 요금은 현장에서 확인 후 숙소 현장에서 직접 결제합니다. 사이트에서 별도 결제하지 않습니다.</span></div>
-      <details class="stay-description-more"><summary>숙소 취소·환불 규정</summary>${stayRefundDetails()}</details>
+      <details class="stay-description-more stay-policy-panel"><summary>숙소 취소·환불 규정</summary>${stayRefundDetails(stay)}</details>
       <div class="summary-line total"><span>지금 결제할 금액</span><strong>${money(payableAmount)}</strong></div>
     `;
     const submitButton = qs('#bookingForm [type="submit"]');
@@ -2371,8 +2374,6 @@ function renderStores() {
     ? store.products
     : store.products.filter((product) => product.category === state.activeCategory);
   const productGroups = groupProductVariants(products);
-  const people = Number(qs("#marketPeople")?.value || 32);
-  const porkKg = Math.ceil(people * 0.35);
   intro.innerHTML = `
     ${stores.length > 1 ? `<nav class="market-store-tabs" aria-label="제휴 마트 선택">${stores.map((item) => `<button type="button" class="category-tab ${item.id === store.id ? "active" : ""}" data-market-select="${item.id}">${escapeHtml(item.name)}</button>`).join("")}</nav>` : ""}
     <section class="market-intro retained-merchant">
@@ -2381,7 +2382,7 @@ function renderStores() {
         <p class="eyebrow">${store.region} 제휴 마트</p>
         <h2>${store.name}</h2>
         <button class="market-mobile-details text-link" type="button" data-market-info>공판장 정보 <i data-lucide="chevron-right"></i></button>
-        <p>${store.intro}<br />숙소 일정에 맞춰 수령 또는 배송 요청을 남길 수 있습니다.</p>
+        <p>${store.intro}</p>
         <div class="detail-meta">
           <span class="pill">${reviewRatingLabel(businessReviewSummary(store))}</span>
           <span class="pill success">${store.type}</span>
@@ -2413,7 +2414,7 @@ function renderStores() {
 
 function storeCard(store) {
   const people = Number(qs("#marketPeople").value || 32);
-  const porkKg = Math.ceil(people * 0.35);
+  const porkKg = people * 300 / 1000;
   return `
     <article class="listing-card">
       <img src="${store.image}" alt="${store.name} 사진" />
@@ -2631,7 +2632,6 @@ function renderProductDetail() {
           <span class="pill">${product.unit}</span>
           <span class="pill success">${product.manufacturer || product.origin}</span>
           ${product.isBundle ? '<span class="pill">세트 구성 상품</span>' : ""}
-          <span class="pill warning">수령 전 변경 가능</span>
           ${alcoholProduct ? '<span class="pill danger">성인 인증 필수</span>' : ""}
         </div>
         <p>${product.detail}</p>
@@ -2681,6 +2681,12 @@ function renderProductDetail() {
         ${product.detailSections?.cautions ? `<div><dt>주의사항</dt><dd>${escapeHtml(product.detailSections.cautions)}</dd></div>` : ""}
         <div><dt>판매자 안내</dt><dd>${escapeHtml(product.detailSections?.sellerNote || product.detail)}</dd></div>
       </dl>
+    </section>
+    <section class="product-information-section market-refund-section">
+      <h2>취소 및 환불</h2>
+      ${dashList(["신선식품: 수령 예정일 3일 전까지 전액 환불", "일반 기성품: 수령 예정일 1일 전까지 전액 환불"])}
+      <p>마감일 23시 59분까지 취소 요청을 접수합니다. 상품 하자·오배송·판매자 귀책에는 위 제한이 적용되지 않습니다.</p>
+      <button type="button" class="terms-inline-link" data-route="refundPolicy">환불 및 취소 규정 전체 보기</button>
     </section>
   `;
   window.motfRenderProductReviews?.(product);
@@ -3594,25 +3600,31 @@ function renderPaymentResult() {
   refreshIcons();
 }
 
+function renderOrderEstimate() {
+  const peopleInput = qs("#recommendPeople");
+  const people = Math.max(1, Math.min(Number(peopleInput.max), Math.trunc(Number(peopleInput.value)) || 1));
+  const drinkersInput = qs("#recommendDrinkers");
+  drinkersInput.max = people;
+  const drinkers = drinkersInput.value === "" ? people : Math.max(0, Math.min(people, Math.trunc(Number(drinkersInput.value))));
+  const style = qs("#mealStyle").value;
+  const [meat, alcohol, snacks, water, softDrinks] = style === "light" ? [200, .5, .3, .5, .5]
+    : style === "heavy" ? [400, 2, .6, 1, 1.5] : [300, 1, .45, .75, 1];
+  const rows = [
+    ["고기", `${(people * meat / 1000).toLocaleString("ko-KR")}kg`],
+    ["소주", `360mL ${Math.ceil(drinkers * alcohol)}병`],
+    ["맥주", `500mL ${Math.ceil(drinkers * alcohol)}병`],
+    ["과자", `60g ${Math.ceil(people * snacks)}봉`],
+    ["생수", `2L ${Math.ceil(people * water / 2)}병`],
+    ["음료", `355mL ${Math.ceil(people * softDrinks)}캔`],
+    ["일회용품", `접시·젓가락 각 ${people}개, 컵 ${people * 2}개`],
+    ["정리용품", `냅킨 ${people * 2}장, 쓰레기봉투 ${Math.ceil(people / 10)}장`],
+  ];
+  qs("#recommendResult").innerHTML = rows.map(([name, amount]) => `<div class="recommend-row"><span>${name}</span><strong>${amount}</strong></div>`).join("");
+}
+
 function renderCommunity() {
   if (window.motfCommunityDesign) return window.motfCommunityDesign.render();
-  const people = Number(qs("#recommendPeople").value || 32);
-  const style = qs("#mealStyle").value;
-  const factor = style === "heavy" ? 0.45 : style === "light" ? 0.28 : 0.35;
-  const pork = Math.ceil(people * factor);
-  const drink = Math.ceil(people * (style === "light" ? 1.1 : style === "heavy" ? 1.8 : 1.4));
-  const water = Math.ceil(people * 0.6);
-  const snacks = Math.ceil(people * (style === "heavy" ? 0.35 : 0.25));
-  qs("#recommendResult").innerHTML = `
-    <div class="recommend-total">
-      <strong>${people}명 기준 추천</strong>
-      <span>${style === "heavy" ? "든든한" : style === "light" ? "간단한" : "기본"} MT 장보기 기준</span>
-    </div>
-    <div class="recommend-row"><span>고기</span><strong>약 ${pork}kg</strong></div>
-    <div class="recommend-row"><span>음료</span><strong>약 ${drink}병 또는 캔</strong></div>
-    <div class="recommend-row"><span>생수</span><strong>2L ${water}병</strong></div>
-    <div class="recommend-row"><span>안주</span><strong>약 ${snacks}kg · ${Math.ceil(people / 6)}세트</strong></div>
-  `;
+  renderOrderEstimate();
   qs("#activityList").innerHTML = activities
     .slice(0, 3)
     .map(
@@ -3955,7 +3967,7 @@ function renderMypage() {
   const selectedBudgetButton = qs("[data-selected-budget-file]");
   if (selectedBudgetButton) {
     selectedBudgetButton.disabled = state.selectedUsageIds.size === 0;
-    selectedBudgetButton.innerHTML = `<i data-lucide="file-spreadsheet"></i>${state.selectedUsageIds.size ? `${state.selectedUsageIds.size}건 결산·증빙 받기` : "선택 내역 결산·증빙"}`;
+    selectedBudgetButton.innerHTML = `<i data-lucide="file-spreadsheet"></i>${state.selectedUsageIds.size ? `${state.selectedUsageIds.size}건 결산 엑셀 받기` : "선택 내역 결산 받기"}`;
   }
   renderPointHistory();
   refreshIcons();
@@ -4244,6 +4256,13 @@ function pendingAccountDueDate(item = {}) {
   return item.expiresAt || item.dueAt || account.dueDate || account.due_date || account.expiredAt || account.expired_at || account.expiresAt || account.expires_at || account.expiry?.dueDate || account.expiry?.due_date || account.accountExpiry?.dueDate || account.accountExpiry?.due_date || "";
 }
 
+function usageExportButtons(item, kind) {
+  if (item.isPaymentReview) return `<button class="secondary-btn" data-check-payment="${escapeHtml(item.id)}"><i data-lucide="refresh-cw"></i>결제 상태 확인</button>`;
+  if (item.isPendingVirtualAccount || item.isExtraCharge) return "";
+  const id = escapeHtml(item.id);
+  return `<button class="secondary-btn" data-budget-file="${id}"><i data-lucide="file-spreadsheet"></i>결산 엑셀 받기</button><button class="ghost-btn" data-usage-receipt="${id}" data-receipt-kind="${kind}"><i data-lucide="receipt-text"></i>영수증 보기</button><button class="ghost-btn" data-route="review" data-review-scope="${kind}"><i data-lucide="star"></i>리뷰</button>`;
+}
+
 function reservationCard(item) {
   const account = item.virtualAccount ? readableAccount(item.virtualAccount) : "";
   const dueDate = pendingAccountDueDate(item);
@@ -4266,7 +4285,7 @@ function reservationCard(item) {
         ${item.refundAmount ? `<p class="muted">환불 예정 금액 ${money(item.refundAmount)}</p>` : ""}
         <div class="button-row">
           ${!item.isExtraCharge && item.rawStatus === "confirmed" ? `<button class="ghost-btn" data-cancel-reservation="${item.id}"><i data-lucide="rotate-ccw"></i>예약 취소</button>` : ""}
-          ${item.isPaymentReview ? `<button class="secondary-btn" data-check-payment="${escapeHtml(item.id)}"><i data-lucide="refresh-cw"></i>결제 상태 확인</button>` : `<button class="secondary-btn" data-budget-file="${item.id}"><i data-lucide="file-spreadsheet"></i>결산·증빙 받기</button><button class="ghost-btn" data-route="review"><i data-lucide="star"></i>리뷰</button>`}
+          ${usageExportButtons(item, "stay")}
         </div>
       </div>
     </article>
@@ -4291,7 +4310,7 @@ function orderCard(item) {
         ${item.isPaymentReview ? `<p class="muted">중복 결제하지 말고 상태를 확인해주세요. 해결되지 않으면 주문번호 ${escapeHtml(item.id)}로 문의해주세요.</p>` : ""}
         ${item.refundAmount ? `<p class="muted">환불 예정 금액 ${money(item.refundAmount)}</p>` : ""}
         <div class="button-row">
-          ${item.isPaymentReview ? `<button class="secondary-btn" data-check-payment="${escapeHtml(item.id)}"><i data-lucide="refresh-cw"></i>결제 상태 확인</button>` : `<button class="secondary-btn" data-budget-file="${item.id}"><i data-lucide="file-spreadsheet"></i>결산·증빙 받기</button><button class="ghost-btn" data-route="review"><i data-lucide="star"></i>리뷰</button>`}
+          ${usageExportButtons(item, "market")}
         </div>
       </div>
     </article>
@@ -4302,17 +4321,19 @@ function renderReviews() {
   const targetSelect = qs("#reviewTarget");
   const submitButton = qs("#reviewForm")?.querySelector('[type="submit"]');
   const helper = qs("#reviewEligibilityNote");
+  const targets = state.reviewTargets.filter(target => state.reviewScope === "all" || (target.type === "market_order" ? "market" : "stay") === state.reviewScope);
+  const marketOnly = state.reviewScope === "market";
   if (targetSelect) {
-    targetSelect.innerHTML = state.reviewTargets.length
-      ? state.reviewTargets.map((target) => `<option value="${escapeHtml(target.id)}">${escapeHtml(target.label)}</option>`).join("")
-      : `<option value="">이용 완료 내역이 없습니다</option>`;
-    targetSelect.disabled = !state.reviewTargets.length;
+    const previous = targetSelect.value;
+    targetSelect.innerHTML = targets.length
+      ? targets.map((target) => `<option value="${escapeHtml(target.id)}">${escapeHtml(target.label)}</option>`).join("")
+      : `<option value="">${marketOnly ? "수령 완료된 주문이 없습니다" : "이용 완료 내역이 없습니다"}</option>`;
+    if (targets.some(target => target.id === previous)) targetSelect.value = previous;
+    targetSelect.disabled = !targets.length;
   }
-  if (submitButton) submitButton.disabled = !state.reviewTargets.length;
+  if (submitButton) submitButton.disabled = !targets.length;
   if (helper) {
-    helper.textContent = state.reviewTargets.length
-      ? "이용 완료된 예약이나 주문만 리뷰를 작성할 수 있어요."
-      : "리뷰는 실제 이용 완료된 예약이나 장보기 주문이 있을 때 작성할 수 있어요.";
+    helper.textContent = marketOnly ? "수령을 완료한 장보기 주문의 후기를 남길 수 있어요." : "이용 완료된 예약이나 주문의 후기를 남길 수 있어요.";
   }
   renderReviewKeywords();
   const visibleReviews = state.reviewScope === "market"
@@ -4336,11 +4357,11 @@ function activeReviewTarget() {
   return state.reviewTargets.find((item) => item.id === targetId) || null;
 }
 
-function reviewKeywordsForTarget(target) {
+function reviewKeywordsForTarget(isMarket) {
   const common = ["소통이 빨라요", "단체 이용 좋아요", "합리적인 가격", "응답이 빨라요", "사장님이 친절해요", "재방문하고 싶어요"];
   const stay = ["숙소가 깨끗해요", "사진과 같아요", "방이 넓어요", "바베큐장이 좋아요", "편의시설이 좋아요", "주차가 편해요", "소음 안내가 명확해요"];
   const market = ["상품 품질이 좋아요", "포장이 꼼꼼해요", "수량이 정확해요", "신선해요", "픽업이 편해요", "배송이 편해요", "대량 주문이 편해요"];
-  return [...common, ...(target?.type === "market_order" ? market : stay)];
+  return [...common, ...(isMarket ? market : stay)];
 }
 
 function renderReviewKeywords() {
@@ -4348,12 +4369,19 @@ function renderReviewKeywords() {
   const list = qs("#reviewKeywordList");
   const label = qs("#reviewKeywordTypeLabel");
   if (!list) return;
-  const keywords = reviewKeywordsForTarget(target);
-  list.innerHTML = keywords.map((keyword, index) => `
-    <button type="button" class="tag-chip ${index < 3 ? "active" : ""}">${escapeHtml(keyword)}</button>
-  `).join("");
+  const isMarket = target ? target.type === "market_order" : state.reviewScope === "market";
+  const fieldset = qs("#structuredStayReviewFields");
+  fieldset.hidden = isMarket;
+  fieldset.disabled = isMarket;
+  qs("#reviewForm h1").textContent = isMarket ? "장보기 후기 작성" : "다음 MT 팀을 위한 솔직한 리뷰";
+  qs("#reviewText").placeholder = isMarket ? "상품의 신선도, 포장, 주문 수량이나 수령 경험을 남겨주세요" : "시설, 가격, 소통, 실제 MT 준비에 도움이 된 점을 남겨주세요";
+  const key = target?.id || (isMarket ? "market" : "stay");
+  if (key !== list.dataset.target) {
+    list.dataset.target = key;
+    list.innerHTML = reviewKeywordsForTarget(isMarket).map(keyword => `<button type="button" class="tag-chip" aria-pressed="false">${escapeHtml(keyword)}</button>`).join("");
+  }
   if (label) {
-    label.textContent = target?.type === "market_order"
+    label.textContent = isMarket
       ? "장보기 주문에 맞는 키워드예요"
       : "숙소 이용에 맞는 키워드예요";
   }
@@ -4424,18 +4452,19 @@ window.motfGetReviewDraft = function getReviewDraft() {
   const targetId = qs("#reviewTarget")?.value || "";
   const target = state.reviewTargets.find((item) => item.id === targetId);
   if (!target) return null;
+  const isMarket = target.type === "market_order";
   return {
     targetType: target.type,
     transactionId: target.transactionId,
     rating: state.rating,
     body: qs("#reviewText")?.value.trim() || "",
-    tags: qsa(".tag-chip.active").map((tag) => tag.textContent.trim()).filter(Boolean),
+    tags: qsa("#reviewKeywordList .tag-chip.active").map((tag) => tag.textContent.trim()).filter(Boolean),
     files: qs("#reviewImages")?.files ? [...qs("#reviewImages").files] : [],
-    structuredScores: Object.fromEntries(qsa("[data-review-score]").map((input) => [input.dataset.reviewScore, Number(input.value)])),
-    comfortablePeopleMin: Number(qs("#reviewComfortMin")?.value || 0) || null,
-    comfortablePeopleMax: Number(qs("#reviewComfortMax")?.value || 0) || null,
-    recommend30Plus: qs("#reviewRecommendLarge")?.value === "" ? null : qs("#reviewRecommendLarge")?.value === "true",
-    organizerDifficulty: Number(qs("#reviewOrganizerDifficulty")?.value || 0) || null,
+    structuredScores: isMarket ? {} : Object.fromEntries(qsa("[data-review-score]").map((input) => [input.dataset.reviewScore, Number(input.value)])),
+    comfortablePeopleMin: isMarket ? null : Number(qs("#reviewComfortMin")?.value || 0) || null,
+    comfortablePeopleMax: isMarket ? null : Number(qs("#reviewComfortMax")?.value || 0) || null,
+    recommend30Plus: isMarket || qs("#reviewRecommendLarge")?.value === "" ? null : qs("#reviewRecommendLarge")?.value === "true",
+    organizerDifficulty: isMarket ? null : Number(qs("#reviewOrganizerDifficulty")?.value || 0) || null,
   };
 };
 
@@ -5010,7 +5039,8 @@ document.addEventListener("click", async (event) => {
 
   const tagButton = event.target.closest(".tag-chip");
   if (tagButton) {
-    tagButton.classList.toggle("active");
+    const active = tagButton.classList.toggle("active");
+    if (tagButton.hasAttribute("aria-pressed")) tagButton.setAttribute("aria-pressed", String(active));
     return;
   }
 
@@ -5053,6 +5083,11 @@ document.addEventListener("click", async (event) => {
   const budgetButton = event.target.closest("[data-budget-file]");
   if (budgetButton) {
     window.motfOpenBudgetPreview?.(budgetButton.dataset.budgetFile);
+    return;
+  }
+  const receiptButton = event.target.closest("[data-usage-receipt]");
+  if (receiptButton) {
+    window.motfOpenBudgetPreview?.(receiptButton.dataset.usageReceipt, { receiptOnly: true, kind: receiptButton.dataset.receiptKind });
     return;
   }
 
@@ -5099,7 +5134,7 @@ document.addEventListener("input", (event) => {
     renderStays();
   }
   if (event.target.matches("#marketPeople")) renderStores();
-  if (event.target.matches("#recommendPeople, #mealStyle")) renderCommunity();
+  if (event.target.matches("#recommendPeople, #mealStyle, #recommendDrinkers")) renderOrderEstimate();
   if (event.target.matches("#activityPeople, #activitySpace, #activityMood")) renderRecreation();
   if (event.target.matches("#reviewRatingRange")) {
     state.rating = Number(event.target.value || 10);
@@ -5131,7 +5166,7 @@ document.addEventListener("change", (event) => {
     const button = qs("[data-selected-budget-file]");
     if (button) {
       button.disabled = state.selectedUsageIds.size === 0;
-      button.innerHTML = `<i data-lucide="file-spreadsheet"></i>${state.selectedUsageIds.size ? `${state.selectedUsageIds.size}건 결산·증빙 받기` : "선택 내역 결산·증빙"}`;
+      button.innerHTML = `<i data-lucide="file-spreadsheet"></i>${state.selectedUsageIds.size ? `${state.selectedUsageIds.size}건 결산 엑셀 받기` : "선택 내역 결산 받기"}`;
       refreshIcons();
     }
     return;
@@ -5148,7 +5183,6 @@ document.addEventListener("change", (event) => {
     renderStays();
   }
   if (event.target.matches("#marketPeople")) renderStores();
-  if (event.target.matches("#mealStyle")) renderCommunity();
   if (event.target.matches("#activityPeople, #activitySpace, #activityMood")) renderRecreation();
   if (event.target.matches("#reviewTarget")) renderReviewKeywords();
 });

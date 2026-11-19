@@ -23,17 +23,29 @@ test('past, impossible and zero-night stays are rejected; leap-day nights are su
   assert.deepEqual(range('2027-12-01','2027-12-01',after), {ok:false});
 });
 
-test('new confirmed stay refunds distinguish 30/29 and 15/14 days, existing rate stays unchanged', () => {
+test('historical fixed snapshots retain the disclosed 30/29 and 15/14 day boundaries', () => {
   const now = new Date('2026-11-30T15:00:00Z');
   const pct = (day, status = 'confirmed', policy = '30_15_v1') =>
-    refundPercent({status,event_date:day}, 'stay', now, policy);
+    refundPercent({status,event_date:day}, 'stay', now, {stay_refund_policy_version:policy});
   assert.equal(pct('2026-12-31'),100);
   assert.equal(pct('2026-12-30'),50);
   assert.equal(pct('2026-12-16'),50);
   assert.equal(pct('2026-12-15'),0);
   assert.equal(pct('2026-12-01'),0);
   assert.equal(pct('2026-12-01','pending'),100);
-  assert.equal(pct('2026-12-15','confirmed',null),100);
+  assert.throws(() => pct('2026-12-15','confirmed',null), {code:'MANUAL_REVIEW_REQUIRED'});
+});
+
+test('new refunds use the booked property schedule, not a later edit or common default', () => {
+  const now = new Date('2026-11-30T15:00:00Z');
+  const booked = [{days_before:20, refund_percent:100}, {days_before:5, refund_percent:70}, {days_before:0, refund_percent:25}];
+  const other = [{days_before:5, refund_percent:40}, {days_before:0, refund_percent:0}];
+  const tx = {status:'confirmed', event_date:'2026-12-10', businesses:{refund_policy:other}};
+  assert.equal(refundPercent(tx,'stay',now,{stay_refund_policy_snapshot:booked}),70);
+  assert.equal(refundPercent(tx,'stay',now,{stay_refund_policy_snapshot:other}),40);
+  assert.throws(() => refundPercent(tx,'stay',now,{stay_refund_policy_snapshot:[]}),{code:'MANUAL_REVIEW_REQUIRED'});
+  assert.throws(() => refundPercent(tx,'stay',now,{stay_refund_policy_snapshot:[{days_before:20,refund_percent:100}]}),{code:'MANUAL_REVIEW_REQUIRED'});
+  assert.deepEqual(require('../stay-refund-policy').describe(other),['체크인 5일 전까지: 40% 환불','체크인 4일 전부터 당일까지: 환불 불가']);
 });
 
 test('receipt signing uses only paid intent IDs selected by the customer scope', async () => {

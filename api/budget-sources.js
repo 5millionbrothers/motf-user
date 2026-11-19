@@ -18,7 +18,7 @@ function officialReceipt(intent) {
   if (supplied) return supplied;
   // NICEPAY's official receipt viewer uses the original approved TID, never a client-provided one.
   const tid = intent?.payment_key;
-  if (intent?.provider === 'nicepay' && String(intent.payment_method).toUpperCase() === 'CARD' && /^[a-z0-9]{30}$/i.test(tid || '')
+  if (intent?.provider === 'nicepay' && ['CARD', 'BANK', 'VBANK', 'CELLPHONE'].includes(String(intent.payment_method).toUpperCase()) && /^[a-z0-9]{30}$/i.test(tid || '')
       && (!stored.TID || stored.TID === tid)) {
     return `https://npg.nicepay.co.kr/issue/IssueLoader.do?type=0&innerWin=Y&TID=${encodeURIComponent(tid)}`;
   }
@@ -82,7 +82,7 @@ function source(row, intent, kind) {
     orderId: intent?.order_id || null, method: intent?.payment_method || null,
     methodLabel: methodLabels[intent?.payment_method] || intent?.payment_method || null,
     provider: intent?.provider || null,
-    receiptUrl: paid ? officialReceipt(intent) : null,
+    receiptUrl: paid && Number(intent.amount) > 0 ? officialReceipt(intent) : null,
     evidenceId: `${kind === 'stay' ? 'S' : 'M'}-${row.id}`,
   };
 }

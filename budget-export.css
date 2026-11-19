@@ -19,6 +19,13 @@
 .budget-export-dialog .budget-footnote{margin:18px 0;font-size:12px;line-height:1.6;color:#7a8470;word-break:keep-all}
 .budget-export-dialog .budget-download{display:flex;justify-content:center;align-items:center;gap:8px;width:100%;min-height:44px;padding:12px;border:0;border-radius:6px;background:#465c36;color:#fff;font-size:14px;font-weight:550;cursor:pointer}
 .budget-download svg{width:17px;height:17px}
+.budget-export-dialog a.budget-download{text-decoration:none;box-sizing:border-box}
+.budget-receipt-list{display:grid;gap:0;padding:0;margin:12px 0;list-style:none}
+.budget-receipt-list li{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #e5e9df;font-size:13px}
+.budget-receipt-list strong,.budget-receipt-list small{display:block;overflow-wrap:anywhere}
+.budget-receipt-list small{margin-top:4px;color:#65725c}
+.budget-receipt-list li > span{color:#65725c}
+.budget-receipt-list a.budget-download{width:auto;font-size:12px;min-height:36px;padding:8px}
 .budget-download:disabled{opacity:.45;cursor:default}
 .budget-status,.budget-error{font-size:13px;line-height:1.7;padding:12px 0;color:#717e64;overflow-wrap:anywhere}
 .budget-error{color:#96502c}
