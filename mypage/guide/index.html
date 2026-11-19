@@ -33,12 +33,12 @@
     <link rel="preload" href="assets/SUIT-Variable.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="local-reset.css?v=20261103-local2" />
     <link rel="stylesheet" href="local-design.css?v=20261103-local2" />
-    <link rel="stylesheet" href="local-adapter.css?v=20261119-settlement-polish" />
-    <link rel="stylesheet" href="screen-polish.css?v=20261119-mt-refresh" />
+    <link rel="stylesheet" href="local-adapter.css?v=20261103-symbol-small" />
+    <link rel="stylesheet" href="screen-polish.css?v=20261106" />
     <link rel="stylesheet" href="preparation-workflows.css?v=20261108" />
-    <link rel="stylesheet" href="budget-export.css?v=20261119-settlement-polish" />
+    <link rel="stylesheet" href="budget-export.css?v=20261109-clean" />
     <link rel="stylesheet" href="loading.css?v=20261103-symbol" />
-    <link rel="stylesheet" href="mobile-polish.css?v=20261119-mt-refresh" />
+    <link rel="stylesheet" href="mobile-polish.css?v=20261117a" />
     <script src="loading.js?v=20260904-loader1"></script>
     <script async src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" onload="window.__motfRefreshIcons && window.__motfRefreshIcons()"></script>
     <meta name="naver-site-verification" content="471f0dd87fee0f68c5867db10cc9fec20706cc7c" />
@@ -145,19 +145,10 @@
         </div>
 
         <div id="mtProjectWorkspace" hidden>
-          <dialog id="mtResetDialog" class="motf-dialog" aria-labelledby="mtResetTitle" aria-describedby="mtResetDescription">
-            <form id="mtResetForm">
-              <h2 id="mtResetTitle">이 MT의 준비 항목을 초기화할까요?</h2>
-              <p id="mtResetDescription"><strong id="mtResetProjectName"></strong>에 담아둔 숙소·장보기 후보와 미확정 비용을 지워요. 되돌릴 수 없어요.</p>
-              <p>기본 정보, 총예산, 일정·공지, 실제 예약·주문·결제 내역은 그대로 유지돼요.</p>
-              <p id="mtResetError" role="alert" hidden></p>
-              <div class="button-row"><button type="button" class="secondary-btn" data-close-motf-dialog autofocus>취소</button><button type="submit" class="primary-btn">초기화</button></div>
-            </form>
-          </dialog>
           <button class="text-link mt-directory-back" type="button" data-mt-directory><i data-lucide="arrow-left"></i>내 MT 목록</button>
           <div class="mt-project-hero">
             <div><p class="eyebrow">준비 중인 여행</p><h1 id="mtProjectTitle"></h1><p class="mt-project-meta"></p></div>
-            <div class="button-row"><span class="mt-readonly-badge" id="mtReadonlyBadge" hidden><i data-lucide="eye"></i>보기 전용</span><button class="ghost-btn" type="button" data-invite-mt-companion><i data-lucide="user-plus"></i>동행 초대</button><button class="ghost-btn" type="button" data-share-mt-project><i data-lucide="share-2"></i>공유</button><button class="ghost-btn" type="button" data-edit-mt-project><i data-lucide="settings-2"></i>기본 정보 수정</button><button class="ghost-btn mt-plan-reset" type="button" data-reset-mt-project hidden><i data-lucide="rotate-ccw"></i>초기화</button><button class="secondary-btn" type="button" data-complete-mt-project><i data-lucide="check-circle-2"></i>MT 완료</button></div>
+            <div class="button-row"><span class="mt-readonly-badge" id="mtReadonlyBadge" hidden><i data-lucide="eye"></i>보기 전용</span><button class="ghost-btn" type="button" data-invite-mt-companion><i data-lucide="user-plus"></i>동행 초대</button><button class="ghost-btn" type="button" data-share-mt-project><i data-lucide="share-2"></i>공유</button><button class="ghost-btn" type="button" data-edit-mt-project><i data-lucide="settings-2"></i>기본 정보 수정</button><button class="secondary-btn" type="button" data-complete-mt-project><i data-lucide="check-circle-2"></i>MT 완료</button></div>
           </div>
 
           <section class="mt-budget-panel" aria-label="MT 예산 현황">
@@ -179,7 +170,7 @@
             <aside class="mt-project-side">
               <section class="mt-side-section"><div class="section-toolbar"><h2>일정</h2><button class="icon-action" type="button" data-add-mt-itinerary aria-label="일정 추가"><i data-lucide="plus"></i></button></div><ol class="mt-timeline" id="mtTimeline"></ol></section>
               <section class="mt-side-section"><div class="section-toolbar"><h2>공지 메모</h2><button class="icon-action" type="button" data-add-mt-notice aria-label="공지 작성"><i data-lucide="square-pen"></i></button></div><div id="mtNoticeList"></div></section>
-              <nav class="mt-side-links" aria-label="MT 도구"><button data-route="chat"><i data-lucide="messages-square"></i><span><strong>문의 채팅</strong><small>숙소·장보기 문의 모아보기</small></span><i data-lucide="chevron-right"></i></button><button type="button" data-mt-budget-export><i data-lucide="file-spreadsheet"></i><span><strong>예산 파일</strong><small>내 MT 예상 비용으로 생성</small></span><i data-lucide="chevron-right"></i></button></nav>
+              <nav class="mt-side-links" aria-label="MT 도구"><button data-route="chat"><i data-lucide="messages-square"></i><span><strong>문의 채팅</strong><small>숙소·장보기 문의 모아보기</small></span><i data-lucide="chevron-right"></i></button><button type="button" data-mt-budget-export><i data-lucide="file-spreadsheet"></i><span><strong>예결산 파일</strong><small>실제 이용 내역으로 생성</small></span><i data-lucide="chevron-right"></i></button></nav>
             </aside>
           </div>
         </div>
@@ -281,8 +272,6 @@
               <label class="check-card"><input type="checkbox" data-stay-filter value="karaoke" />노래방/마이크</label>
               <label class="check-card"><input type="checkbox" data-stay-filter value="field" />야외운동장</label>
               <label class="check-card"><input type="checkbox" data-stay-filter value="pool" />수영장</label>
-              <label class="check-card"><input type="checkbox" data-stay-filter value="parking" />주차</label>
-              <label class="check-card"><input type="checkbox" data-stay-filter value="pickup" />픽업</label>
             </fieldset>
           </div>
         </section>
@@ -338,7 +327,7 @@
                   <option value="운동장">운동장</option>
                   <option value="미사용">미사용</option>
                 </select>
-                <small>시설 이용 여부와 추가금은 현장에서 확인 후 숙소 현장에서 직접 결제합니다.</small>
+                <small>가능 여부와 현장 요금은 예약 후 숙소에 확인해주세요.</small>
               </label>
             </div>
             <label>숙소에 전달할 요청사항<textarea id="bookingMemo" rows="8" maxlength="2000" placeholder="예: 이용할 시설과 시간, 바비큐 인원, 숯·그릴 수량, 픽업 요청, 방 배정 방식, 늦은 체크인, 침구 추가 등 사장님이 확인해야 할 내용을 자세히 적어주세요."></textarea></label>
@@ -349,10 +338,10 @@
               <div class="benefit-quick-actions"><button type="button" data-use-all-points="stay">전액 사용</button><button type="button" data-reset-benefits="stay">사용 취소</button></div>
               <div class="checkout-benefit-result" id="stayBenefitPreview" aria-live="polite">포인트 또는 할인코드를 입력한 뒤 적용해주세요.</div>
             </div>
-            <p class="checkout-service-period"><strong>서비스 제공 기간</strong> 선택한 체크인일부터 체크아웃일까지입니다. 숙박일은 3개월 전 1일 00:00(한국시간)에 열립니다.</p>
+            <p class="checkout-service-period"><strong>서비스 제공 기간</strong> 결제일로부터 최대 90일 이내의 선택한 숙박 일정에 제공됩니다.</p>
             <div class="checkout-legal-notice">
               <p>모티프는 통신판매중개자로서 본 숙박상품의 거래당사자가 아닙니다. 실제 숙박 제공과 시설 운영의 책임은 표시된 숙박시설 운영사업자에게 있습니다.</p>
-              <p>추가 인원, 바비큐 등 추가금은 현장에서 확인 후 숙소 현장에서 직접 결제합니다. 모티프에서는 객실 기본금만 결제하며, 추가금은 사이트 결제금액에 포함되지 않습니다.</p>
+              <p>추가 인원, 바비큐 등 현장에서 확정되는 추가금은 표시된 기준에 따라 숙박시설에 직접 결제하며, 현재 플랫폼 결제금액에 포함되지 않습니다.</p>
             </div>
             <label class="checkbox-row checkout-consent-checkbox"><input required type="checkbox" id="bookingTerms" /><span><strong>[필수]</strong> 숙박시설 사업자정보, 예약 내용, 이용약관, 개인정보 수집·이용 및 제3자 제공, 취소·환불·노쇼 기준을 확인하고 동의합니다.</span></label>
             <div class="checkout-legal-actions">
@@ -455,7 +444,7 @@
             <h2>결제 안내</h2>
             <ol class="plain-steps">
               <li>실제 상품 가격과 재고 확인</li>
-              <li>나이스페이(NICEPAY) 결제</li>
+              <li>토스페이먼츠에서 안전하게 결제</li>
               <li>서버에서 주문번호와 금액 재검증</li>
               <li>승인 후 예약·주문 요청 접수</li>
             </ol>
@@ -484,13 +473,12 @@
         <div class="community-grid">
           <section class="tool-panel recommend-tool-panel" id="communityOrderRecommend">
             <h2>인원별 추천 주문량</h2>
-            <label>참여 인원<input type="number" id="recommendPeople" min="1" max="120" value="32" /></label>
-            <label>주류를 준비할 성인 인원 <input type="number" id="recommendDrinkers" min="0" max="32" placeholder="미입력 시 참여 인원 기준" /><small>주류가 필요 없으면 0명을 입력하세요.</small></label>
+            <label>참여 인원<input type="number" id="recommendPeople" min="10" max="120" value="32" /></label>
             <label>식사 스타일
               <select id="mealStyle">
                 <option value="standard">보통</option>
                 <option value="heavy">많이 먹는 편</option>
-                <option value="light">적게 먹는 편</option>
+                <option value="light">간단히</option>
               </select>
             </label>
             <div id="recommendResult" class="result-box"></div>
@@ -685,7 +673,7 @@
           <div>
             <h1>우리 MT 이용 내역 관리</h1>
           </div>
-          <div class="button-row"><button class="secondary-btn" data-route="review"><i data-lucide="star"></i>리뷰 남기기</button><button class="primary-btn" type="button" data-selected-budget-file disabled><i data-lucide="file-spreadsheet"></i>선택 내역 결산 받기</button></div>
+          <div class="button-row"><button class="secondary-btn" data-route="review"><i data-lucide="star"></i>리뷰 남기기</button><button class="primary-btn" type="button" data-selected-budget-file disabled><i data-lucide="file-spreadsheet"></i>선택 내역 예결산</button></div>
         </div>
         <form class="usage-period-filter" id="usagePeriodFilter">
           <label>조회 시작일<input type="date" id="usageFrom" /></label>
@@ -801,46 +789,13 @@
               <div><dt>사업장 주소</dt><dd>서울특별시 중구 소공로 46 A-1102</dd></div>
               <div><dt>유선번호</dt><dd>010-3357-2537, 010-7553-7892</dd></div>
               <div><dt>이메일</dt><dd>5millionbrothers@gmail.com</dd></div>
+              <div><dt>통신판매업 신고번호</dt><dd>신고 준비 중</dd></div>
             </dl>
           </div>
         </div>
       </section>
 
-      <section id="partnerInquiry" class="view legal-view contact-form-view">
-        <div class="legal-layout contact-form-layout">
-          <div class="view-title compact"><div><h1>신규 입점 문의</h1></div></div>
-          <form id="partnerInquiryForm" class="legal-card contact-form" data-site-contact-form="partner">
-            <label><span class="contact-field-label">업장 종류 <span>*</span></span><select name="businessType" required><option value="">선택해주세요</option><option>숙소</option><option>식당·식자재</option><option>레크리에이션·체험</option><option>교통</option><option>기타</option></select></label>
-            <label><span class="contact-field-label">업장 이름 <span>*</span></span><input name="businessName" type="text" maxlength="100" placeholder="업장 이름을 입력해주세요" required /></label>
-            <div class="contact-form-row">
-              <label><span class="contact-field-label">담당자 이름 <span>*</span></span><input name="contactName" type="text" maxlength="80" autocomplete="name" placeholder="담당자 이름을 입력해주세요" required /></label>
-              <label><span class="contact-field-label">이메일 또는 전화번호 <span>*</span></span><input name="contact" type="text" maxlength="150" placeholder="이메일 또는 전화번호를 입력해주세요" required /></label>
-            </div>
-            <label>업장 소개 또는 제공 가능한 서비스<textarea name="message" rows="5" minlength="5" maxlength="5000" required placeholder="문의 내용을 5자 이상 입력해주세요"></textarea></label>
-            <p>운영팀이 입점 검토와 회신을 위해 업장·담당자 정보, 연락처와 문의 내용을 처리합니다. 처리 완료 후 6개월 보관하며, 거래 관련 민원·분쟁 기록은 법령에 따라 3년 보관합니다. 동의를 거부할 수 있으나 문의 접수는 제한됩니다. <a href="/privacy" target="_blank" rel="noopener">개인정보 처리방침</a></p>
-            <label class="contact-consent"><input name="consent" type="checkbox" required /><span>위 개인정보 수집·이용에 동의합니다. (필수)</span></label>
-            <input name="website" type="text" tabindex="-1" autocomplete="off" hidden aria-hidden="true" />
-            <p role="status" aria-live="polite"></p>
-          </form>
-          <div class="contact-form-actions"><button class="secondary-btn" type="button" data-history-back data-fallback-route="home">이전</button><button class="primary-btn" type="submit" form="partnerInquiryForm"><i data-lucide="send"></i>문의 접수하기</button></div>
-        </div>
-      </section>
-<section id="feedback" class="view legal-view contact-form-view">
-        <div class="legal-layout contact-form-layout">
-          <div class="view-title compact"><div><h1>유저 건의사항</h1></div></div>
-          <form id="feedbackForm" class="legal-card contact-form" data-site-contact-form="feedback">
-            <label>건의 유형<select name="topic"><option>불편한 점</option><option>추가되었으면 하는 기능</option><option>오류 신고</option><option>기타 의견</option></select></label>
-            <label>건의 내용 <span>*</span><textarea name="message" rows="8" minlength="5" maxlength="5000" placeholder="의견을 5자 이상 남겨주세요" required></textarea></label>
-            <label>이메일 또는 연락처 (선택)<input name="contact" type="text" maxlength="150" placeholder="답변을 원하시면 남겨주세요" /></label>
-            <p>운영팀이 건의 검토와 회신을 위해 건의 내용과 남겨주신 연락처를 처리합니다. 처리 완료 후 6개월 보관하며, 거래 관련 민원·분쟁 기록은 법령에 따라 3년 보관합니다. 동의를 거부할 수 있으나 접수는 제한됩니다. 연락처 없이도 접수할 수 있습니다. <a href="/privacy" target="_blank" rel="noopener">개인정보 처리방침</a></p>
-            <label class="contact-consent"><input name="consent" type="checkbox" required /><span>위 개인정보 수집·이용에 동의합니다. (필수)</span></label>
-            <input name="website" type="text" tabindex="-1" autocomplete="off" hidden aria-hidden="true" />
-            <p role="status" aria-live="polite"></p>
-          </form>
-          <div class="contact-form-actions"><button class="secondary-btn" type="button" data-history-back data-fallback-route="home">이전</button><button class="primary-btn" type="submit" form="feedbackForm"><i data-lucide="send"></i>보내기</button></div>
-        </div>
-      </section>
-<section id="terms" class="view legal-view">
+      <section id="terms" class="view legal-view">
         <button class="ghost-btn back-btn" data-history-back data-fallback-route="myGuide"><i data-lucide="chevron-left"></i>뒤로가기</button>
         <div class="legal-layout">
           <div class="view-title compact">
@@ -860,10 +815,10 @@
 <p class="legal-numbered-item">5. “숙박상품”이란 제휴 숙박시설이 제공하는 객실, 시설, 식사, 부대서비스 및 이에 결합된 상품을 말합니다.</p>
 <p class="legal-numbered-item">6. “식자재상품”이란 제휴 식자재 판매자가 판매하는 농·축·수산물, 가공식품, 음료, 소모품 및 이에 부수하는 배송·수령 서비스를 말합니다.</p>
 <p class="legal-numbered-item">7. “예약 등”이란 숙박 예약, 식자재 주문, 견적 요청, 예약 또는 주문의 변경·취소 등 서비스를 통한 거래 관련 신청을 말합니다.</p>
-<p class="legal-numbered-item">8. “현장 추가금”이란 추가 인원, 바비큐, 추가 시설 등의 이용 여부와 금액을 현장에서 확인한 뒤, 이용자가 숙소 현장에서 숙박시설에 직접 결제하는 금액을 말합니다. 사이트 결제금액에는 포함되지 않습니다.</p>
+<p class="legal-numbered-item">8. “현장 추가금”이란 추가 인원, 바비큐, 추가 시설 등 현장에서 확인되는 선택사항에 대하여 이용자가 숙박시설에 직접 지급하는 금액을 말합니다.</p>
 <p class="legal-numbered-item">9. “거래조건”이란 상품정보, 가격, 이용일 또는 수령일, 인원·수량, 판매자 정보, 예약·주문 확정 방식, 취소·환불 조건, 배송·수령 방법 및 그 밖의 개별 거래에 적용되는 조건을 말합니다.</p>
 <h2>제3조 약관의 게시와 변경</h2>
-<p class="legal-numbered-item">1. 회사는 이 약관과 상호, 대표자, 사업장 주소, 연락처, 사업자등록번호 등 관계 법령에 따른 정보를 이용자가 쉽게 확인할 수 있도록 서비스 화면에 게시합니다.</p>
+<p class="legal-numbered-item">1. 회사는 이 약관과 상호, 대표자, 사업장 주소, 연락처, 사업자등록번호, 통신판매업 신고번호 등 관계 법령에 따른 정보를 이용자가 쉽게 확인할 수 있도록 서비스 화면에 게시합니다.</p>
 <p class="legal-numbered-item">2. 회사가 약관을 변경하는 경우 적용일과 변경사유를 명시하여 원칙적으로 적용일 7일 전부터 공지합니다. 이용자에게 불리한 중요한 변경은 원칙적으로 30일 전부터 공지하고, 가능한 경우 전자우편, 문자메시지 또는 서비스 내 알림으로 개별 통지합니다.</p>
 <p class="legal-numbered-item">3. 변경된 약관은 적용일 이후 체결되는 거래에 적용됩니다. 이미 성립한 거래에는 이용자가 별도로 동의하지 않는 한 거래 성립 당시의 약관과 거래조건이 적용됩니다.</p>
 <p class="legal-numbered-item">4. 회사는 각 거래에 적용된 약관과 거래조건을 이용자가 확인할 수 있도록 보관할 수 있습니다.</p>
@@ -878,14 +833,14 @@
 <h2>제5조 회사의 지위와 거래당사자</h2>
 <p class="legal-numbered-item">1. 회사는 이용자와 제휴사업자 사이의 거래를 중개합니다. 개별 숙박상품 또는 식자재상품의 판매·제공 주체는 거래 화면에 표시된 제휴사업자입니다.</p>
 <p class="legal-numbered-item">2. 회사는 자신이 개별 거래의 당사자가 아니라는 사실과 제휴사업자의 상호 또는 성명, 대표자, 주소, 연락처, 사업자등록번호 등 관계 법령상 필요한 신원정보를 이용자가 거래를 신청하기 전에 확인할 수 있도록 표시합니다.</p>
-<p class="legal-numbered-item">3. 회사가 이용자의 결제를 접수하거나 나이스페이(NICEPAY)를 통하여 결제·환불을 지원한다는 사정만으로 회사가 개별 상품의 판매자가 되는 것은 아닙니다. 회사가 직접 판매자로 표시된 거래는 예외로 합니다.</p>
+<p class="legal-numbered-item">3. 회사가 이용자의 결제를 접수하거나 토스페이먼츠 주식회사를 통하여 결제·환불·분리정산을 지원한다는 사정만으로 회사가 개별 상품의 판매자가 되는 것은 아닙니다. 회사가 직접 판매자로 표시된 거래는 예외로 합니다.</p>
 <p class="legal-numbered-item">4. 회사는 중개자라는 이유로 관계 법령상 회사에 부과되는 고지, 확인, 기록보존, 분쟁처리 협조 및 회사의 고의 또는 과실로 인한 책임까지 면제되지 않습니다.</p>
 <h2>제6조 이용자격과 미성년자</h2>
 <p class="legal-numbered-item">1. 만 14세 미만인 사람은 회원가입, 숙박 예약 또는 식자재 주문을 직접 진행할 수 없습니다.</p>
 <p class="legal-numbered-item">2. 만 14세 이상인 미성년자의 숙박시설 이용은 해당 숙박시설의 운영정책과 관계 법령에 따라 법정대리인 동의 또는 성인 인솔을 요구할 수 있습니다.</p>
 <p class="legal-numbered-item">3. 학교, 기업, 기관, 동아리 등 단체의 예약·주문은 이를 진행할 적법한 권한이 있는 대표자가 진행해야 합니다.</p>
 <h2>제7조 회원가입과 계정관리</h2>
-<p class="legal-numbered-item">1. 이용자는 일반 아이디와 비밀번호 또는 카카오 로그인으로 회원가입할 수 있습니다. 일반 가입은 휴대전화 본인확인을 거치며, 연락 이메일은 선택사항입니다. 기존 이메일 로그인 계정은 기존 방식으로 이용할 수 있습니다. 카카오 가입에는 별도 비밀번호를 요구하지 않으며, 주류 주문의 성인확인은 가입과 별도로 진행합니다.</p>
+<p class="legal-numbered-item">1. 이용자는 이메일과 비밀번호 또는 회사가 지원하는 카카오 로그인 등의 방법으로 회원가입할 수 있습니다.</p>
 <p class="legal-numbered-item">2. 이용자는 정확하고 최신의 정보를 제공해야 하며 타인의 정보를 사용해서는 안 됩니다.</p>
 <p class="legal-numbered-item">3. 이용자는 계정과 인증수단을 안전하게 관리해야 하며, 도용 또는 무단사용을 알게 된 경우 즉시 회사에 알려야 합니다.</p>
 <p class="legal-numbered-item">4. 회사는 허위정보 등록, 타인 명의 사용, 법령 위반, 서비스 방해 또는 반복적인 부정거래가 확인된 경우 사전 통지 후 서비스 이용을 제한할 수 있습니다. 긴급한 피해 방지가 필요한 경우 먼저 제한하고 사후 통지할 수 있습니다.</p>
@@ -898,7 +853,7 @@
 <h2>제9조 숙박 예약</h2>
 <p class="legal-numbered-item">1. 숙박상품의 기본 인원, 최대 인원, 이용일, 체크인·체크아웃 시간, 객실·시설 구성, 포함 서비스와 제외 서비스는 상품 또는 견적 화면에 표시합니다.</p>
 <p class="legal-numbered-item">2. 숙박 기본 예약금액은 원칙적으로 서비스를 통하여 결제합니다.</p>
-<p class="legal-numbered-item">3. 추가 인원, 바비큐, 추가 시설 요금은 현장에서 이용 여부와 금액을 확인한 뒤 숙소 현장에서 직접 결제합니다. 모티프에서는 객실 기본금만 결제하며, 이러한 추가금을 사이트에서 별도로 결제하도록 요청하지 않습니다.</p>
+<p class="legal-numbered-item">3. 추가 인원, 바비큐, 추가 시설 등 현장에서 수량 또는 이용 여부가 확정되는 항목은 사전에 달리 표시하지 않는 한 숙박시설에 직접 지급합니다.</p>
 <p class="legal-numbered-item">4. 숙박시설은 예약 확정 전 객실 가능 여부와 거래조건을 확인해야 하며, 자신의 귀책으로 확정된 예약을 제공할 수 없는 경우 관계 법령과 표시된 조건에 따라 환급, 대체 숙소 또는 손해배상 등 필요한 조치를 부담합니다.</p>
 <p class="legal-numbered-item">5. 이용자는 최대 인원, 소음, 흡연, 반려동물, 시설 안전 등 결제 전에 표시된 숙박시설 이용규칙을 준수해야 합니다.</p>
 <h2>제10조 식자재 주문</h2>
@@ -912,23 +867,23 @@
 <p class="legal-numbered-item">8. 회사는 주류 통신판매 수단만 제공하며 자기 책임으로 주류를 매입하거나 판매하지 않습니다. 실제 주류 판매의 당사자는 거래 화면에 표시된 제휴사업자입니다.</p>
 <p class="legal-numbered-item">9. 담배, 의약품 및 그 밖에 온라인 판매·연령확인·허가가 필요한 품목은 회사가 별도의 적법성 확인과 필요한 절차를 완료하여 판매 가능하다고 표시한 경우에만 거래할 수 있습니다.</p>
 <h2>제11조 배송과 수령</h2>
-<p class="legal-numbered-item">1. 현재 장보기 주문은 대성 공판장에서 직접 픽업하는 방식으로 운영합니다. 수령 장소는 주문 화면에 고정 표시되며 별도의 배송지를 요구하지 않습니다.</p>
-<p class="legal-numbered-item">2. 이용자는 정확한 주문자 정보, 연락처 및 수령 가능시간을 제공해야 합니다.</p>
+<p class="legal-numbered-item">1. 식자재상품은 판매자의 영업장에서 현장수령하는 것을 기본으로 합니다. 일반 식자재는 판매자가 배송을 제공할 수 있는 경우에 한하여 상품 화면에 배송 가능 여부, 지역, 비용 및 방법을 표시하고 배송을 선택할 수 있습니다.</p>
+<p class="legal-numbered-item">2. 이용자는 정확한 수령인, 연락처, 주소, 수령 가능시간 및 현장 출입정보를 제공해야 합니다.</p>
 <p class="legal-numbered-item">3. 이용자의 잘못된 정보 제공, 연락두절 또는 정당한 사유 없는 수령 거부로 추가 비용이 발생한 경우 사전에 고지된 범위에서 이용자가 부담할 수 있습니다.</p>
 <p class="legal-numbered-item">4. 판매자 또는 배송주체의 귀책으로 상품이 약정된 시점에 공급되지 않은 경우 이용자는 관계 법령과 주문 시 표시된 조건에 따라 주문을 취소하거나 재배송을 요구할 수 있습니다.</p>
-<p class="legal-numbered-item">5. 배송 서비스를 새로 도입하는 경우 이용 가능한 상품, 지역, 비용과 개인정보 처리 내용을 먼저 안내하며, 현재 픽업 주문에 배송 가능 여부를 보장하지 않습니다.</p>
+<p class="legal-numbered-item">5. 비대면 배송의 완료 기준과 보관 장소는 주문 전에 표시하거나 이용자와 합의합니다.</p>
 <p class="legal-numbered-item">6. 주류는 배송할 수 없으며 주문자 본인이 주류판매자의 영업장에서 직접 수령해야 합니다.</p>
 <h2>제12조 가격과 결제</h2>
 <p class="legal-numbered-item">1. 회사는 총 결제금액, 상품금액, 세금·수수료 포함 여부, 배송비, 할인금액, 현장 추가금 및 결제수단을 결제 전에 표시합니다.</p>
-<p class="legal-numbered-item">2. 현재 서비스의 전자결제는 나이스페이(NICEPAY)의 전자지급결제대행 서비스를 통하여 처리됩니다. 이용 가능한 결제수단은 결제 화면에 표시합니다. 이전 결제대행사로 처리한 거래의 취소·환불에는 원거래 결제대행사의 절차가 적용될 수 있습니다.</p>
+<p class="legal-numbered-item">2. 서비스의 전자결제는 토스페이먼츠 주식회사의 전자지급결제대행 서비스를 통하여 처리될 수 있습니다.</p>
 <p class="legal-numbered-item">3. 결제수단의 한도, 인증, 취소 또는 환급 처리기간은 해당 결제수단과 금융기관의 정책에 따라 달라질 수 있습니다.</p>
 <p class="legal-numbered-item">4. 이용자는 정당한 권한이 있는 결제수단만 사용해야 하며, 부정사용이 확인된 경우 회사는 거래를 취소하고 이용을 제한할 수 있습니다.</p>
 <h2>제13조 숙박 예약의 변경·취소·환불</h2>
 <p class="legal-numbered-item">1. 숙박 예약의 변경·취소·환불은 결제 전에 표시된 해당 숙박시설의 개별 취소정책, 관계 법령 및 소비자분쟁해결기준에 따릅니다.</p>
 <p class="legal-numbered-item">2. 단체예약, 객실 블록, 식사·행사장 결합상품 또는 맞춤 견적상품은 준비 비용과 예약 특성에 따라 별도 기준이 적용될 수 있으며, 회사는 이를 결제 전에 명확히 표시합니다.</p>
-<p class="legal-numbered-item">3. 예약일·객실 변경은 숙박시설의 재확인과 기본 숙박비 차액의 결제 또는 부분환급이 필요할 수 있으며, 변경이 완료되기 전까지 종전 예약조건이 유지됩니다. 추가 인원·부대시설 요금은 별도로 현장에서 확인 후 숙소 현장에서 직접 결제합니다.</p>
+<p class="legal-numbered-item">3. 예약일·인원·객실 변경은 숙박시설의 재확인과 추가결제 또는 부분환급이 필요할 수 있으며, 변경이 완료되기 전까지 종전 예약조건이 유지됩니다.</p>
 <p class="legal-numbered-item">4. 숙박시설 또는 회사의 귀책으로 거래를 이행할 수 없는 경우 이용자에게 지체 없이 알리고 관계 법령과 개별 거래조건에 따른 환급 또는 대체조치를 제공합니다.</p>
-<p class="legal-numbered-item">5. 나이스페이(NICEPAY), 카드사 또는 금융기관의 처리기간에 따라 실제 환급 완료시점이 달라질 수 있습니다. 이전 결제 건에는 원거래 결제대행사의 절차가 적용될 수 있습니다.</p>
+<p class="legal-numbered-item">5. 토스페이먼츠, 카드사 또는 금융기관의 처리기간에 따라 실제 환급 완료시점이 달라질 수 있습니다.</p>
 <h2>제14조 식자재 주문의 취소·교환·환불</h2>
 <p class="legal-numbered-item">1. 이용자는 주문한 식자재상품의 종류에 따라 다음 각 호의 기간 내에 주문을 취소할 수 있으며, 해당 기간 내에 취소하는 경우 결제금액 전액을 환급받을 수 있습니다.</p>
 <p class="legal-numbered-item">1. 신선식품: 제휴사업자의 주문 승인 여부와 관계없이 상품 수령예정일의 3일 전까지 주문을 취소할 수 있습니다. 해당 기간이 지난 이후에는 원칙적으로 주문의 취소 및 환급이 불가합니다.</p>
@@ -992,7 +947,7 @@
 <p class="legal-numbered-item">2. 이용자는 한국소비자원, 소비자분쟁조정위원회 또는 그 밖의 관계기관에 상담·조정을 신청할 수 있습니다.</p>
 <p class="legal-numbered-item">3. 소송이 제기되는 경우 관할법원은 민사소송법 등 관계 법령에 따릅니다.</p>
 <h2>제24조 사업자정보와 고객센터</h2>
-<ul class="legal-list"><li>상호: 모티프</li><li>대표자: 손태건, 한승원</li><li>사업자등록번호: 109-17-94706</li><li>사업장 주소: 서울특별시 중구 소공로 46 A-1102</li><li>대표전화: 010-3357-2537 / 010-7553-7892</li><li>이메일: 5millionbrothers@gmail.com</li></ul>
+<ul class="legal-list"><li>상호: 모티프</li><li>대표자: 손태건, 한승원</li><li>사업자등록번호: 109-17-94706</li><li>통신판매업 신고번호: 신고 준비 중</li><li>사업장 주소: 서울특별시 중구 소공로 46 A-1102</li><li>대표전화: 010-3357-2537 / 010-7553-7892</li><li>이메일: 5millionbrothers@gmail.com</li></ul>
 <h2>부칙</h2>
 <p>이 약관은 2026년 9월 1일부터 시행합니다.</p>
           </article>
@@ -1013,18 +968,18 @@
 <div class="legal-table-wrap"><table class="legal-table">
 <thead><tr><th>구분</th><th>처리 목적</th><th>처리 항목</th><th>법적 근거</th><th>보유기간</th></tr></thead>
 <tbody>
-<tr><td>회원가입·계정관리</td><td>회원 식별, 로그인, 본인확인, 공지 및 계정관리</td><td>일반 아이디, 비밀번호(인증 서비스에서 해시 처리), 이름, 휴대전화번호, 본인확인 시 생년월일·CI의 해시값·인증일시. 연락 이메일과 소속 단체명은 선택 입력</td><td>계약 체결·이행을 위하여 필요한 처리</td><td>회원탈퇴 시까지. 법정 보존 또는 진행 중인 거래·분쟁이 있는 경우 해당 기간까지</td></tr>
+<tr><td>회원가입·계정관리</td><td>회원 식별, 로그인, 본인확인, 공지 및 계정관리</td><td>이름, 이메일주소, 비밀번호, 휴대전화번호, 소속 단체명</td><td>계약 체결·이행을 위하여 필요한 처리</td><td>회원탈퇴 시까지. 법정 보존 또는 진행 중인 거래·분쟁이 있는 경우 해당 기간까지</td></tr>
 <tr><td>카카오 로그인</td><td>간편로그인, 계정 식별</td><td>카카오계정 고유 식별값, 닉네임, 이용자가 제공에 동의한 이메일주소</td><td>계약 체결·이행을 위하여 필요한 처리</td><td>회원탈퇴 시까지</td></tr>
 <tr><td>숙박 예약</td><td>견적, 예약 신청·확정·변경·취소, 숙박 제공, 상담</td><td>예약자 이름, 휴대전화번호, 이메일주소, 소속 단체명, 숙박일정, 이용인원, 예약내용, 요청사항</td><td>계약 체결·이행을 위하여 필요한 처리</td><td>거래 종료 시까지. 법정 보존기간이 있는 경우 해당 기간</td></tr>
-<tr><td>식자재 주문·성인확인</td><td>주문 신청·확정, 상품 준비·픽업, 교환·환불, 주류 구매자 확인</td><td>주문자 이름, 휴대전화번호, 입력한 이메일·단체명, 주문상품·수량·수령일시, 요청사항. 성인확인 시 생년월일, CI 해시값, 인증수단·인증일시·유효기간</td><td>계약 체결·이행 및 법적 의무 이행을 위하여 필요한 처리</td><td>거래 종료 시까지. 법정 보존기간이 있는 경우 해당 기간. 성인확인의 유효기간은 1년이며 만료 후 재확인</td></tr>
+<tr><td>식자재 주문</td><td>주문 신청·확정, 상품 준비·배송·수령, 교환·환불, 상담</td><td>주문자·수령인 이름, 휴대전화번호, 이메일주소, 소속 단체명, 배송지 또는 수령장소, 주문상품·수량·수령일시, 요청사항, 주류 주문 시 성인 확인 여부</td><td>계약 체결·이행을 위하여 필요한 처리</td><td>거래 종료 시까지. 법정 보존기간이 있는 경우 해당 기간</td></tr>
 <tr><td>결제·환불</td><td>결제 승인, 입금 확인, 취소·환불, 정산 및 증빙</td><td>주문·예약번호, 결제금액, 결제수단, 승인·입금·환불정보. 카드번호 등 결제수단의 상세정보는 PG사가 직접 처리할 수 있음</td><td>계약 체결·이행 및 법적 의무 이행</td><td>관계 법령상 보존기간까지</td></tr>
 <tr><td>상담·분쟁</td><td>문의 접수, 사실확인, 분쟁·민원 처리</td><td>이용자 식별정보, 예약·주문·결제정보, 문의 내용, 메시지 기록, 이용자가 제출한 자료</td><td>계약 이행, 법적 의무 이행 또는 정당한 이익</td><td>분쟁 종료 후 관계 법령상 보존기간까지</td></tr>
 <tr><td>보안·부정이용 방지</td><td>로그인 보안, 장애 대응, 비정상 이용 탐지</td><td>IP주소, 접속일시, 브라우저·기기정보, 쿠키, 서비스 이용기록, 부정이용기록</td><td>서비스 안전성에 관한 정당한 이익</td><td>목적 달성 시까지 또는 관계 법령상 보존기간</td></tr>
-<tr><td>신규 입점 문의·건의사항</td><td>문의 접수, 입점 검토, 회신 및 처리 이력 관리</td><td>입점 문의: 업장 종류·이름, 담당자 이름·연락처, 문의 내용. 건의사항: 유형·내용, 선택 입력한 연락처. 접수 시각, 동의 시각, 중복·스팸 방지를 위한 IP의 비가역 해시값</td><td>문의 양식에서 받는 수집·이용 동의</td><td>처리 완료 후 6개월. 거래 관련 소비자 불만·분쟁 기록은 법령에 따라 3년</td></tr>
+<tr><td>마케팅</td><td>혜택·이벤트·신규 서비스의 광고성 카카오톡 메시지·문자 안내</td><td>이름, 휴대전화번호, 수신 채널, 동의·철회 일시</td><td>선택 동의</td><td>동의 철회 또는 회원탈퇴 시까지</td></tr>
 </tbody></table></div>
 <p>회사는 주민등록번호, 건강정보, 알레르기 정보 등 고유식별정보 또는 민감정보를 일반 예약·주문 요청사항으로 수집하지 않습니다. 이용자는 자유입력란에 이러한 정보나 다른 사람의 불필요한 개인정보를 입력해서는 안 됩니다. 별도 처리가 필요한 경우 회사는 관계 법령에 따른 절차를 마련한 뒤 별도로 안내합니다.</p>
-<p>휴대전화 본인확인과 주류 주문의 성인확인에는 NHN KCP의 본인확인 서비스를 이용합니다. 회사는 확인된 이름·전화번호·생년월일, CI 해시값 및 인증 이력을 기록하며, 주민등록번호 원문이나 신분증 사본은 저장하지 않습니다. 실제 인도 시 주문자 본인·성년 여부 확인은 주류 판매자가 수행합니다.</p>
-<p>현재 서비스에는 별도의 광고성 정보 수신 동의를 수집하는 기능이 없습니다. 광고성 메시지를 발송하려는 경우 거래 안내와 구분해 선택 동의를 받고 수신거부·동의철회 방법을 제공합니다. 회원가입·예약·결제 등 정보성 안내는 광고성 수신 동의와 구분합니다.</p>
+<p>회사는 주류 주문 과정에서 이용자의 성인 확인 여부만 기록하며 신분증 사본이나 주민등록번호를 수집·저장하지 않습니다. 실제 인도 시 신분증을 통한 주문자 본인·성년 여부 확인은 주류 판매자가 수행합니다.</p>
+<p>광고성 정보 수신 동의는 선택사항이며, 정보주체는 언제든지 동의를 철회할 수 있습니다. 회사는 철회 이후 광고성 정보를 발송하지 않고, 관계 법령에 따라 정기적으로 수신동의 여부를 확인합니다.</p>
 <h2>제2조 만 14세 미만 아동의 개인정보</h2>
 <p>회사는 만 14세 미만 아동의 회원가입, 숙박 예약 또는 식자재 주문을 허용하지 않습니다. 만 14세 미만 아동이 포함된 단체의 거래는 성인 대표자가 진행해야 하며, 회사는 아동 구성원의 불필요한 개인정보를 요구하지 않습니다.</p>
 <h2>제3조 법령에 따른 거래기록 보존</h2>
@@ -1045,7 +1000,8 @@
 <thead><tr><th>제공받는 자</th><th>제공 목적</th><th>제공 항목</th><th>보유·이용기간</th></tr></thead>
 <tbody>
 <tr><td>이용자가 선택한 숙박시설 운영사업자(거래 화면에 실제 상호 표시)</td><td>예약 확인, 숙박 제공, 변경·취소, 현장 요청 및 분쟁처리</td><td>예약자 이름, 휴대전화번호, 이메일주소, 소속 단체명, 숙박일정, 이용인원, 예약번호, 요청사항</td><td>거래 및 분쟁처리 종료 시까지. 법령상 보존의무가 있는 경우 해당 기간</td></tr>
-<tr><td>대성 공판장(거래 화면에 실제 판매자 정보 표시)</td><td>주문 확인, 상품 준비·픽업, 교환·환불 및 분쟁처리</td><td>주문자 이름·휴대전화번호, 입력한 이메일·단체명, 주문내역, 수령일시, 요청사항</td><td>거래 및 분쟁처리 종료 시까지. 법령상 보존의무가 있는 경우 해당 기간</td></tr>
+<tr><td>이용자가 선택한 식자재 판매사업자(거래 화면에 실제 상호 표시)</td><td>주문 확인, 상품 준비, 배송·수령, 교환·환불 및 분쟁처리</td><td>주문자·수령인 이름, 휴대전화번호, 이메일주소, 소속 단체명, 배송지 또는 수령장소, 주문내역, 수령일시, 요청사항</td><td>거래 및 분쟁처리 종료 시까지. 법령상 보존의무가 있는 경우 해당 기간</td></tr>
+<tr><td>거래 화면에 표시된 배송사업자(회사가 직접 정보를 제공하는 경우에 한함)</td><td>상품 배송, 배송조회 및 사고처리</td><td>수령인 이름, 휴대전화번호, 배송지, 배송 요청사항</td><td>배송 및 분쟁처리 종료 시까지. 법령상 보존의무가 있는 경우 해당 기간</td></tr>
 </tbody></table></div>
 <p>정보주체는 제3자 제공 동의를 거부할 수 있으나, 거래 이행에 필수적인 정보의 제공을 거부하면 해당 숙박 예약 또는 식자재 주문을 진행할 수 없습니다.</p>
 <h2>제5조 개인정보 처리업무의 위탁</h2>
@@ -1053,28 +1009,21 @@
 <div class="legal-table-wrap"><table class="legal-table">
 <thead><tr><th>수탁자</th><th>위탁업무</th><th>보유·이용기간</th></tr></thead>
 <tbody>
-<tr><td>나이스정보통신㈜(나이스페이·NICEPAY)</td><td>전자결제, 입금 확인, 결제취소, 환불 및 정산 지원</td><td>위탁계약 종료 또는 관계 법령상 보존기간까지</td></tr>
-<tr><td>NHN KCP㈜</td><td>휴대전화 본인확인 및 성인확인</td><td>인증 처리 및 관계 법령·위탁계약에 따른 기간</td></tr>
-<tr><td>주식회사 알리는사람들(알리고)</td><td>카카오 알림톡·문자메시지를 이용한 정보성 거래 안내</td><td>발송 목적 달성 또는 위탁계약 종료 시까지. 법령상 보존기간이 있는 경우 해당 기간</td></tr>
+<tr><td>토스페이먼츠 주식회사</td><td>전자결제, 입금 확인, 결제취소, 환불 및 정산 지원</td><td>위탁계약 종료 또는 관계 법령상 보존기간까지</td></tr>
+<tr><td>주식회사 알리는사람들(알리고)</td><td>카카오 알림톡을 이용한 정보성 거래 안내 및 별도 동의자에 대한 광고성 카카오톡 메시지·문자메시지 발송</td><td>발송 목적 달성 또는 위탁계약 종료 시까지. 법령상 보존기간이 있는 경우 해당 기간</td></tr>
 <tr><td>Supabase Pte. Ltd.</td><td>회원 인증, 데이터베이스, 파일·로그 저장 및 서비스 인프라 제공</td><td>회원탈퇴, 처리목적 달성 또는 위탁계약 종료 시까지. 법령상 보존기간이 있는 경우 해당 기간</td></tr>
-<tr><td>Vercel Inc.</td><td>이용자·사장님 웹사이트 호스팅, API 요청 처리 및 보안·장애 대응</td><td>요청 처리 목적 달성 또는 위탁계약 종료 시까지. 접속·오류 로그는 계약상 보존기간 적용</td></tr>
-<tr><td>Fly.io, Inc. (알림톡 중계 사용 시)</td><td>알리고 발송 요청의 서버 중계</td><td>발송 요청 처리 목적 달성 시까지. 접속·오류 로그는 계약상 보존기간 적용</td></tr>
-<tr><td>Plus Five Five, Inc. (Resend, 가입 안내 이메일 발송 설정 시)</td><td>가입 안내 이메일 발송</td><td>발송 처리 및 계약상 보존기간까지</td></tr>
 </tbody></table></div>
 <p>수탁자 또는 재수탁자가 변경되는 경우 회사는 이 방침을 통하여 공개합니다.</p>
 <h2>제6조 개인정보의 국외 이전</h2>
-<p>회사가 사용하는 Supabase 프로젝트의 주 데이터베이스 지역은 대한민국 서울(ap-northeast-2)입니다. 이용자·사장님 사이트의 API 실행 지역은 미국 버지니아(iad1)로, 서울에 저장한 데이터도 API를 통한 처리 과정에서 국외로 전송될 수 있습니다.</p>
-<div class="legal-table-wrap"><table class="legal-table"><thead><tr><th>이전받는 자·국가·연락처</th><th>항목·목적</th><th>시점·방법</th><th>보유·이용기간</th></tr></thead><tbody><tr><td>Vercel Inc. / 미국 / privacy@vercel.com</td><td>API에 전달되는 계정·본인확인 결과, 예약·주문·결제 식별정보, 문의 내용·연락처, 접속정보. 웹사이트 운영과 요청 처리·보안·장애 대응</td><td>해당 기능 요청 시 암호화 통신(HTTPS)으로 전송</td><td>요청 처리 목적 달성 또는 계약 종료 시까지. 접속·오류 로그는 계약상 보존기간 적용</td></tr>
-<tr><td>Fly.io, Inc. / 일본 도쿄(nrt) / compliance@fly.io</td><td>알림톡 수신자 이름·전화번호, 메시지 내용·연결 주소. 알리고 발송 요청의 서버 중계</td><td>알림톡 발송 요청 시 HTTPS 전송</td><td>발송 요청 처리 목적 달성 시까지. 접속·오류 로그는 계약상 보존기간 적용</td></tr>
-<tr><td>Plus Five Five, Inc. (Resend) / 미국 / support@resend.com (가입 안내 이메일 발송 설정 시에 한함)</td><td>가입 안내 수신 이메일주소와 안내 내용. 정보성 이메일 발송</td><td>가입 안내 발송 시 HTTPS 전송</td><td>발송 처리 및 계약상 보존기간까지</td></tr></tbody></table></div>
-<p>서비스 계약 이행을 위한 개인정보 처리위탁·보관에 해당하는 국외 이전은 「개인정보 보호법」 제28조의8에 따른 요건과 고지 절차를 적용합니다. 열람·이전 거부·처리정지 요청은 5millionbrothers@gmail.com으로 접수할 수 있으며, 필수 요청 처리를 거부하는 경우 해당 기능 이용이 제한될 수 있습니다.</p>
+<p>Supabase Pte. Ltd.를 통한 회원 인증, 데이터베이스, 파일 저장 및 서비스 인프라 제공 과정에서 개인정보가 국외에서 처리될 수 있습니다. 이전받는 자, 이전 국가, 이전 항목, 이전 목적, 이전 시점과 방법, 보유·이용기간 등 상세 내용은 관계 법령에 따라 본 처리방침에 공개합니다.</p>
+<p>회사는 국외 이전이 발생하는 경우 이전받는 자, 이전 국가, 이전 항목, 이전 목적, 이전 일시와 방법, 보유·이용기간, 법적 근거 및 이전을 거부하는 방법과 그 효과를 관계 법령에 따라 공개합니다.</p>
 <h2>제7조 개인정보의 파기</h2>
 <p class="legal-numbered-item">1. 회사는 보유기간의 경과 또는 처리 목적 달성 등 파기사유가 발생한 개인정보를 지체 없이 파기합니다.</p>
 <p class="legal-numbered-item">2. 다른 법령에 따라 보존하는 정보는 별도의 데이터베이스 또는 접근이 제한된 보관장소에 분리하여 보관합니다.</p>
 <p class="legal-numbered-item">3. 전자파일은 복구 또는 재생이 어렵도록 안전한 방법으로 삭제하고, 종이문서는 분쇄하거나 소각합니다.</p>
 <h2>제8조 정보주체와 법정대리인의 권리</h2>
 <p class="legal-numbered-item">1. 정보주체는 회사에 개인정보 열람, 정정·삭제, 처리정지, 동의철회 및 회원탈퇴를 요구할 수 있습니다.</p>
-<p class="legal-numbered-item">2. 정보주체는 <a href="/mypage/account">마이페이지 계정 설정</a>에서 회원탈퇴를 신청하거나 <a href="mailto:5millionbrothers@gmail.com">개인정보 보호책임자에게 이메일</a>로 열람·정정·삭제·처리정지를 요청할 수 있습니다. 진행 중인 예약·환불·정산 또는 법정 보존의무가 있는 기록은 즉시 삭제가 제한될 수 있으며, 해당 사유와 보존 범위를 안내합니다. 대리인이 요청하는 경우 위임 등 권한을 확인합니다.</p>
+<p class="legal-numbered-item">2. 정보주체는 계정 설정 또는 개인정보 보호책임자 연락처를 통하여 권리를 행사할 수 있으며, 대리인을 통하여 행사하는 경우 회사가 정한 위임장 등 확인서류를 제출할 수 있습니다.</p>
 <p class="legal-numbered-item">3. 회사는 본인 또는 정당한 대리인 여부를 확인한 후 관계 법령이 정한 절차와 기간에 따라 처리합니다. 거절 또는 제한 사유가 있는 경우 그 사유를 안내합니다.</p>
 <p class="legal-numbered-item">4. 개인정보 열람청구는 개인정보 보호책임자에게 접수할 수 있습니다.</p>
 <h2>제9조 쿠키 등 자동수집 장치</h2>
@@ -1091,7 +1040,7 @@
 <ul class="legal-list"><li>개인정보침해 신고센터: 국번 없이 118, privacy.kisa.or.kr</li><li>개인정보분쟁조정위원회: 1833-6972, www.kopico.go.kr</li><li>경찰청 사이버범죄 신고시스템: 국번 없이 182, ecrm.police.go.kr</li></ul>
 <h2>제13조 개인정보처리방침의 변경</h2>
 <p>이 방침이 변경되는 경우 회사는 시행일 전에 서비스 공지사항을 통하여 알립니다. 정보주체의 권리에 중대한 변경이 있는 경우 충분한 사전 안내기간을 두고 알립니다.</p>
-<ul class="legal-list"><li>최초 시행일자: 2026년 9월 1일</li><li>운영 현황 정정: 2026년 11월 17일 (결제·인증·호스팅·문의 접수 안내)</li></ul>
+<ul class="legal-list"><li>공고일자: 2026년 9월 1일</li><li>시행일자: 2026년 9월 1일</li></ul>
           </article>
         </div>
       </section>
@@ -1109,9 +1058,9 @@
 <h2>제13조 숙박 예약의 변경·취소·환불</h2>
 <p class="legal-numbered-item">1. 숙박 예약의 변경·취소·환불은 결제 전에 표시된 해당 숙박시설의 개별 취소정책, 관계 법령 및 소비자분쟁해결기준에 따릅니다.</p>
 <p class="legal-numbered-item">2. 단체예약, 객실 블록, 식사·행사장 결합상품 또는 맞춤 견적상품은 준비 비용과 예약 특성에 따라 별도 기준이 적용될 수 있으며, 회사는 이를 결제 전에 명확히 표시합니다.</p>
-<p class="legal-numbered-item">3. 예약일·객실 변경은 숙박시설의 재확인과 기본 숙박비 차액의 결제 또는 부분환급이 필요할 수 있으며, 변경이 완료되기 전까지 종전 예약조건이 유지됩니다. 추가 인원·부대시설 요금은 별도로 현장에서 확인 후 숙소 현장에서 직접 결제합니다.</p>
+<p class="legal-numbered-item">3. 예약일·인원·객실 변경은 숙박시설의 재확인과 추가결제 또는 부분환급이 필요할 수 있으며, 변경이 완료되기 전까지 종전 예약조건이 유지됩니다.</p>
 <p class="legal-numbered-item">4. 숙박시설 또는 회사의 귀책으로 거래를 이행할 수 없는 경우 이용자에게 지체 없이 알리고 관계 법령과 개별 거래조건에 따른 환급 또는 대체조치를 제공합니다.</p>
-<p class="legal-numbered-item">5. 나이스페이(NICEPAY), 카드사 또는 금융기관의 처리기간에 따라 실제 환급 완료시점이 달라질 수 있습니다. 이전 결제 건에는 원거래 결제대행사의 절차가 적용될 수 있습니다.</p>
+<p class="legal-numbered-item">5. 토스페이먼츠, 카드사 또는 금융기관의 처리기간에 따라 실제 환급 완료시점이 달라질 수 있습니다.</p>
 <h2>제14조 식자재 주문의 취소·교환·환불</h2>
 <p class="legal-numbered-item">1. 이용자는 주문한 식자재상품의 종류에 따라 다음 각 호의 기간 내에 주문을 취소할 수 있으며, 해당 기간 내에 취소하는 경우 결제금액 전액을 환급받을 수 있습니다.</p>
 <p class="legal-numbered-item">1. 신선식품: 제휴사업자의 주문 승인 여부와 관계없이 상품 수령예정일의 3일 전까지 주문을 취소할 수 있습니다. 해당 기간이 지난 이후에는 원칙적으로 주문의 취소 및 환급이 불가합니다.</p>
@@ -1135,7 +1084,7 @@
 <p class="legal-numbered-item">2. 이용자가 약정된 식자재 수령시간에 연락 없이 수령하지 않은 경우 상품의 보관 가능성, 재판매 가능성 및 사전에 표시된 조건에 따라 취소·환불이 제한되거나 추가 보관·재배송 비용이 발생할 수 있습니다.</p>
 <p class="legal-numbered-item">3. 제휴사업자는 노쇼 또는 수령 불이행 기준을 거래 전에 명확히 표시해야 합니다.</p>
 <h2>환불 처리 안내</h2>
-<p>나이스페이(NICEPAY), 카드사 또는 금융기관의 처리기간에 따라 실제 환급 완료 시점이 달라질 수 있습니다. 이전 결제 건에는 원거래 결제대행사의 절차가 적용될 수 있습니다. 제공자 또는 회사의 귀책으로 거래를 이행할 수 없는 경우 이용자에게 지체 없이 알리고 관계 법령과 개별 거래조건에 따른 환급 또는 대체조치를 제공합니다.</p>
+<p>토스페이먼츠, 카드사 또는 금융기관의 처리기간에 따라 실제 환급 완료 시점이 달라질 수 있습니다. 제공자 또는 회사의 귀책으로 거래를 이행할 수 없는 경우 이용자에게 지체 없이 알리고 관계 법령과 개별 거래조건에 따른 환급 또는 대체조치를 제공합니다.</p>
           </article>
         </div>
       </section>
@@ -1232,12 +1181,12 @@
         <button type="button" data-route="refundPolicy">환불 및 취소 규정</button>
       </div>
       <address>
-        모티프 | 대표자 손태건, 한승원 · 사업자등록번호 109-17-94706<br />
+        모티프 | 대표자 손태건, 한승원 · 사업자등록번호 109-17-94706 · 통신판매업 신고번호 신고 준비 중<br />
         서울특별시 중구 소공로 46 A-1102 · 010-3357-2537 / 010-7553-7892 · 5millionbrothers@gmail.com<br />
         모티프는 통신판매중개자이며 개별 숙박 및 식자재 거래의 당사자가 아닙니다.
       </address>
       <a class="footer-instagram" data-social-instagram href="#" target="_blank" rel="noopener noreferrer" aria-label="모티프 인스타그램"><i data-lucide="camera"></i><span>Instagram</span></a>
-      <div class="footer-contact-links"><a href="/?route=partnerInquiry">신규입점문의 <i data-lucide="arrow-up-right"></i></a><a href="/?route=feedback">유저 건의사항 <i data-lucide="arrow-up-right"></i></a></div>
+      <div class="footer-contact-links"><a href="https://forms.gle/mHNaoH2Tq4xNQKkc7" target="_blank" rel="noopener noreferrer">신규입점문의 <i data-lucide="arrow-up-right"></i></a><a href="https://forms.gle/3Ygs7HY1CSexXXng8" target="_blank" rel="noopener noreferrer">유저 건의사항 <i data-lucide="arrow-up-right"></i></a></div>
     </footer>
 
     <dialog id="photoGalleryDialog" class="photo-gallery-dialog" aria-label="숙소 사진 전체보기">
@@ -1260,7 +1209,7 @@
         </div>
         <div class="market-guide-copy">
           <p>모티프의 장보기 기능은 모티프를 통해 손쉽게 주문·결제한 뒤, 대성 공판장에서 직접 픽업하는 것을 원칙으로 합니다.</p>
-          <p>현재 모든 장보기 주문은 대성 공판장 한 곳에서 직접 수령합니다.</p>
+          <p>일반 상품의 대성리 지역 배송 가능 여부는 주문 전 공판장에 별도로 확인해주세요.</p>
           <p><strong>주류는 배송·대리수령이 불가하며, 성인인 주문자 본인이 공판장에 방문해 신분증 확인 후 수령해야 합니다.</strong></p>
         </div>
         <button class="primary-btn" type="submit">확인했습니다</button>
@@ -1274,43 +1223,29 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ko.js"></script>
     <script src="nicepay.js?v=20261030-card-bank"></script>
-    <script src="stay-booking-window.js?v=20261119"></script>
-    <script src="stay-refund-policy.js?v=20261119-settlement-polish"></script>
-    <script src="app.js?v=20261119-mt-refresh"></script>
-    <script src="budget-model.js?v=20261119-settlement-polish"></script>
-    <script src="budget-export.js?v=20261119-settlement-polish"></script>
-    <script src="/identity-flow.js?v=20261117-auth-rooms"></script>
-<script src="auth.js?v=20261117-account-sites"></script>
-    <script src="catalog.js?v=20261119-settlement-polish"></script>
-    <script src="transactions.js?v=20261119-mt-refresh"></script>
-    <script src="chat-data.js?v=20261119-settlement-polish"></script>
+    <script src="app.js?v=20261119-weekend"></script>
+    <script src="budget-model.js?v=20261109-clean"></script>
+    <script src="budget-export.js?v=20261109-clean"></script>
+    <script src="auth.js?v=20261108"></script>
+    <script src="catalog.js?v=20261113-workflow"></script>
+    <script src="transactions.js?v=20261116-reset"></script>
+    <script src="chat-data.js?v=20261116-reset"></script>
     <script src="support-data.js?v=20260621-support1"></script>
     <script src="reviews-data.js?v=20260829-hotfix3"></script>
-    <script src="product-refresh.js?v=20261119-booking-window"></script>
-    <script src="mt-project-data.js?v=20261119-mt-refresh"></script>
+    <script src="product-refresh.js?v=20261117-mobile"></script>
+    <script src="mt-project-data.js?v=20261116-launch"></script>
     <script src="content-data.js?v=20261116-launch"></script>
     <script src="site-metadata.js?v=20261106"></script>
     <script src="desktop-model.js?v=20261116-market-combined"></script>
     <script src="local-home-templates.js?v=20261116-desktop"></script>
-    <script src="local-design.js?v=20261117-home-products"></script>
-    <script src="community-design.js?v=20261119-settlement-polish"></script>
+    <script src="local-design.js?v=20261113-workflow"></script>
+    <script src="community-design.js?v=20261108"></script>
     <script src="/mt-workflow-model.js?v=20261113-recent"></script>
     <script src="mt-selection.js?v=20261116-launch"></script>
     <script src="product-reviews.js?v=20261116-market-combined"></script>
-    <script src="mobile-polish.js?v=20261119-mt-refresh"></script>
+    <script src="mobile-polish.js?v=20261117a"></script>
     <script src="/workflow-ui.js?v=20261116-desktop"></script>
     <script src="/desktop-ui.js?v=20261116-market-combined"></script>
     <script src="/desktop-replies.js?v=20261116"></script>
-  <dialog id="contactSuccessDialog" class="contact-success-dialog" aria-labelledby="contactSuccessTitle">
-      <div class="contact-success-dialog__body">
-        <div class="section-toolbar">
-          <h2 id="contactSuccessTitle">접수되었습니다.</h2>
-          <button class="icon-action" type="button" data-close-contact-success aria-label="팝업 닫기"><i data-lucide="x"></i></button>
-        </div>
-        <p id="contactSuccessMessage">문의가 접수되었습니다.</p>
-        <button class="primary-btn" type="button" data-close-contact-success>확인</button>
-      </div>
-    </dialog>
-<script src="/site-contact.js?v=20261117-inbox"></script>
-</body>
+  </body>
 </html>
