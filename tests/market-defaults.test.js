@@ -46,12 +46,28 @@ test('stay budget keeps filtering between two and four million', () => {
   const source = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
   const slider = {value:'2000000',max:'4000000'};
   const context = vm.createContext({
+    state:{stayBudgetOverride:null},
     qs:s=>s==='#stayPrice'?slider:{value:s==='#stayRegion'?'전체':'10'},
-    stays:[{id:'low',price:1800000,maxPeople:30},{id:'high',price:2800000,maxPeople:30}],
+    stays:[{id:'low',price:1800000,maxPeople:30},{id:'high',price:2800000,maxPeople:30},{id:'over',price:4500000,maxPeople:30}],
     normalizeStaySearchDates(){},ensureStayAvailability(){},getStayDetailFilters(){return {};},
     stayDisplayPrice:s=>s.price,stayMatchesDetailFilters:()=>true,stayHasAvailableRoom:()=>true,
   });
-  vm.runInContext(source.slice(source.indexOf('function getStayMatches()'),source.indexOf('function renderStays()')),context);
+  vm.runInContext(source.slice(source.indexOf('function stayBudgetLimit()'),source.indexOf('function renderStays()')),context);
   assert.equal(context.getStayMatches().length,1);
   slider.value='3000000';assert.equal(context.getStayMatches().length,2);
+  slider.value=slider.max;assert.equal(context.getStayMatches().length,3);
+  context.state.stayBudgetOverride=4000000;assert.equal(context.getStayMatches().length,2);
+  context.state.stayBudgetOverride=2799999;assert.equal(context.getStayMatches().length,1);
+  context.state.stayBudgetOverride=0;assert.equal(context.getStayMatches().length,0);
+});
+
+test('the customer catalog uses the unhyphenated Coca-Cola brand and keeps escaping display names', () => {
+  const source=fs.readFileSync(path.join(__dirname,'..','catalog.js'),'utf8');
+  const context=vm.createContext({window:{motfEscapeHtml:value=>String(value).replaceAll('<','&lt;')}});
+  const declarations=source.slice(source.indexOf('  const text = '),source.indexOf('  const imageUrl = '));
+  vm.runInContext(declarations,context);
+  assert.equal(vm.runInContext('marketText("코카-콜라")',context),'코카콜라');
+  assert.equal(vm.runInContext('marketText("코카‑콜라<")',context),'코카콜라&lt;');
+  const build=source.slice(source.indexOf('  function buildStore('),source.indexOf('  function buildStore(')+2300);
+  assert.match(build,/manufacturer:\s*marketText\(item.detail_sections\?\.manufacturer\)/);
 });

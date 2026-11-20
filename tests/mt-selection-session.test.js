@@ -1,17 +1,17 @@
 const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
 const source=fs.readFileSync(require.resolve('../mt-selection.js'),'utf8');
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
-async function setup({one=false,defer=false}={}) {
+async function setup({one=false,defer=false,mobile=false}={}) {
   let now=100000,finishWrite,writes=0,moves=0;const events={},dialogEvents={},documentEvents={},storage=new Map(),appended=[],timers=[],error={textContent:''};
   const projects=[{id:'mt-a',title:'A의 MT',status:'planning'},{id:'mt-b',title:'B의 MT',status:'planning'}];if(one)projects.pop();
   const dialog={open:false,setAttribute(){},removeAttribute(){},addEventListener(name,handler){dialogEvents[name]=handler},showModal(){this.open=true},close(){this.open=false},querySelector(){return error}};
-  const window={motfCurrentUserId:'a',motfMtWorkflow:require('../mt-workflow-model'),motfOrganizationReady:Promise.resolve(),
+  const window={motfCurrentUserId:'a',motfMtWorkflow:require('../mt-workflow-model'),motfOrganizationReady:Promise.resolve(),matchMedia:()=>({matches:mobile}),
     motfRequireLogin:callback=>callback(),motfListWritableMtProjects:async()=>window.motfCurrentUserId==='a'?projects:[],
     motfReadMtSelection:async()=>({items:[],candidates:[]}),
     motfSetMtShoppingQuantity:async()=>{writes++;if(defer)await new Promise(resolve=>{finishWrite=resolve});return {id:'item',quantity:1,updated_at:'2026-11-13T00:00:00Z'}},
     motfMoveRecentMtSave:async()=>{moves++;return {save_reference:{kind:'shopping',recordIds:['item-b'],moveQuantity:1,expectedQuantity:1,updatedAt:null}}},
     addEventListener(name,handler){events[name]=handler}};
-  const context={window,state:{},escapeHtml:String,refreshIcons(){},productVariants:value=>[value],normalizeProductQuantity:(_product,qty)=>qty || 1,
+  const context={window,state:{},escapeHtml:String,refreshIcons(){},money:String,productOrderRules:()=>({minimum:1,step:1,unit:'개'}),productVariants:value=>[value],normalizeProductQuantity:(_product,qty)=>qty || 1,
     Date:class extends Date{static now(){return now}},setTimeout:(fn,ms)=>{timers.push({fn,ms});return timers.length;},clearTimeout(){},requestAnimationFrame(){},localStorage:{getItem:key=>storage.get(key)||null,setItem:(key,value)=>storage.set(key,value)},
     MutationObserver:class{observe(){}},document:{body:{append:element=>appended.push(element)},
       createElement:tag=>tag==='dialog'?dialog:{setAttribute(){},remove(){this.removed=true;},contains:()=>false},querySelector:()=>null,querySelectorAll:()=>[],addEventListener:(name,handler)=>{documentEvents[name]=handler}}};
@@ -31,6 +31,13 @@ test('saved receipt dismisses after five seconds without closing an uncommitted 
 test('first save asks for an MT even when there is only one',async()=>{
   const app=await setup({one:true});await app.add();assert.equal(app.writes(),0);assert.match(app.dialog.innerHTML,/data-selection-project="mt-a"/);
   await app.choose('mt-a');assert.equal(app.writes(),1);assert.match(app.appended.at(-1).innerHTML,/data-mt-receipt-change/);assert.equal(app.dialog.open,false);
+});
+test('mobile single-option products show quantity steppers before committing',async()=>{
+  const app=await setup({one:true,mobile:true});await app.add();await app.choose('mt-a');
+  assert.equal(app.writes(),0);
+  assert.equal(app.dialog.open,true);
+  assert.match(app.dialog.innerHTML,/data-selection-step="-1"/);
+  assert.match(app.dialog.innerHTML,/data-selection-step="1"/);
 });
 test('subsequent saves reuse the choice without extending its three-hour expiry',async()=>{
   const app=await setup();await app.add();await app.choose('mt-a');const key='motf.recentSaveMt.v1.a',before=app.storage.get(key);

@@ -20,6 +20,7 @@
     kitchen: "취사시설",
   };
   const text = (value) => window.motfEscapeHtml?.(value) ?? String(value ?? "");
+  const marketText = (value) => text(String(value ?? "").replace(/코카[-‐‑–]콜라/g, "코카콜라"));
   const imageUrl = (value, fallback) => {
     try {
       const url = new URL(value);
@@ -124,11 +125,11 @@
     const products = offerings.map((item) => ({
       id: item.id,
       category: text(item.category || "기타"),
-      name: text(item.detail_sections?.productDisplayName || item.name),
+      name: marketText(item.detail_sections?.productDisplayName || item.name),
       unit: text(item.unit || "1개"),
       price: Number(item.price) || 0,
       origin: text(item.origin || "업체 제공 상품"),
-      manufacturer: text(item.detail_sections?.manufacturer || ""),
+      manufacturer: marketText(item.detail_sections?.manufacturer),
       groupKey: text(item.detail_sections?.productGroupKey || ""),
       variantLabel: text(item.detail_sections?.variantLabel || item.unit || "1개"),
       image: imageUrl(item.image_url || business.cover_image_url, productFallback),

@@ -49,7 +49,7 @@
   .design-main .mt-project-main>.section-toolbar h2 { font-size:22px; }
   .design-main .mt-project-main>.section-toolbar p:not(.eyebrow) { margin:8px 0 0; font-size:13px; color:#738067; }
   .design-main .room-option-card { display:grid; grid-template-columns:280px minmax(0,1fr); min-height:360px; height:360px; overflow:hidden; }
-  .design-main .room-option-card>img { width:100%; height:100%; object-fit:cover; }
+  .design-main .room-option-photo>img { width:100%; height:100%; object-fit:cover; }
   .design-main .room-option-body { display:flex; flex-direction:column; min-width:0; padding:20px; gap:12px; }
   .design-main .room-option-body .mini-detail-grid { gap:10px; margin:0; }
   .design-main .room-option-body .mini-detail-block { min-height:0; padding:10px; }

@@ -171,7 +171,7 @@
   .design-main .section-toolbar:has(+ .room-list-vertical) > span { font-size: 13px; color: var(--mp-sub); }
   .design-main .room-list-vertical { gap: 16px !important; }
   .design-main .room-option-card { border-radius: 14px !important; overflow: hidden; }
-  .design-main .room-option-card > img { border-radius: 0 !important; }
+  .design-main .room-option-photo > img { border-radius: 0 !important; }
   .design-main .room-option-card .room-option-body { padding: 18px 16px 16px !important; gap: 12px !important; }
   /* 사진 바로 아래 작게 붙어 있던 "객실 유형 1" 표시는 숨김 */
   .design-main .room-option-card .room-option-body .eyebrow { display: none !important; }
@@ -179,7 +179,6 @@
   .design-main .room-option-card .room-option-body .muted { font-size: 13.5px !important; color: var(--mp-sub); }
   /* 정원·금액·위치·공간 상자 4개는 바로 위 요약과 태그에 이미 있어서 모바일에선 숨김 */
   .design-main .room-option-card .mini-detail-grid { display: none !important; }
-  /* "객실 자세히 보기" / "내 MT 담기"를 같은 크기 두 버튼으로 */
   .design-main .room-option-card .room-option-actions {
     display: grid !important;
     grid-template-columns: 1fr 1fr;
@@ -910,7 +909,7 @@
   #stayDetailContent > .mp-rooms .section-toolbar span { font-size: 13px !important; color: var(--mp-sub) !important; }
   .mp-rooms .room-list-vertical { display: grid !important; gap: 16px !important; }
   .mp-rooms .room-option-card { display: block !important; padding: 0 !important; border: 1px solid var(--mp-line) !important; border-radius: 16px !important; background: #fff !important; box-shadow: none !important; overflow: hidden; }
-  .mp-rooms .room-option-card > img { display: block; width: 100% !important; height: auto !important; aspect-ratio: 16 / 10; object-fit: cover; margin: 0 !important; border-radius: 0 !important; }
+  .mp-rooms .room-option-photo > img { display: block; width: 100% !important; height: auto !important; aspect-ratio: 16 / 10; object-fit: cover; margin: 0 !important; border-radius: 0 !important; min-height: 0; }
   .mp-rooms .room-option-card .room-option-body { position: static !important; display: grid !important; gap: 10px !important; margin: 0 !important; padding: 16px !important; transform: none !important; background: #fff !important; }
   .mp-rooms .room-option-card .room-option-body > div:first-child { display: block; }
   .mp-rooms .room-option-card .room-option-body h3 { margin: 0 !important; font-size: 18px !important; font-weight: 700 !important; line-height: 1.35; }
@@ -951,7 +950,7 @@
   #stayDetailContent > .detail-sections-bottom .mp-fold-toggle { margin-top: 8px; }
 
   #stayDetailContent > :is(.stay-facility-showcase, .public-availability-section, .stay-review-insight, #stayReviewsSection, .mp-rooms, .detail-sections-bottom) { background: #fff !important; border-left: 0 !important; border-right: 0 !important; border-bottom: 0 !important; border-radius: 0 !important; box-shadow: none !important; padding-bottom: 0 !important; }
-  .mp-rooms .room-option-card > img { aspect-ratio: 16 / 9 !important; }
+  .mp-rooms .room-option-photo > img { aspect-ratio: 16 / 9 !important; }
 
   /* 하단 고정 예약 바 */
   .mp-detail-bar { display: none; }
@@ -1506,10 +1505,7 @@
   #stayDetailContent .stay-facility-showcase .section-toolbar [data-open-chat] { display: none !important; }
 }
 @media (max-width: 699px) {
-  /* 숙소 상세 객실 카드: '객실 자세히 보기' 버튼 대신 카드를 누르면 객실 상세, 버튼은 [내 MT 담기 | 바로 예약하기] */
-  .mp-rooms .room-option-card.mp-room-linked { cursor: pointer; }
-  .mp-rooms .room-option-card.mp-room-linked .room-option-actions > button:not([data-add-mt-candidate]):not(.mp-room-book) { display: none !important; }
-  .mp-rooms .room-option-card.mp-room-linked .room-option-actions { grid-template-columns: 1fr 1fr !important; }
+  .mp-rooms .room-option-card .room-option-actions { grid-template-columns: 1fr 1fr !important; }
   .mp-rooms .room-option-card .room-option-actions > .mp-room-book { order: 1; display: flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 12px; border: 1px solid var(--mp-olive); border-radius: 10px; background: var(--mp-olive); color: #fff; font: inherit; font-size: 14.5px; font-weight: 700; }
   .mp-rooms .room-option-card .room-option-actions > .mp-room-book:disabled { border-color: #c9cfc0; background: #c9cfc0; }
   .mp-rooms .room-option-card .room-option-actions > .text-button { min-height: 44px; }
@@ -1597,7 +1593,7 @@
   .design-main [data-like-post].is-liked svg { fill: currentColor; }
 
   /* 커뮤니티: '레크 추천하기'도 '모집 글쓰기'처럼 테두리 있는 버튼 */
-  #community .community-panel-actions > [data-recommend-game] { display: inline-flex !important; align-items: center; gap: 4px; min-height: 34px; padding: 0 12px !important; border: 1px solid var(--mp-line-strong, #c2cbb5) !important; border-radius: 999px !important; background: #fff !important; color: var(--mp-ink) !important; text-decoration: none !important; font-weight: 600; }
+  #community .community-panel-actions > :is([data-recommend-game], [data-new-gathering]) { display: inline-flex !important; align-items: center; gap: 4px; min-height: 34px; padding: 0 12px !important; border: 1px solid var(--mp-line-strong, #c2cbb5) !important; border-radius: 999px !important; background: #fff !important; color: var(--mp-ink) !important; text-decoration: none !important; font-size: 12px; font-weight: 600; }
 
   /* 커뮤니티 레크레이션·같이 가요 화면: '← 커뮤니티'를 제목 위로, 부제목(레크레이션) 숨김, 버튼 두 개는 제목 아래 한 줄 */
   #community.mp-community-section > .page-back { display: inline-flex; margin: 4px 0 6px; }

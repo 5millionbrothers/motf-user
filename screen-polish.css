@@ -113,6 +113,13 @@
 .design-main .category-tabs button { padding:0 0 12px; font-size:11px; color:#94a47e; }
 .design-main .merchant-dialog { width:min(620px,calc(100% - 36px)); }
 .design-main .merchant-modal-copy .eyebrow { display:none; }
+.merchant-modal-address { display:flex; align-items:flex-start; gap:10px; margin-top:16px; padding:12px 0; border-bottom:1px solid var(--line); }
+.merchant-modal-address svg { width:17px; height:17px; margin-top:2px; color:var(--olive); flex:none; }
+.merchant-modal-address strong { font-size:13px; }
+.merchant-modal-address p { margin:4px 0 0; line-height:1.5; overflow-wrap:anywhere; }
+.design-main #stayFilters .stay-budget-amount { display:flex; align-items:center; gap:6px; }
+.design-main #stayFilters .stay-budget-amount input { box-sizing:border-box; width:120px; max-width:65%; min-width:0; min-height:34px; margin:0; padding:5px 8px; border:1px solid var(--line); border-radius:6px; background:#fff; color:var(--ink); font-size:14px; font-variant-numeric:tabular-nums; }
+.design-main #stayFilters .stay-budget-amount span { white-space:nowrap; }
 .design-main .merchant-modal-copy>p { font-size:13px; color:#6f7968; line-height:1.9; margin:18px 0; }
 .design-main .merchant-modal-photo { width:100%; height:210px; object-fit:cover; border-radius:6px; margin-top:18px; }
 .design-main .merchant-modal-copy .detail-meta { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:18px; }
@@ -211,6 +218,7 @@
   .design-main .category-tabs button { font-size:10px; padding-bottom:10px; }
   .design-main .merchant-modal-photo { height:170px; }
   .design-main .merchant-modal-copy>p { font-size:12px; }
+  .design-main #stayFilters .stay-budget-amount input { min-height:44px; font-size:16px; }
   .design-main .event-directory { grid-template-columns:1fr; gap:26px; padding-top:22px; }
   .design-main .original-program .home-card-title { font-size:21px; }
   .design-main .original-program-copy>p { font-size:11px; }

@@ -34,15 +34,15 @@
     <link rel="stylesheet" href="local-reset.css?v=20261103-local2" />
     <link rel="stylesheet" href="local-design.css?v=20261103-local2" />
     <link rel="stylesheet" href="local-adapter.css?v=20261119-settlement-polish" />
-    <link rel="stylesheet" href="screen-polish.css?v=20261119-mt-refresh" />
-    <link rel="stylesheet" href="preparation-workflows.css?v=20261108" />
+    <link rel="stylesheet" href="screen-polish.css?v=20261120-customer-polish" />
+    <link rel="stylesheet" href="preparation-workflows.css?v=20261120-customer-polish" />
     <link rel="stylesheet" href="budget-export.css?v=20261119-settlement-polish" />
     <link rel="stylesheet" href="loading.css?v=20261103-symbol" />
-    <link rel="stylesheet" href="mobile-polish.css?v=20261119-mt-refresh" />
+    <link rel="stylesheet" href="mobile-polish.css?v=20261120-customer-polish" />
     <script src="loading.js?v=20260904-loader1"></script>
     <script async src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" onload="window.__motfRefreshIcons && window.__motfRefreshIcons()"></script>
     <meta name="naver-site-verification" content="471f0dd87fee0f68c5867db10cc9fec20706cc7c" />
-  <link rel="stylesheet" href="/desktop-refinements.css?v=20261113-recent">
+  <link rel="stylesheet" href="/desktop-refinements.css?v=20261120-customer-polish">
     <link rel="stylesheet" href="/desktop-ui.css?v=20261116-market-combined" />
     <link rel="stylesheet" href="/desktop-replies.css?v=20261116" />
     <link rel="stylesheet" href="/launch.css?v=20261116" />
@@ -252,11 +252,11 @@
             인원
             <input type="number" id="stayPeople" min="10" max="120" value="10" />
           </label>
-          <label class="range-label">
-            MT 숙소 총예산
-            <span id="stayPriceLabel">4,000,000원 이상</span>
-            <input type="range" id="stayPrice" min="200000" max="4000000" step="100000" value="4000000" />
-          </label>
+          <div class="range-label">
+            <label for="stayBudgetAmount">MT 숙소 총예산</label>
+            <div class="stay-budget-amount"><input id="stayBudgetAmount" type="text" inputmode="numeric" autocomplete="off" maxlength="16" value="4,000,000" aria-describedby="stayPriceLabel"><span id="stayPriceLabel">원 이상</span></div>
+            <input type="range" id="stayPrice" min="200000" max="4000000" step="1" value="4000000" aria-label="MT 숙소 총예산 슬라이더">
+          </div>
           <button class="detail-filter-trigger" type="button" data-toggle-stay-filters>
             <i data-lucide="sliders-horizontal"></i>세부필터
           </button>
@@ -738,8 +738,8 @@
             <p>예약할 때 등록한 소속 중 하나를 선택할 수 있습니다.</p>
             <div class="affiliation-builder">
               <select id="affiliationKind"><option>대학/대학원</option><option>교회</option><option>회사</option><option>동아리</option><option>학과</option><option>학생회</option><option>기타</option></select>
-              <input id="affiliationSchool" placeholder="학교·기관명 (예: 고려대학교)" />
-              <input id="affiliationDetail" placeholder="세부 소속 (예: 국제학부, TRUSS)" />
+              <input id="affiliationSchool" placeholder="학교·기관명 (예: 고려대학교, 연세대학교)" />
+              <input id="affiliationDetail" placeholder="세부 소속 (예: 경영학과, 국제학부)" />
               <button class="secondary-btn" type="button" data-add-affiliation><i data-lucide="plus"></i>소속 추가</button>
             </div>
             <div class="affiliation-list" id="affiliationList"></div>
@@ -1276,12 +1276,12 @@
     <script src="nicepay.js?v=20261030-card-bank"></script>
     <script src="stay-booking-window.js?v=20261119"></script>
     <script src="stay-refund-policy.js?v=20261119-settlement-polish"></script>
-    <script src="app.js?v=20261120-weekend"></script>
+    <script src="app.js?v=20261120-customer-polish"></script>
     <script src="budget-model.js?v=20261119-settlement-polish"></script>
     <script src="budget-export.js?v=20261119-settlement-polish"></script>
     <script src="/identity-flow.js?v=20261117-auth-rooms"></script>
-<script src="auth.js?v=20261117-account-sites"></script>
-    <script src="catalog.js?v=20261119-settlement-polish"></script>
+<script src="auth.js?v=20261120-customer-polish"></script>
+    <script src="catalog.js?v=20261120-customer-polish"></script>
     <script src="transactions.js?v=20261119-mt-refresh"></script>
     <script src="chat-data.js?v=20261119-settlement-polish"></script>
     <script src="support-data.js?v=20260621-support1"></script>
@@ -1292,15 +1292,15 @@
     <script src="site-metadata.js?v=20261106"></script>
     <script src="desktop-model.js?v=20261116-market-combined"></script>
     <script src="local-home-templates.js?v=20261116-desktop"></script>
-    <script src="local-design.js?v=20261117-home-products"></script>
-    <script src="community-design.js?v=20261119-settlement-polish"></script>
+    <script src="local-design.js?v=20261120-customer-polish"></script>
+    <script src="community-design.js?v=20261120-customer-polish"></script>
     <script src="/mt-workflow-model.js?v=20261113-recent"></script>
-    <script src="mt-selection.js?v=20261116-launch"></script>
+    <script src="mt-selection.js?v=20261120-customer-polish"></script>
     <script src="product-reviews.js?v=20261116-market-combined"></script>
-    <script src="mobile-polish.js?v=20261119-mt-refresh"></script>
+    <script src="mobile-polish.js?v=20261120-customer-polish"></script>
     <script src="/workflow-ui.js?v=20261116-desktop"></script>
     <script src="/desktop-ui.js?v=20261116-market-combined"></script>
-    <script src="/desktop-replies.js?v=20261116"></script>
+    <script src="/desktop-replies.js?v=20261120-customer-polish"></script>
   <dialog id="contactSuccessDialog" class="contact-success-dialog" aria-labelledby="contactSuccessTitle">
       <div class="contact-success-dialog__body">
         <div class="section-toolbar">

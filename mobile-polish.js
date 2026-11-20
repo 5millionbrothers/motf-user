@@ -288,7 +288,7 @@
     const n = nights(v.checkIn, v.checkOut);
     setText(bar.querySelector('strong'), v.region || '지역 선택');
     setText(bar.querySelector('.mp-sb-text span'), `${short(v.checkIn)} – ${short(v.checkOut)}${n ? ` · ${n}박` : ''} · ${v.people}명`);
-    const active = $$('[data-stay-filter]:checked').length + (Number($('#stayMinRooms')?.value || 0) > 0 ? 1 : 0) + (Number($('#stayPrice')?.value || 0) < Number($('#stayPrice')?.max || 0) ? 1 : 0);
+    const active = $$('[data-stay-filter]:checked').length + (Number($('#stayMinRooms')?.value || 0) > 0 ? 1 : 0) + (stayBudgetLimit() !== null ? 1 : 0);
     setText(bar.querySelector('b'), active ? String(active) : '');
   }
 
@@ -677,9 +677,7 @@
       const peopleText = basePeople && maxPeople > basePeople ? `기준 ${basePeople}명 · 최대 ${maxPeople}명` : (room.capacity || '인원 확인 필요');
       info.innerHTML = `<p>${M()?.svg.user || ''}<span>${esc(peopleText)}</span></p>${features.length ? `<p><span>${features.map(esc).join(' · ')}</span></p>` : ''}<div class="mp-room-price">${rateBlocked || top > base ? '' : '<small>숙박</small>'}<strong>${priceText}</strong></div>${!rateBlocked && top > base ? `<p class="mp-room-price-note">기준 인원 초과 시 1인당 ${esc(M()?.won(extraFee))} 추가</p>` : ''}`;
       head?.after(info);
-      // 버튼은 [내 MT 담기 | 바로 예약하기], 카드(사진·객실명)를 누르면 객실 자세히 보기
       const actions = $('.room-option-actions', card);
-      const detail = $('[data-room-index]', actions || card);
       if (actions && !$('.mp-room-book', actions)) {
         const unavailable = isRoomUnavailable(room, stay);
         const book = document.createElement('button');
@@ -695,14 +693,6 @@
           navigate('booking');
         });
         actions.append(book);
-        card.classList.add('mp-room-linked');
-      }
-      if (detail && !card.dataset.mpLink) {
-        card.dataset.mpLink = '1';
-        card.addEventListener('click', event => {
-          if (event.target.closest('button, a, input, label')) return;
-          detail.click();
-        });
       }
     });
   }

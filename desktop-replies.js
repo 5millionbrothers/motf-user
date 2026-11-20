@@ -4,15 +4,16 @@
   const $ = (s, root = document) => root.querySelector(s);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const owner = Boolean($('#chatMessageInput')), input = () => $(owner ? '#chatMessageInput' : '#chatText');
+  const replyLabel = owner ? '빠른 답변' : '빠른 문의';
   if (!input()) return;
   const presets = owner ? [
     ['전화 안내','안녕하세요. 전화로 문의 주시면 더 자세하게 안내드리겠습니다. 편하신 연락 시간도 남겨주세요.'],
     ['확인 중','문의 주셔서 감사합니다. 예약 일정과 요청하신 내용을 확인한 뒤 답변드리겠습니다.'],
   ] : [['예약 문의','안녕하세요. 해당 일정과 인원으로 예약 가능한지, 추가 비용은 있는지 문의드립니다.'],['픽업 문의','안녕하세요. 주문 상품의 픽업 장소와 가능한 시간을 확인하고 싶습니다.']];
   const bar = document.createElement('div'); bar.className = 'desktop-reply-bar';
-  bar.innerHTML = `<span>빠른 답변</span>${presets.map(([title],i)=>`<button type="button" data-reply-preset="${i}" title="메시지 입력란에 넣기">${title}</button>`).join('')}<button type="button" data-replies-manage>내 문구</button><span class="desktop-reply-feedback" role="status"></span><button type="button" data-replies-refresh aria-label="대화 새로고침" title="대화 새로고침"><i data-lucide="refresh-cw"></i></button>`;
+  bar.innerHTML = `<span>${replyLabel}</span>${presets.map(([title],i)=>`<button type="button" data-reply-preset="${i}" title="메시지 입력란에 넣기">${title}</button>`).join('')}<button type="button" data-replies-manage>내 문구</button><span class="desktop-reply-feedback" role="status"></span><button type="button" data-replies-refresh aria-label="대화 새로고침" title="대화 새로고침"><i data-lucide="refresh-cw"></i></button>`;
   (owner ? input().closest('.chat-footer') : input().closest('form')).before(bar);
-  const dialog = document.createElement('dialog'); dialog.className = 'desktop-replies-dialog'; dialog.setAttribute('aria-label','내 빠른 답변'); document.body.append(dialog);
+  const dialog = document.createElement('dialog'); dialog.className = 'desktop-replies-dialog'; dialog.setAttribute('aria-label',`내 ${replyLabel}`); document.body.append(dialog);
   let rows = [], version = 0, editing = '', busy = false, account = '', pendingDelete = '';
   const client = () => window.motfSupabase;
   const currentId = () => owner ? window.motfCurrentProfile?.id : window.motfCurrentUserId;
@@ -25,7 +26,7 @@
   }
   function render(error = '', draft) {
     const item = draft || rows.find(row=>row.id===editing);
-    dialog.innerHTML = `<div class="desktop-replies-top"><h2>내 빠른 답변</h2><button type="button" data-replies-close aria-label="닫기" title="닫기">×</button></div><div class="desktop-replies-list">${rows.map(row=>`<article><button type="button" data-reply-use="${row.id}" title="메시지 입력란에 넣기">${esc(row.title)}</button><button type="button" data-reply-edit="${row.id}" aria-label="${esc(row.title)} 수정" title="수정">수정</button><button type="button" data-reply-delete="${row.id}" title="삭제">${pendingDelete===row.id?'삭제 확인':'삭제'}</button></article>`).join('')||`<p>${busy?'문구를 불러오는 중입니다.':'저장한 문구가 없습니다.'}</p>`}</div><form data-reply-form><h3>${editing?'문구 수정':'새 문구'}</h3><label>이름<input name="title" required maxlength="30" value="${esc(item?.title||'')}" placeholder="예: 입실 안내" ${busy?'disabled':''}></label><label>내용<textarea name="body" required maxlength="2000" rows="4" ${busy?'disabled':''}>${esc(item?.body||'')}</textarea></label><p class="desktop-reply-error" role="alert">${esc(error)}</p><div class="desktop-replies-actions">${editing?'<button type="button" data-reply-new>새 문구</button>':''}<button type="submit" ${busy?'disabled':''}>${busy?'처리 중':'저장'}</button></div></form>`;
+    dialog.innerHTML = `<div class="desktop-replies-top"><h2>내 ${replyLabel}</h2><button type="button" data-replies-close aria-label="닫기" title="닫기">×</button></div><div class="desktop-replies-list">${rows.map(row=>`<article><button type="button" data-reply-use="${row.id}" title="메시지 입력란에 넣기">${esc(row.title)}</button><button type="button" data-reply-edit="${row.id}" aria-label="${esc(row.title)} 수정" title="수정">수정</button><button type="button" data-reply-delete="${row.id}" title="삭제">${pendingDelete===row.id?'삭제 확인':'삭제'}</button></article>`).join('')||`<p>${busy?'문구를 불러오는 중입니다.':'저장한 문구가 없습니다.'}</p>`}</div><form data-reply-form><h3>${editing?'문구 수정':'새 문구'}</h3><label>이름<input name="title" required maxlength="30" value="${esc(item?.title||'')}" placeholder="예: ${owner ? '입실 안내' : '입실 시간 문의'}" ${busy?'disabled':''}></label><label>내용<textarea name="body" required maxlength="2000" rows="4" ${busy?'disabled':''}>${esc(item?.body||'')}</textarea></label><p class="desktop-reply-error" role="alert">${esc(error)}</p><div class="desktop-replies-actions">${editing?'<button type="button" data-reply-new>새 문구</button>':''}<button type="submit" ${busy?'disabled':''}>${busy?'처리 중':'저장'}</button></div></form>`;
   }
   async function load() {
     const token = ++version; account = currentId();

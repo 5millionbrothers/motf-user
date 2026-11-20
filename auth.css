@@ -328,6 +328,14 @@ body.auth-modal-open {
   margin-top: 4px;
 }
 
+#myAccount [data-account-username-panel] { display:grid; gap:8px; min-width:0; }
+#myAccount .account-username-controls { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+#myAccount #accountUsername { flex:1 1 250px; width:auto; max-width:100%; min-width:0; height:44px; margin:0; font-size:16px; }
+#myAccount #accountUsername:focus { outline:2px solid var(--teal); outline-offset:1px; box-shadow:none; }
+#myAccount [data-save-account-username] { min-height:44px; }
+#myAccount [data-save-account-username][hidden] { display:none; }
+#myAccount [data-account-identity-label] { margin:0; }
+
 @media (max-width: 520px) {
   .auth-dialog {
     padding: 22px 18px;

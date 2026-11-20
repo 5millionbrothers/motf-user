@@ -523,11 +523,14 @@
       if (!usernamePanel) {
         usernamePanel = document.createElement("div");
         usernamePanel.dataset.accountUsernamePanel = "";
-        usernamePanel.innerHTML = '<label>로그인 아이디<input id="accountUsername" autocomplete="username" minlength="4" maxlength="24" placeholder="영문으로 시작하는 영문·숫자·밑줄 4~24자리" /></label><button type="button" class="secondary-btn" data-save-account-username>아이디 등록</button><p class="muted" data-account-identity-label></p>';
+        usernamePanel.innerHTML = '<label for="accountUsername">로그인 아이디</label><div class="account-username-controls"><input type="text" id="accountUsername" autocomplete="off" autocapitalize="none" spellcheck="false" minlength="4" maxlength="24" placeholder="영문으로 시작하는 영문·숫자·밑줄 4~24자리" aria-describedby="accountIdentityStatus" /><button type="button" class="secondary-btn" data-save-account-username>아이디 등록</button></div><p id="accountIdentityStatus" class="muted" data-account-identity-label></p>';
         accountForm.appendChild(usernamePanel);
       }
-      usernamePanel.querySelector("input").value = profile?.username || "";
-      usernamePanel.querySelector("input").readOnly = Boolean(profile?.username);
+      const usernameInput = usernamePanel.querySelector("input");
+      const accountId = profile?.id || session?.user?.id || "";
+      if (profile?.username || usernamePanel.dataset.accountId !== accountId) usernameInput.value = profile?.username || "";
+      usernamePanel.dataset.accountId = accountId;
+      usernameInput.readOnly = Boolean(profile?.username);
       usernamePanel.querySelector("button").hidden = Boolean(profile?.username);
       usernamePanel.querySelector("[data-account-identity-label]").textContent = profile?.identity_verified_at ? "본인확인 완료" : "본인확인 미완료";
     }

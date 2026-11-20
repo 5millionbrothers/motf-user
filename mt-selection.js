@@ -139,7 +139,7 @@
     if (pending.kind === 'shopping') {
       const existing = workflow.shoppingItem(snapshot, pending.product.id);
       if (existing) pending.quantity = existing.quantity;
-      if (!existing && productVariants(pending.product).length === 1) {
+      if (!existing && productVariants(pending.product).length === 1 && !window.matchMedia('(max-width: 699px)').matches) {
         const item = await commit(request,()=>window.motfSetMtShoppingQuantity(id, pending.product.id, normalizeProductQuantity(pending.product,pending.quantity)));
         if (pending !== request) return;
         await saved(chosen,'',shoppingReference(item)); return;
@@ -175,11 +175,21 @@
     const product = pending.product, rules = productOrderRules(product), variants = productVariants(product);
     const existing = workflow.shoppingItem(snapshot, product.id);
     pending.quantity = normalizeProductQuantity(product,pending.quantity);
-    shell(`<button class="text-button" type="button" data-selection-back>${icon('arrow-left')} MT 다시 선택</button><div class="selection-context"><strong>${esc(pending.project.title)}</strong><span>${esc(label(pending.project))} · 장보기 후보</span></div><div class="selection-product"><img src="${esc(product.image)}" alt=""><div><h3>${esc(product.name)}</h3><span>${money(product.price)} / ${esc(product.unit)}</span></div></div>${variants.length > 1 ? `<label class="selection-field">상품 옵션<select data-selection-variant>${variants.map(item => `<option value="${item.id}" ${item.id === product.id ? 'selected' : ''}>${esc(item.variantLabel || item.unit)} · ${money(item.price)}</option>`).join('')}</select></label>` : ''}<label class="selection-field">수량 (${esc(rules.unit)})<input type="number" data-selection-quantity min="${rules.minimum}" max="1000" step="${rules.step}" value="${pending.quantity}" aria-label="담을 상품 수량"></label><p class="selection-lead">최소 ${rules.minimum}${esc(rules.unit)} · ${rules.step}${esc(rules.unit)} 단위. 내 MT 후보에 담으며 장바구니나 결제에는 영향을 주지 않아요.</p><div class="selection-footer"><strong data-selection-product-total>${money(product.price * pending.quantity)}</strong><button class="primary" type="button" data-selection-save>이 MT에 상품 담기 ${icon('folder-plus')}</button></div>`);
+    shell(`<button class="text-button" type="button" data-selection-back>${icon('arrow-left')} MT 다시 선택</button><div class="selection-context"><strong>${esc(pending.project.title)}</strong><span>${esc(label(pending.project))} · 장보기 후보</span></div><div class="selection-product"><img src="${esc(product.image)}" alt=""><div><h3>${esc(product.name)}</h3><span>${money(product.price)} / ${esc(product.unit)}</span></div></div>${variants.length > 1 ? `<label class="selection-field">상품 옵션<select data-selection-variant>${variants.map(item => `<option value="${item.id}" ${item.id === product.id ? 'selected' : ''}>${esc(item.variantLabel || item.unit)} · ${money(item.price)}</option>`).join('')}</select></label>` : ''}<div class="selection-field"><label for="mtSelectionQuantity">수량 (${esc(rules.unit)})</label><div class="selection-stepper"><button type="button" data-selection-step="-1" aria-label="수량 줄이기" ${pending.quantity <= rules.minimum ? 'disabled' : ''}>${icon('minus')}</button><input id="mtSelectionQuantity" type="number" inputmode="numeric" data-selection-quantity min="${rules.minimum}" max="1000" step="${rules.step}" value="${pending.quantity}"><button type="button" data-selection-step="1" aria-label="수량 늘리기" ${normalizeProductQuantity(product,pending.quantity+rules.step) === pending.quantity ? 'disabled' : ''}>${icon('plus')}</button></div></div><p class="selection-lead">최소 ${rules.minimum}${esc(rules.unit)} · ${rules.step}${esc(rules.unit)} 단위. 내 MT 후보에 담으며 장바구니나 결제에는 영향을 주지 않아요.</p><div class="selection-footer"><strong data-selection-product-total>${money(product.price * pending.quantity)}</strong><button class="primary" type="button" data-selection-save>이 MT에 상품 담기 ${icon('folder-plus')}</button></div>`);
     if (existing) {
       $('[data-selection-save]',dialog).textContent = '담긴 수량 변경';
       $('.selection-footer',dialog).insertAdjacentHTML('beforeend','<button type="button" class="text-button" data-selection-delete>후보에서 삭제</button>');
     }
+  }
+  function setProductQuantity(value) {
+    const {product} = pending;
+    const {minimum,step} = productOrderRules(product);
+    const quantity = normalizeProductQuantity(product,value);
+    pending.quantity = quantity;
+    $('[data-selection-quantity]',dialog).value = quantity;
+    $('[data-selection-step="-1"]',dialog).disabled = quantity <= minimum;
+    $('[data-selection-step="1"]',dialog).disabled = normalizeProductQuantity(product,quantity+step) === quantity;
+    $('[data-selection-product-total]',dialog).textContent = money(product.price * quantity);
   }
   dialog.addEventListener('change',event => {
     if (!pending || pending.committing) return;
@@ -194,13 +204,16 @@
       renderProduct();
     }
     if (input.hasAttribute('data-selection-quantity')) {
-      pending.quantity = normalizeProductQuantity(pending.product,input.value); input.value = pending.quantity;
-      $('[data-selection-product-total]',dialog).textContent = money(pending.product.price * pending.quantity);
+      setProductQuantity(input.value);
     }
   });
   dialog.addEventListener('click',async event => {
     const button = event.target.closest('button'); if (!button) return;
     if (!pending || pending.committing) return;
+    if (button.hasAttribute('data-selection-step')) {
+      setProductQuantity(pending.quantity + Number(button.dataset.selectionStep) * productOrderRules(pending.product).step);
+      return;
+    }
     if (button.hasAttribute('data-selection-close')) { pending = null; version++; dialog.close(); return; }
     if (button.hasAttribute('data-selection-back')) { version++; pending={...pending,project:null,rooms:new Set()}; renderProjects(); return; }
     if (button.hasAttribute('data-selection-new')) {
