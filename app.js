@@ -1918,16 +1918,125 @@ function renderStayGallery(images, alt, expanded = false) {
   `;
 }
 
-function roomOptionCard(room, index, stay) {
+(function injectRoomGroupStyles() {
+  if (document.getElementById("motfRoomGroupStyles")) return;
+  const style = document.createElement("style");
+  style.id = "motfRoomGroupStyles";
+  style.textContent = `
+    .room-site-picker { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 4px; }
+    .room-site-chip { display: inline-flex; flex-direction: column; gap: 2px; min-width: 96px; padding: 9px 12px; border: 1px solid var(--line, #dcdcd2); border-radius: 10px; background: var(--white, #fff); color: var(--ink, #222); text-decoration: none; line-height: 1.3; }
+    .room-site-chip strong { font-size: 14px; }
+    .room-site-chip small { font-size: 12px; color: var(--muted, #6b6b63); }
+    .room-site-chip:hover { border-color: var(--olive, #5b6b3a); }
+    .room-site-chip.active { border-color: var(--olive, #5b6b3a); box-shadow: inset 0 0 0 1px var(--olive, #5b6b3a); background: var(--paper, #f7f6f0); }
+    .room-site-chip.sold-out { opacity: .45; pointer-events: none; }
+    .room-group-stock, .room-group-note { margin: 6px 0 0; font-size: 13px; color: var(--muted, #6b6b63); }
+    .room-group-stock strong, .room-group-note strong { color: var(--olive, #5b6b3a); font-size: 15px; }
+    @media (max-width: 699px) {
+      .room-site-picker { flex-wrap: nowrap; overflow-x: auto; margin-inline: -2px; padding: 2px 2px 6px; scrollbar-width: none; }
+      .room-site-chip { flex: 0 0 auto; min-width: 88px; }
+    }`;
+  document.head.append(style);
+})();
+
+function roomGroupInfo(room) {
+  const group = room?.detailSections?.roomGroup;
+  const name = String(group?.name || "").trim();
+  return name ? { name, mode: group.mode === "pool" ? "pool" : "pick" } : null;
+}
+
+function stayRoomEntries(stay) {
+  const entries = [];
+  const groups = new Map();
+  safeArray(stay?.rooms).forEach((room, index) => {
+    const info = roomGroupInfo(room);
+    if (!info) { entries.push({ type: "room", room, index }); return; }
+    let group = groups.get(info.name);
+    if (!group) {
+      group = { type: "group", name: info.name, mode: info.mode, members: [] };
+      groups.set(info.name, group);
+      entries.push(group);
+    }
+    group.members.push({ room, index });
+  });
+  return entries;
+}
+
+function roomGroupMembers(stay, room) {
+  const info = roomGroupInfo(room);
+  if (!info) return [];
+  return safeArray(stay?.rooms).filter((item) => roomGroupInfo(item)?.name === info.name);
+}
+
+function firstAvailableGroupRoom(stay, rooms) {
+  return rooms.find((room) => !isRoomUnavailable(room, stay)) || rooms[0];
+}
+
+function ensurePoolRoomSelection() {
+  const stay = state.selectedStay;
+  const room = state.selectedRoom;
+  if (!stay || !room || roomGroupInfo(room)?.mode !== "pool" || !isRoomUnavailable(room, stay)) return;
+  const next = roomGroupMembers(stay, room).find((item) => !isRoomUnavailable(item, stay));
+  if (!next) return;
+  state.selectedRoom = next;
+  const route = currentRoute();
+  if (route === "roomDetail" || route === "booking") {
+    window.history.replaceState(window.history.state, "", routeUrl(route, new URLSearchParams({ stay: stay.id, room: next.id })));
+  }
+}
+
+function stayRoomListHtml(stay) {
+  return stayRoomEntries(stay).map((entry, position) => entry.type === "group"
+    ? roomGroupCard(entry, position, stay)
+    : roomOptionCard(entry.room, entry.index, stay, position)).join("");
+}
+
+function roomGroupCard(group, position, stay) {
+  const rooms = group.members.map((member) => member.room);
+  const available = rooms.filter((room) => !isRoomUnavailable(room, stay));
+  const lead = firstAvailableGroupRoom(stay, rooms);
+  const leadIndex = stay.rooms.indexOf(lead);
+  const soldOut = !available.length;
+  const features = safeArray(lead?.features).filter(item => !/화장실|욕실/.test(item));
+  const href = escapeHtml(routeUrl("roomDetail", new URLSearchParams({ stay: stay.id, room: lead.id })));
+  const prices = [...new Set(rooms.map((room) => roomPriceLabel(stay, room)))];
+  const priceText = prices.length > 1 ? "자리별 요금 상이" : prices[0];
+  const sites = group.mode === "pick" ? `
+        <div class="room-site-picker" role="list" aria-label="${escapeHtml(group.name)} 자리 선택">
+          ${rooms.map((room) => {
+            const unavailable = isRoomUnavailable(room, stay);
+            const siteHref = escapeHtml(routeUrl("roomDetail", new URLSearchParams({ stay: stay.id, room: room.id })));
+            return `<a role="listitem" class="room-site-chip ${unavailable ? "sold-out" : ""}" href="${siteHref}" data-room-index="${stay.rooms.indexOf(room)}" ${unavailable ? 'aria-disabled="true"' : ""}><strong>${catalogLabel(room.name)}</strong><small>${unavailable ? "예약 마감" : `${escapeHtml(room.capacity || "")} · ${roomPriceLabel(stay, room)}`}</small></a>`;
+          }).join("")}
+        </div>` : "";
+  return `
+    <article class="room-option-card room-group-card ${soldOut ? "sold-out" : ""}" data-room-id="${escapeHtml(lead.id)}" data-room-group-mode="${group.mode}">
+      <a class="room-option-photo" href="${href}" data-room-index="${leadIndex}"><img src="${escapeHtml(lead.image)}" alt="${catalogLabel(group.name)} 상세 정보"></a>
+      <div class="room-option-body">
+        <div>
+          <p class="eyebrow">객실 유형 ${position + 1} · ${group.mode === "pool" ? "자리 자동 배정" : "자리 직접 선택"}</p>
+          <h3><a class="room-option-title" href="${href}" data-room-index="${leadIndex}">${catalogLabel(group.name)}</a></h3>
+          <p class="muted">${escapeHtml(lead.capacity || "")} · ${priceText}</p>
+          <p class="room-group-stock"><strong>${available.length}</strong> / ${rooms.length}자리 예약 가능</p>
+        </div>
+        ${sites}
+        <div class="detail-meta">${features.map((feature) => `<span class="pill">${feature}</span>`).join("")}</div>
+        <div class="room-option-actions"><button class="text-button" data-add-mt-candidate="${stay.id}" data-preferred-room="${lead.id}" ${soldOut ? "disabled" : ""}><i data-lucide="folder-plus"></i>내 MT 담기</button></div>
+      </div>
+    </article>
+  `;
+}
+
+function roomOptionCard(room, index, stay, position = index) {
   const unavailable = isRoomUnavailable(room, stay);
   const features = safeArray(room?.features).filter(item => !/화장실|욕실/.test(item));
   const href = escapeHtml(routeUrl("roomDetail", new URLSearchParams({ stay: stay.id, room: room.id })));
   return `
-    <article class="room-option-card ${unavailable ? "sold-out" : ""}">
+    <article class="room-option-card ${unavailable ? "sold-out" : ""}" data-room-id="${escapeHtml(room.id)}">
       <a class="room-option-photo" href="${href}" data-room-index="${index}"><img src="${escapeHtml(room.image)}" alt="${catalogLabel(room.name)} 상세 정보"></a>
       <div class="room-option-body">
         <div>
-          <p class="eyebrow">객실 유형 ${index + 1}</p>
+          <p class="eyebrow">객실 유형 ${position + 1}</p>
           <h3><a class="room-option-title" href="${href}" data-room-index="${index}">${catalogLabel(room.name)}</a></h3>
           <p class="muted">${room.capacity} · ${roomPriceLabel(stay, room)}</p>
         </div>
@@ -2062,7 +2171,7 @@ function renderStayDetail() {
         <span>객실을 누르면 상세 정보로 이동합니다</span>
       </div>
       <div class="room-list-vertical">
-        ${stay.rooms.map((room, index) => roomOptionCard(room, index, stay)).join("")}
+        ${stayRoomListHtml(stay)}
       </div>
     </section>
 
@@ -2165,6 +2274,7 @@ async function loadPublicStayCalendar(stay) {
 
 function renderRoomDetail() {
   ensureStayAvailability();
+  ensurePoolRoomSelection();
   const stay = state.selectedStay;
   const room = state.selectedRoom;
   if (!stay || !room) {
@@ -2186,12 +2296,23 @@ function renderRoomDetail() {
   state.gallery = { images: gallery, index: 0, alt: `${stay.name} ${room.name}` };
   const maxPeople = roomCapacityMax(room);
   const selectedPrice = rateBlocked ? "선택 날짜 예약 불가" : money(bookingBaseRoomFee(stay, room));
+  const group = roomGroupInfo(room);
+  const groupRooms = group ? roomGroupMembers(stay, room) : [];
+  const groupAvailable = groupRooms.filter((item) => !isRoomUnavailable(item, stay)).length;
+  const groupHtml = !group ? "" : group.mode === "pool"
+    ? `<p class="room-group-note"><strong>${groupAvailable}</strong> / ${groupRooms.length}자리 예약 가능 · 자리 번호는 비어 있는 자리로 자동 배정돼요.</p>`
+    : `<div class="room-site-picker" role="list" aria-label="${escapeHtml(group.name)} 자리 선택">${groupRooms.map((item) => {
+        const itemUnavailable = isRoomUnavailable(item, stay);
+        const siteHref = escapeHtml(routeUrl("roomDetail", new URLSearchParams({ stay: stay.id, room: item.id })));
+        return `<a role="listitem" class="room-site-chip ${item === room ? "active" : ""} ${itemUnavailable ? "sold-out" : ""}" href="${siteHref}" data-room-index="${stay.rooms.indexOf(item)}" ${item === room ? 'aria-current="true"' : ""}><strong>${catalogLabel(item.name)}</strong><small>${itemUnavailable ? "예약 마감" : roomPriceLabel(stay, item)}</small></a>`;
+      }).join("")}</div>`;
   qs("#roomDetailContent").innerHTML = `
     <section class="room-detail-hero">
       <div>
-        <p class="eyebrow">${stay.name}</p>
-        <h1 class="room-detail-title">${room.name}</h1>
+        <p class="eyebrow">${stay.name}${group ? ` · ${catalogLabel(group.name)}` : ""}</p>
+        <h1 class="room-detail-title">${group?.mode === "pool" ? catalogLabel(group.name) : room.name}</h1>
         <p>${room.capacity || "정원 확인 필요"}${roomFeatures.length ? ` · ${roomFeatures.slice(0, 3).join(" · ")}` : ""}</p>
+        ${groupHtml}
       </div>
       <aside class="room-reserve-card">
         <span>선택 일정 기본 숙박비</span>
@@ -2336,6 +2457,7 @@ function bookingAmount() {
 
 function renderBooking() {
   ensureStayAvailability();
+  ensurePoolRoomSelection();
   const stay = state.selectedStay;
   const room = state.selectedRoom;
   const form = qs("#bookingForm");

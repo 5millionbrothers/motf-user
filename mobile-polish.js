@@ -660,8 +660,9 @@
     $$('.room-option-card', list).forEach((card, index) => {
       if (card.dataset.mp) return;
       card.dataset.mp = '1';
-      const room = stay.rooms?.[index];
+      const room = (stay.rooms || []).find(item => String(item.id) === card.dataset.roomId) || stay.rooms?.[index];
       if (!room) return;
+      const pickGroup = card.dataset.roomGroupMode === 'pick';
       const head = $('.room-option-body > div', card);
       const features = (Array.isArray(room.features) ? room.features : []).filter(item => !/화장실|욕실/.test(item)).slice(0, 3);
       const info = document.createElement('div');
@@ -684,13 +685,14 @@
         book.type = 'button';
         book.className = 'mp-room-book';
         book.disabled = unavailable;
-        book.textContent = rateBlocked ? '예약 불가' : unavailable ? '품절' : '바로 예약하기';
+        book.textContent = rateBlocked ? '예약 불가' : unavailable ? '품절' : pickGroup ? '자리 선택' : '바로 예약하기';
         book.addEventListener('click', event => {
           event.preventDefault();
           event.stopPropagation();
           if (unavailable || typeof state === 'undefined' || typeof navigate !== 'function') return;
           state.selectedRoom = room;
-          navigate('booking');
+          if (pickGroup) navigate('roomDetail', { params: new URLSearchParams({ stay: stay.id, room: room.id }) });
+          else navigate('booking');
         });
         actions.append(book);
       }
