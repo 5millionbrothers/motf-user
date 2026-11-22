@@ -1999,27 +1999,16 @@ function roomGroupCard(group, position, stay) {
   const soldOut = !available.length;
   const features = safeArray(lead?.features).filter(item => !/화장실|욕실/.test(item));
   const href = escapeHtml(routeUrl("roomDetail", new URLSearchParams({ stay: stay.id, room: lead.id })));
-  const prices = [...new Set(rooms.map((room) => roomPriceLabel(stay, room)))];
-  const priceText = prices.length > 1 ? "자리별 요금 상이" : prices[0];
-  const sites = group.mode === "pick" ? `
-        <div class="room-site-picker" role="list" aria-label="${escapeHtml(group.name)} 자리 선택">
-          ${rooms.map((room) => {
-            const unavailable = isRoomUnavailable(room, stay);
-            const siteHref = escapeHtml(routeUrl("roomDetail", new URLSearchParams({ stay: stay.id, room: room.id })));
-            return `<a role="listitem" class="room-site-chip ${unavailable ? "sold-out" : ""}" href="${siteHref}" data-room-index="${stay.rooms.indexOf(room)}" ${unavailable ? 'aria-disabled="true"' : ""}><strong>${catalogLabel(room.name)}</strong><small>${unavailable ? "예약 마감" : `${escapeHtml(room.capacity || "")} · ${roomPriceLabel(stay, room)}`}</small></a>`;
-          }).join("")}
-        </div>` : "";
+  const priceText = roomPriceLabel(stay, lead);
   return `
     <article class="room-option-card room-group-card ${soldOut ? "sold-out" : ""}" data-room-id="${escapeHtml(lead.id)}" data-room-group-mode="${group.mode}">
       <a class="room-option-photo" href="${href}" data-room-index="${leadIndex}"><img src="${escapeHtml(lead.image)}" alt="${catalogLabel(group.name)} 상세 정보"></a>
       <div class="room-option-body">
         <div>
-          <p class="eyebrow">객실 유형 ${position + 1} · ${group.mode === "pool" ? "자리 자동 배정" : "자리 직접 선택"}</p>
+          <p class="eyebrow">객실 유형 ${position + 1}</p>
           <h3><a class="room-option-title" href="${href}" data-room-index="${leadIndex}">${catalogLabel(group.name)}</a></h3>
           <p class="muted">${escapeHtml(lead.capacity || "")} · ${priceText}</p>
-          <p class="room-group-stock"><strong>${available.length}</strong> / ${rooms.length}자리 예약 가능</p>
         </div>
-        ${sites}
         <div class="detail-meta">${features.map((feature) => `<span class="pill">${feature}</span>`).join("")}</div>
         <div class="room-option-actions"><button class="text-button" data-add-mt-candidate="${stay.id}" data-preferred-room="${lead.id}" ${soldOut ? "disabled" : ""}><i data-lucide="folder-plus"></i>내 MT 담기</button></div>
       </div>

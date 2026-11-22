@@ -685,7 +685,7 @@
         book.type = 'button';
         book.className = 'mp-room-book';
         book.disabled = unavailable;
-        book.textContent = rateBlocked ? '예약 불가' : unavailable ? '품절' : pickGroup ? '자리 선택' : '바로 예약하기';
+        book.textContent = rateBlocked ? '예약 불가' : unavailable ? '품절' : '바로 예약하기';
         book.addEventListener('click', event => {
           event.preventDefault();
           event.stopPropagation();
