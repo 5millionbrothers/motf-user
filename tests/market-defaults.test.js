@@ -69,5 +69,5 @@ test('the customer catalog uses the unhyphenated Coca-Cola brand and keeps escap
   assert.equal(vm.runInContext('marketText("코카-콜라")',context),'코카콜라');
   assert.equal(vm.runInContext('marketText("코카‑콜라<")',context),'코카콜라&lt;');
   const build=source.slice(source.indexOf('  function buildStore('),source.indexOf('  function buildStore(')+2300);
-  assert.match(build,/manufacturer:\s*marketText\(item.detail_sections\?\.manufacturer\)/);
+  assert.match(build,/manufacturer:.*marketText\(item.detail_sections\?\.manufacturer\)/);
 });

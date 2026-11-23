@@ -229,3 +229,11 @@
   .design-main .event-detail-hero h1 { font-size:27px; }
   .design-main dialog :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),textarea,select) { font-size:16px; }
 }
+.design-main .product-disclosure-link { color: #2f3d2b; text-decoration: underline; text-underline-offset: 0.2em; }
+.design-main .product-disclosure { max-width: 800px; margin: 28px 0 0; scroll-margin-top: 96px; }
+.design-main .product-disclosure h3 { margin: 0 0 12px; font-size: 16px; }
+.design-main .product-disclosure figure { margin: 0 0 22px; }
+.design-main .product-disclosure img { display: block; max-width: 100%; height: auto; border: 1px solid #e2e6dd; border-radius: 8px; background: white; }
+.design-main .product-disclosure figcaption { margin: 8px 0 0; }
+.design-main .product-disclosure figcaption a { padding: 8px 12px; text-decoration: none; }
+.design-main .product-disclosure-note { margin: 0 0 12px; font-size: 13px; }

@@ -483,9 +483,12 @@ window.motfApplyCatalog = function applyCatalog(nextStays, nextStores, options =
     else setStaySelection(requestedStayId, requestedRoomId);
   }
   if (Array.isArray(nextStores)) {
+    const selectedId = state.selectedProduct?.id;
     stores = nextStores;
-    state.selectedStore = stores[0] || null;
-    state.selectedProduct = groupProductVariants(stores[0]?.products || [])[0] || null;
+    const selected = selectedId ? findProduct(selectedId) : null;
+    state.selectedStore = selected?.store || stores[0] || null;
+    state.selectedProduct = selected?.product || groupProductVariants(stores[0]?.products || [])[0] || null;
+    if (route === "productDetail") applyRouteSelection(route);
     state.cart = [];
   }
   state.catalogLoading = false;
@@ -497,6 +500,7 @@ window.motfApplyCatalog = function applyCatalog(nextStays, nextStores, options =
   if (route === "booking") renderBooking();
   if (route === "market") renderStores();
   if (route === "storeDetail") renderStoreDetail();
+  if (route === "productDetail") renderProductDetail();
 };
 
 window.motfGetReservationDraft = function getReservationDraft() {
@@ -1063,6 +1067,14 @@ function applyRouteSelection(route) {
     const eventId = params.get("event");
     if (eventId) state.selectedEvent = state.platformEvents.find((item) => String(item.id) === String(eventId)) || state.selectedEvent;
   }
+  if (route === "productDetail") {
+    const productId = currentParams.get("product");
+    if (productId) {
+      const found = findProduct(productId);
+      state.selectedProduct = found?.product || null;
+      if (found) state.selectedStore = found.store;
+    }
+  }
 }
 
 function maybeShowMarketGuide() {
@@ -1107,6 +1119,7 @@ function routeUrl(route, optionParams = null) {
     if (!params.has("room") && selectedRoomId) params.set("room", selectedRoomId);
   }
   if (route === "eventDetail" && !params.has("event") && (initialParam("event") || state.selectedEvent?.id)) params.set("event", initialParam("event") || state.selectedEvent.id);
+  if (route === "productDetail" && !params.has("product") && state.selectedProduct?.id) params.set("product", state.selectedProduct.id);
   const query = params.toString();
   return `${window.location.origin}${path}${query ? `?${query}` : ""}`;
 }
@@ -2673,7 +2686,8 @@ function groupProductVariants(products = []) {
       selected = variants.filter(item => /냉동/.test([item.variantLabel,item.detailSections?.temperature,item.detail].filter(Boolean).join(' ')))
         .sort((a,b) => Number(a.price) - Number(b.price))[0];
     }
-    return { ...(selected || variants[0]), variants };
+    const representative = selected || variants[0];
+    return { ...representative, name: representative.cardName || representative.name, variants };
   });
 }
 
@@ -2785,6 +2799,10 @@ function isAlcoholProduct(product) {
 function renderProductDetail() {
   const product = state.selectedProduct;
   if (!product) {
+    if (state.catalogLoading) {
+      qs("#productDetailContent").innerHTML = '<div class="empty-state" role="status">상품 정보를 불러오는 중입니다.</div>';
+      return;
+    }
     qs("#productDetailContent").innerHTML = `<div class="empty-state catalog-error"><strong>상품 정보를 찾을 수 없습니다.</strong><button class="primary-btn" type="button" data-route="market">마트로 돌아가기</button></div>`;
     refreshIcons();
     return;
@@ -2792,6 +2810,15 @@ function renderProductDetail() {
   const alcoholProduct = isAlcoholProduct(product);
   const variants = productVariants(product);
   const orderRules = productOrderRules(product);
+  const disclosure = product.disclosure;
+  const labelValue = (key, value, fallback, alwaysLink = false) => {
+    const placeholder = !value || /^(상품 포장지|수령 상품의|상품 표기|상품 표시사항 참조)/.test(value);
+    return (alwaysLink || placeholder) && disclosure?.fields.includes(key)
+      ? '<a class="product-disclosure-link" href="#product-disclosure-photo" data-product-disclosure-link>표시사항 사진 참조</a>'
+      : escapeHtml(value || fallback);
+  };
+  const nutrition = product.nutritionInfo?.description || Object.entries(product.nutritionInfo || {})
+    .map(([key, value]) => `${key} ${value}`).join(" · ");
   qs("#productDetailContent").innerHTML = `
     <div class="product-detail">
       <img class="${productImageClass(product)}" src="${product.image}" alt="${product.name} 사진" />
@@ -2842,15 +2869,30 @@ function renderProductDetail() {
         <div><dt>용량·단위</dt><dd>${escapeHtml(product.unit)}</dd></div>
         ${product.detailSections?.productType ? `<div><dt>식품 유형</dt><dd>${escapeHtml(product.detailSections.productType)}</dd></div>` : ""}
         ${product.detailSections?.alcohol ? `<div><dt>알코올</dt><dd>${escapeHtml(product.detailSections.alcohol)}</dd></div>` : ""}
-        <div><dt>원산지</dt><dd>${escapeHtml(product.origin)}</dd></div>
-        <div><dt>원재료</dt><dd>${escapeHtml(product.detailSections?.ingredients || "상품 포장지 표기 참조")}</dd></div>
-        <div><dt>알레르기</dt><dd>${escapeHtml(product.detailSections?.allergens || "상품 포장지 표기 참조")}</dd></div>
-        <div><dt>보관 방법</dt><dd>${escapeHtml(product.detailSections?.storage || "상품 표기 및 마트 안내에 따릅니다.")}</dd></div>
+        <div><dt>원산지</dt><dd>${labelValue("origin", product.origin)}</dd></div>
+        <div><dt>원재료</dt><dd>${labelValue("ingredients", product.detailSections?.ingredients, "상품 포장지 표기 참조", true)}</dd></div>
+        <div><dt>알레르기</dt><dd>${labelValue("allergens", product.detailSections?.allergens, "상품 포장지 표기 참조", true)}</dd></div>
+        <div><dt>보관 방법</dt><dd>${labelValue("storage", product.detailSections?.storage, "상품 표기 및 마트 안내에 따릅니다.")}</dd></div>
         <div><dt>소비기한</dt><dd>${escapeHtml(product.detailSections?.expiry || "수령 상품의 포장지에서 확인해주세요.")}</dd></div>
-        <div><dt>영양 정보</dt><dd>${escapeHtml(product.nutritionInfo?.description || Object.entries(product.nutritionInfo || {}).map(([key, value]) => `${key} ${value}`).join(" · ") || "상품 포장지의 영양정보를 확인해주세요.")}</dd></div>
+        ${product.category !== "일회용품" ? `<div><dt>영양 정보</dt><dd>${labelValue("nutrition", nutrition, "상품 포장지의 영양정보를 확인해주세요.", true)}</dd></div>` : ""}
+        ${(product.extraDisclosureFacts || []).map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}
         ${product.detailSections?.cautions ? `<div><dt>주의사항</dt><dd>${escapeHtml(product.detailSections.cautions)}</dd></div>` : ""}
         <div><dt>판매자 안내</dt><dd>${escapeHtml(product.detailSections?.sellerNote || product.detail)}</dd></div>
       </dl>
+      ${disclosure ? `
+        <section class="product-disclosure" id="product-disclosure-photo" tabindex="-1">
+          <h3>${disclosure.reference ? "참고 이미지" : "상품 표시사항"}</h3>
+          ${disclosure.note ? `<p class="product-disclosure-note">${escapeHtml(disclosure.note)}</p>` : ""}
+          ${disclosure.photos.map((url, index) => `
+            <figure>
+              <img src="${escapeHtml(url)}" alt="${escapeHtml(product.name)} ${disclosure.reference ? "참고 이미지" : "표시사항"} ${index + 1}" loading="lazy" decoding="async" />
+              <figcaption><a class="secondary-btn" href="${escapeHtml(url)}" target="_blank" rel="noopener">
+                <i data-lucide="zoom-in"></i>사진 ${disclosure.photos.length > 1 ? `${index + 1} ` : ""}크게 보기
+              </a></figcaption>
+            </figure>
+          `).join("")}
+        </section>
+      ` : ""}
     </section>
     <section class="product-information-section market-refund-section">
       <h2>취소 및 환불</h2>
@@ -5132,6 +5174,15 @@ document.addEventListener("click", async (event) => {
     return;
   }
 
+  if (event.target.closest("[data-product-disclosure-link]")) {
+    const photo = qs("#product-disclosure-photo");
+    if (photo) {
+      event.preventDefault();
+      photo.focus({ preventScroll: true });
+      photo.scrollIntoView({ block: "start" });
+    }
+    return;
+  }
   const productButton = event.target.closest("[data-product-id]");
   if (productButton) {
     const found = findProduct(productButton.dataset.productId);
@@ -5155,6 +5206,7 @@ document.addEventListener("click", async (event) => {
     if (found) {
       state.selectedProduct = found.product;
       state.selectedStore = found.store;
+      window.history.replaceState(window.history.state, "", routeUrl("productDetail"));
       renderProductDetail();
     }
     return;

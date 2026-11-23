@@ -8,6 +8,12 @@
   const serviceRegionMap = new Map();
   const homeProductMap = new Map();
   const productFallback = "https://images.unsplash.com/photo-1606787366850-de6330128bfc?auto=format&fit=crop&w=1200&q=82";
+  const daesungId = "d5513697-7341-4cc6-a16b-781caf6b902d";
+  const labelRoot = "/assets/market/daesung/disclosures/";
+  const unlistedDaesungIds = new Set([
+    "3574f59d-ff14-545e-9faf-cd1c813a501b",
+    "a9ab6a62-10fe-5d05-b420-6daee67ee4a4",
+  ]);
   const facilityLabels = {
     barbecue: "야외바베큐",
     outdoor: "야외바베큐",
@@ -121,30 +127,47 @@
     };
   }
 
-  function buildStore(business, offerings) {
-    const products = offerings.map((item) => ({
-      id: item.id,
-      category: text(item.category || "기타"),
-      name: marketText(item.detail_sections?.productDisplayName || item.name),
-      unit: text(item.unit || "1개"),
-      price: Number(item.price) || 0,
-      origin: text(item.origin || "업체 제공 상품"),
-      manufacturer: marketText(item.detail_sections?.manufacturer),
-      groupKey: text(item.detail_sections?.productGroupKey || ""),
-      variantLabel: text(item.detail_sections?.variantLabel || item.unit || "1개"),
-      image: imageUrl(item.image_url || business.cover_image_url, productFallback),
-      images: (item.image_urls || []).map((url) => imageUrl(url, productFallback)),
-      detail: text(item.description || "상세 내용은 마트에 문의해주세요."),
-      detailSections: item.detail_sections && typeof item.detail_sections === "object" ? item.detail_sections : {},
-      nutritionInfo: item.nutrition_info && typeof item.nutrition_info === "object" ? item.nutrition_info : {},
-      isAlcohol: Boolean(item.is_alcohol),
-      isSourceCalibrated: item.detail_sections?.catalogVersion === "20261026",
-      isCutout: Boolean(
-        String(item.detail_sections?.importSource || "").startsWith("google-sheet:")
-        && String(item.image_url || "").includes("/assets/market/daesung/")
-      ),
-      stockQuantity: item.stock_quantity == null ? null : Number(item.stock_quantity),
-    }));
+  function buildStore(business, offerings, disclosures) {
+    const daesung = business.id === daesungId;
+    const products = offerings.filter(item => !daesung || !unlistedDaesungIds.has(item.id)).map(item => {
+      const entry = daesung ? disclosures[item.id] : null;
+      const release = entry?.sourceName === item.name && entry?.sourceUnit === item.unit ? entry : null;
+      const rawDetails = item.detail_sections && typeof item.detail_sections === "object" ? item.detail_sections : {};
+      const unit = release?.unit || item.unit || "1개";
+      const manufacturer = release?.manufacturer || item.detail_sections?.manufacturer;
+      const photos = (Array.isArray(release?.photos) ? release.photos : []).filter(file => /^label-\d{3}\.webp$/.test(file)).map(file => labelRoot + file);
+      const cover = /^label-\d{3}\.webp$/.test(release?.coverPhoto || "") ? labelRoot + release.coverPhoto : null;
+      return {
+        id: item.id,
+        category: text(item.category || "기타"),
+        name: marketText(release?.name || rawDetails.productDisplayName || item.name),
+        unit: text(unit),
+        price: Number(item.price) || 0,
+        origin: text(release?.origin || item.origin || "업체 제공 상품"),
+        manufacturer: release?.manufacturer ? marketText(manufacturer) : marketText(item.detail_sections?.manufacturer),
+        cardName: release?.cardName ? marketText(release.cardName) : "",
+        groupKey: text(release?.groupKey || rawDetails.productGroupKey || ""),
+        variantLabel: text(release?.variantLabel || release?.unit || rawDetails.variantLabel || unit),
+        image: cover || imageUrl(item.image_url || business.cover_image_url, productFallback),
+        images: cover ? [cover] : (item.image_urls || []).map((url) => imageUrl(url, productFallback)),
+        detail: marketText(release?.unit && !rawDetails.quantityUnit
+          ? [manufacturer, unit].filter(Boolean).join(" · ")
+          : item.description || "상세 내용은 마트에 문의해주세요."),
+        detailSections: release?.detail ? { ...rawDetails, ...release.detail } : rawDetails,
+        nutritionInfo: item.nutrition_info && typeof item.nutrition_info === "object" ? item.nutrition_info : {},
+        disclosure: photos.length ? {
+          photos, reference: release.reference === true, fields: release.reference === true ? [] : (release.fields || []), note: release.note || "",
+        } : null,
+        extraDisclosureFacts: release?.facts || [],
+        isAlcohol: Boolean(item.is_alcohol),
+        isSourceCalibrated: item.detail_sections?.catalogVersion === "20261026",
+        isCutout: Boolean(
+          String(item.detail_sections?.importSource || "").startsWith("google-sheet:")
+          && String(item.image_url || "").includes("/assets/market/daesung/")
+        ),
+        stockQuantity: item.stock_quantity == null ? null : Number(item.stock_quantity),
+      };
+    });
     return {
       id: business.id,
       displayOrder: Number.isFinite(Number(business.display_order)) ? Number(business.display_order) : 3,
@@ -186,7 +209,7 @@
   }
 
   (async () => {
-    let [businessResult, offeringResult, regionResult, homeProductResult] = await Promise.all([
+    let [businessResult, offeringResult, regionResult, homeProductResult, disclosureResult] = await Promise.all([
       client.from("businesses")
         .select("id, business_type, business_name, phone, address, description, short_description, highlight_summary, highlight_keys, region, cover_image_url, gallery_image_urls, facilities, approval_status, latitude, longitude, location_verified_at, station_distance_m, convenience_distance_m, nearby_tags, room_count, bath_count, shared_bathroom_count, shared_bathroom_gender_separated, shared_bathroom_note, shoulder_season_ranges, peak_season_ranges, amenity_details, extra_fees, refund_policy, recommended_sets, is_featured, display_order, discovery_weight")
         .eq("approval_status", "approved"),
@@ -196,6 +219,7 @@
         .order("sort_order"),
       client.rpc('list_business_service_regions'),
       client.rpc('list_market_home_products'),
+      fetch(labelRoot + "index.json?v=20261123-r2").then(response => response.ok ? response.json() : {}).catch(() => ({})),
     ]);
     if (!regionResult.error) (regionResult.data || []).forEach(item => serviceRegionMap.set(item.business_id,item.regions || []));
     if (!homeProductResult.error) (homeProductResult.data || []).forEach(item => homeProductMap.set(item.business_id,item.offering_ids || []));
@@ -257,7 +281,7 @@
     const stays = window.innerWidth >= 1024 ? window.motfRankStayExposure(stayItems, 'list') : rankCatalog(stayItems);
     const stores = rankCatalog(businesses
       .filter((business) => business.business_type === "market")
-      .map((business) => buildStore(business, offerings.filter((item) => item.business_id === business.id))));
+      .map((business) => buildStore(business, offerings.filter((item) => item.business_id === business.id), disclosureResult || {})));
 
     window.motfApplyCatalog(stays, stores);
   })();
