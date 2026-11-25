@@ -24,6 +24,12 @@
   function target(url){try{const value=new URL(url||'/events',location.origin);if(!['http:','https:'].includes(value.protocol))return{route:'events'};if(value.origin===location.origin||['motf.co.kr','www.motf.co.kr'].includes(value.hostname)){if(value.pathname==='/events/detail')return{event:value.searchParams.get('event')};const route=Object.entries(routePaths).find(([,path])=>path===value.pathname.replace(/\/$/,'')||path===value.pathname)?.[0];if(route)return{route};}return{url:value.href};}catch{return{route:'events'};}}
   function promos(){
     const cards=state.homepageCards.filter(card=>card.is_active!==false&&(!card.starts_at||Date.parse(card.starts_at)<=Date.now())&&(!card.ends_at||Date.parse(card.ends_at)>Date.now())).sort((a,b)=>Number(a.sort_order)-Number(b.sort_order));
+    if(state.homeCarouselManaged) return cards.filter(card=>card.placement==='promotion').slice(0,10).map(card=>({
+      id:card.id, kind:card.banner_action==='create_mt'?'내 MT':card.banner_action==='create_organization'?'우리 단체':'모티프 소식',
+      title:card.title, description:card.subtitle||'', button:card.link_label||'자세히 보기',
+      image:card.image_url, theme:card.banner_action==='create_mt'||card.banner_action==='create_organization'?'guide':'original',
+      create:card.banner_action==='create_mt', organization:card.banner_action==='create_organization', target:target(card.link_url),
+    }));
     const selected=new Set(cards.map(card=>target(card.link_url).event));
     return [{kind:'내 MT',title:'흩어진 MT 준비,\n우리 공간에 모아봐요.',description:'숙소 후보와 장보기, 예산을 함께 정리해요.',button:'내 MT 만들기',image:'design/mt-prep.jpg',theme:'guide',create:true},{kind:'우리 단체',title:'올해의 준비가,\n다음 총무의 시작이 되도록.',description:'학생회·동아리·모임의 MT 기록과 담당자를 한곳에서 관리하세요.',button:'우리 단체 만들기',image:'design/mt-prep.jpg',theme:'guide',organization:true},...cards.map(card=>({kind:card.placement==='card_news'?'CARD NEWS':'모티프 소식',title:card.title,description:card.subtitle||'',button:card.link_label||'자세히 보기',image:card.image_url,theme:'original',target:target(card.link_url)})),...state.platformEvents.filter(event=>!['draft','cancelled','completed'].includes(effectiveEventStatus(event))&&!selected.has(String(event.id))).slice(0,5).map(event=>({kind:'MOriginal',title:event.title,description:event.short_description||'',button:'프로그램 보기',image:event.poster_url,theme:'original',target:{event:String(event.id)}}))];
   }
@@ -45,6 +51,8 @@
   }
   function banner(){
     const host=$('#homeLocalBanner');if(!host)return;
+    if(!slides.length){host.hidden=true;host.replaceChildren();return;}
+    host.hidden=false;
     host.innerHTML=templates.homeEditorial();const slide=slides[slideIndex];const promo=$('.home-promo',host);promo.className=`home-promo theme-${slide.theme}`;
     const image=$('.home-promo-visual img',host);image.src=slide.image.startsWith('design/')?'assets/'+slide.image:slide.image;
     const button=$('.home-promo-copy .text-button',host);button.removeAttribute('data-action');button.removeAttribute('data-page');if(slide.create)button.dataset.createMtProject='';else if(slide.organization)button.dataset.localOrganization='';else if(slide.target?.event){if(state.platformEvents.some(event=>String(event.id)===slide.target.event&&!['draft','cancelled'].includes(event.status)))button.dataset.eventId=slide.target.event;else button.dataset.route='events';}else if(slide.target?.url){const link=document.createElement('a');link.className=button.className;link.innerHTML=button.innerHTML;link.href=slide.target.url;link.target='_blank';link.rel='noopener noreferrer';button.replaceWith(link);}else button.dataset.route=slide.target?.route||'events';

@@ -29,13 +29,13 @@
     <link rel="apple-touch-icon" sizes="180x180" href="assets/motf-apple-touch-icon.png?v=20261103-symbol" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
     <style>@layer mp-mobile, operational;</style>
-    <link rel="stylesheet" href="legacy-style.css?v=20261116-signup-legal" />
+    <link rel="stylesheet" href="legacy-style.css?v=20261125-content-mt" />
     <link rel="preload" href="assets/SUIT-Variable.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="local-reset.css?v=20261103-local2" />
-    <link rel="stylesheet" href="local-design.css?v=20261116-contact31" />
+    <link rel="stylesheet" href="local-design.css?v=20261125-content-mt" />
     <link rel="stylesheet" href="local-adapter.css?v=20261119-settlement-polish" />
     <link rel="stylesheet" href="screen-polish.css?v=20261123-daesung-catalog-r2" />
-    <link rel="stylesheet" href="preparation-workflows.css?v=20261120-customer-polish" />
+    <link rel="stylesheet" href="preparation-workflows.css?v=20261125-content-mt" />
     <link rel="stylesheet" href="budget-export.css?v=20261119-settlement-polish" />
     <link rel="stylesheet" href="loading.css?v=20261103-symbol" />
     <link rel="stylesheet" href="mobile-polish.css?v=20261120-customer-polish" />
@@ -188,10 +188,12 @@
       <dialog id="mtProjectDialog" class="motf-dialog">
         <form method="dialog" id="mtProjectForm">
           <div class="section-toolbar"><div><p class="eyebrow">우리 MT 방</p><h2>MT 기본 정보</h2></div><button class="icon-action" type="button" data-close-motf-dialog aria-label="닫기"><i data-lucide="x"></i></button></div>
+          <div class="mt-project-fields">
           <label>MT 이름<input id="mtEditTitle" required maxlength="120" /></label>
           <label>모임명 (선택)<input id="mtEditOrganization" maxlength="100" /></label>
           <div class="form-grid"><label>시작일<input id="mtEditStart" type="date" required /></label><label>종료일<input id="mtEditEnd" type="date" required /></label><label>인원<input id="mtEditPeople" type="number" min="1" max="500" required /></label><label>지역<input id="mtEditRegion" maxlength="50" required /></label></div>
           <label>총예산<span class="money-input"><input id="mtEditBudget" type="text" inputmode="numeric" data-money-input placeholder="예: 2,500,000" /><b>원</b></span></label>
+          </div>
           <button class="primary-btn" type="submit"><i data-lucide="save"></i>저장</button>
         </form>
       </dialog>
@@ -1289,28 +1291,28 @@
     <script src="nicepay.js?v=20261030-card-bank"></script>
     <script src="stay-booking-window.js?v=20261119"></script>
     <script src="stay-refund-policy.js?v=20261119-settlement-polish"></script>
-    <script src="app.js?v=20261123-daesung-catalog-r2"></script>
+    <script src="app.js?v=20261125-content-mt"></script>
     <script src="budget-model.js?v=20261119-settlement-polish"></script>
     <script src="budget-export.js?v=20261119-settlement-polish"></script>
     <script src="/identity-flow.js?v=20261117-auth-rooms"></script>
-    <script src="auth.js?v=20261120-customer-polish"></script>
-    <script src="catalog.js?v=20261123-daesung-catalog-r2"></script>
+    <script src="auth.js?v=20261125-content-mt"></script>
+    <script src="catalog.js?v=20261125-content-mt"></script>
     <script src="transactions.js?v=20261119-mt-refresh"></script>
     <script src="chat-data.js?v=20261119-settlement-polish"></script>
     <script src="support-data.js?v=20260621-support1"></script>
     <script src="reviews-data.js?v=20260829-hotfix3"></script>
-    <script src="product-refresh.js?v=20261119-booking-window"></script>
-    <script src="mt-project-data.js?v=20261119-mt-refresh"></script>
-    <script src="content-data.js?v=20261116-launch"></script>
+    <script src="product-refresh.js?v=20261125-content-mt"></script>
+    <script src="mt-project-data.js?v=20261125-content-mt"></script>
+    <script src="content-data.js?v=20261125-content-mt"></script>
     <script src="site-metadata.js?v=20261106"></script>
     <script src="desktop-model.js?v=20261116-market-combined"></script>
     <script src="local-home-templates.js?v=20261116-desktop"></script>
-    <script src="local-design.js?v=20261120-customer-polish"></script>
+    <script src="local-design.js?v=20261125-content-mt"></script>
     <script src="community-design.js?v=20261120-customer-polish"></script>
     <script src="/mt-workflow-model.js?v=20261113-recent"></script>
-    <script src="mt-selection.js?v=20261120-customer-polish"></script>
+    <script src="mt-selection.js?v=20261125-content-mt"></script>
     <script src="product-reviews.js?v=20261116-market-combined"></script>
-    <script src="mobile-polish.js?v=20261123-room-list"></script>
+    <script src="mobile-polish.js?v=20261125-content-mt"></script>
     <script src="/workflow-ui.js?v=20261116-desktop"></script>
     <script src="/desktop-ui.js?v=20261116-market-combined"></script>
     <script src="/desktop-replies.js?v=20261120-customer-polish"></script>

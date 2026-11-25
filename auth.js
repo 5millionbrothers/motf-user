@@ -1207,7 +1207,7 @@
   };
   window.motfOrganizationReady = new Promise((resolve) => {
     const script = document.createElement("script");
-    script.src = "/organization-data.js?v=20261108";
+    script.src = "/organization-data.js?v=20261125";
     script.onload = () => resolve(window.motfReloadOrganization?.());
     script.onerror = () => resolve();
     document.head.append(script);

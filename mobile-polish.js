@@ -300,6 +300,7 @@
   }
   function setSheet(state, animate = true) {
     if (!sheet.el) return;
+    const changed = sheet.state !== state;
     if (state !== 'peek') hideMapCard();
     // 끝까지 올린 상태(full)는 화면 고정 시트가 아니라 일반 페이지 스크롤로 바꿈
     // → 내리면 로고 줄이 같이 올라가고, 아이폰 사파리·크롬 주소창도 접혀서 목록이 화면을 꽉 채움
@@ -313,7 +314,7 @@
     sheet.y = sheetSnaps()[state];
     sheet.el.classList.toggle('mp-dragging', !animate);
     sheet.el.style.setProperty('--mp-sheet-y', `${sheet.y}px`);
-    if (state !== 'full') sheet.el.scrollTop = 0;
+    if (changed && state !== 'full') sheet.el.scrollTop = 0;
     // 목록이 중간·아래일 때는 촘촘한 목록(사진 왼쪽), 끝까지 올리면 큰 사진 카드
     sheet.el.classList.toggle('mp-compact', state !== 'full');
     const toggle = $('#stays .mp-map-toggle');

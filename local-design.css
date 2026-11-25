@@ -2253,6 +2253,7 @@ body[data-concept="home"] .site-header.wrap { height:78px; }
 .search-first .home-promo h2 { font-size:29px; font-weight:550; line-height:1.35; margin-top:8px; }
 .search-first .home-promo-copy>span { font-size:12px; margin-top:9px; }
 .search-first .home-promo-copy>.text-button { font-size:12px; margin-top:15px; }
+.search-first .home-promo h2, .search-first .home-promo-copy>span { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; overflow-wrap:anywhere; }
 .search-first .home-card-meta { height:32px; margin-top:8px; }
 .search-first .home-card-meta>.icon-button { width:30px; height:30px; }
 .search-first .home-card-meta>.icon-button svg { width:15px; height:15px; }

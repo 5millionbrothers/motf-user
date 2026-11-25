@@ -165,10 +165,16 @@
       if (pending !== request) return;
       await saved(chosen,'',roomReference(result?.candidate_ids)); return;
     }
-    shell(`<button class="text-button" type="button" data-selection-back>${icon('arrow-left')} MT 다시 선택</button><div class="selection-context"><strong>${esc(stay.name)}</strong><span>${esc(pending.project.title)} · ${esc(pending.project.starts_on)} ~ ${esc(pending.project.ends_on)}</span></div><p class="selection-lead">필요한 객실을 여러 개 선택하세요. 예약은 아직 접수되지 않아요.</p><div class="selection-room-list">${stay.rooms.map(room => {
+    pending.roomChoices = { stay, unavailable };
+    renderRoomPage(1);
+  }
+  function renderRoomPage(pageNumber) {
+    const { stay, unavailable } = pending.roomChoices;
+    const page = mtPageSlice(stay.rooms, pageNumber, 6);
+    shell(`<button class="text-button" type="button" data-selection-back>${icon('arrow-left')} MT 다시 선택</button><div class="selection-context"><strong>${esc(stay.name)}</strong><span>${esc(pending.project.title)} · ${esc(pending.project.starts_on)} ~ ${esc(pending.project.ends_on)}</span></div><p class="selection-lead">필요한 객실을 여러 개 선택하세요. 예약은 아직 접수되지 않아요.</p><div class="selection-room-list">${page.rows.map(room => {
       const soldOut = unavailable.has(String(room.id)), already = workflow.roomCount(snapshot, pending.businessId, room.id);
       return `<label class="selection-room ${soldOut ? 'unavailable' : ''}"><input type="checkbox" data-selection-room="${room.id}" ${soldOut || already ? 'disabled' : ''} ${pending.rooms.has(String(room.id)) ? 'checked' : ''}><img src="${esc(room.image || stay.image)}" alt=""><span><strong>${esc(room.name)}${already ? ' · 담긴 객실' : ''}</strong><small>기준 ${room.basePeople || '-'}명 / 최대 ${room.maxPeople || roomCapacityMax(room) || '-'}명</small><small>${soldOut ? '선택 일정 예약 마감' : money(mtRoomRangeTotal(stay,room,pending.project))}</small></span></label>`;
-    }).join('')}</div><div class="selection-footer"><strong data-selection-count></strong><button class="primary" type="button" data-selection-save>선택한 객실 담기 ${icon('folder-plus')}</button></div>`);
+    }).join('')}</div>${mtPageButtons('stay', page, 'data-selection-room-page')}<div class="selection-footer"><strong data-selection-count></strong><button class="primary" type="button" data-selection-save>선택한 객실 담기 ${icon('folder-plus')}</button></div>`);
     roomFooter();
   }
   function renderProduct() {
@@ -193,6 +199,12 @@
   }
   dialog.addEventListener('change',event => {
     if (!pending || pending.committing) return;
+    if (button.hasAttribute('data-selection-room-page')) {
+      renderRoomPage(button.dataset.selectionRoomPage);
+      $('[aria-current="page"]',dialog)?.focus({preventScroll:true});
+      dialog.scrollTop = 0;
+      return;
+    }
     const input = event.target;
     if (input.hasAttribute('data-selection-room')) {
       if (input.checked) pending.rooms.add(input.dataset.selectionRoom); else pending.rooms.delete(input.dataset.selectionRoom);

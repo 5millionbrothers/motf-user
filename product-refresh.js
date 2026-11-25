@@ -113,7 +113,7 @@
       media_urls: mediaUrls,
       review_status: "pending",
     });
-    if (error) return window.toast?.("추천을 접수하지 못했습니다. DB 44번 SQL 적용을 확인해주세요.");
+    if (error) throw error;
     form.reset();
     form.hidden = true;
     form.classList.remove("full-page-compose");
@@ -163,11 +163,15 @@
   async function loadCommunityData() {
     const client = window.motfSupabase;
     if (!client) return;
+    const { data: auth } = await client.auth.getSession();
+    const signedIn = Boolean(auth.session);
+    const publicFields = "id,author_name,board_key,title,body,media_urls,created_at";
     const [posts, likes, comments] = await Promise.all([
-      client.from("community_posts").select("id,author_id,author_name,board_key,title,body,media_urls,created_at").eq("is_hidden", false).order("created_at", { ascending: false }).limit(200),
-      client.from("community_post_likes").select("post_id,user_id"),
-      client.from("community_comments").select("id,post_id,user_id,parent_comment_id,body,created_at").order("created_at"),
+      client.from("community_posts").select(signedIn ? publicFields + ",author_id" : publicFields).eq("is_hidden", false).is("deleted_at", null).order("created_at", { ascending: false }).limit(200),
+      signedIn ? client.from("community_post_likes").select("post_id,user_id") : {},
+      signedIn ? client.from("community_comments").select("id,post_id,user_id,parent_comment_id,body,created_at").order("created_at") : {},
     ]);
+    if (posts.error) { console.warn("커뮤니티 게시글을 불러오지 못했습니다.", posts.error); return; }
     const commentRows = comments.data || [];
     const byId = new Map(commentRows.map((item) => [item.id, item]));
     window.motfApplyCommunityData?.(posts.data || [], likes.data || [], commentRows.map((item) => ({ ...item, parent_user_id: byId.get(item.parent_comment_id)?.user_id || null })));
@@ -273,6 +277,12 @@
   observer.observe(document.body, { attributes: true, attributeFilter: ["data-current-route"] });
   window.motfInitializeDatePickers = initializePickers;
   window.motfReloadDesktopCommunity = loadCommunityData;
+  window.addEventListener("motf:routechange", event => {
+    if (["community", "boardDetail", "postDetail"].includes(event.detail?.route)) void loadCommunityData();
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && ["community", "boardDetail", "postDetail"].includes(currentRoute())) void loadCommunityData();
+  });
   initializePickers();
   // 서버 연결(motfSupabase)이 늦게 준비되면 첫 시도에서 아무것도 못 불러와 홈 커뮤니티 칸이 비어 보였음 → 준비될 때까지 다시 시도
   (function loadCommunityWhenReady(tries = 0) {

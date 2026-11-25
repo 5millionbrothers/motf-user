@@ -9,8 +9,8 @@
   const canEdit = (project) => project.organization_id
     ? window.motfGetOrganizationId?.() === project.organization_id && window.motfCanEditOrganization?.(project.organization_id) === true
     : !window.motfGetOrganizationId?.() && project.owner_id === currentUser?.id;
-  const projectFields = "id, owner_id, organization_id, title, organization_name, region, starts_on, ends_on, guest_count, status, final_business_id, final_reservation_id, estimated_budget, created_at, updated_at";
-  const itemFields = "id, project_id, item_kind, reference_id, title, quantity, amount, status, note, created_at, updated_at";
+  const projectFields = "id, owner_id, organization_id, title, organization_name, region, starts_on, ends_on, guest_count, status, final_business_id, final_reservation_id, estimated_budget, include_barbecue, created_at, updated_at";
+  const itemFields = "id, project_id, item_kind, reference_id, title, quantity, amount, status, note, cost_breakdown, created_at, updated_at";
   const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
   function requireUser() {
@@ -143,7 +143,7 @@
     if (error) throw error;
     if (currentUser?.id !== userId) return;
     if (currentProject?.id === projectId && canEdit(currentProject)) {
-      currentProject = { ...currentProject, items: (currentProject.items || []).filter(item => item.status !== "planned") };
+      currentProject = { ...currentProject, include_barbecue: false, items: (currentProject.items || []).filter(item => item.status !== "planned") };
       window.motfApplyMtProject(currentProject, []);
     }
     window.dispatchEvent(new CustomEvent("motf:mt-items-changed", { detail: { projectId } }));
@@ -260,6 +260,12 @@
     });
     if (error) throw error;
     return data;
+  };
+  window.motfSetMtBarbecue = async function setMtBarbecue(projectId, include) {
+    requireUser();
+    const { error } = await client.rpc("set_mt_barbecue", { target_project_id: projectId, include_barbecue: include });
+    if (error) throw error;
+    if (currentProject?.id === projectId) await window.motfSelectMtProject(projectId);
   };
   window.motfReadMtSelection = async function readMtSelection(projectId) {
     requireUser();

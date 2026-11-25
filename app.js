@@ -447,6 +447,7 @@ const state = {
   publicStayCalendar: { businessId: "", blocks: [], loading: false },
   platformEvents: [],
   homepageCards: [],
+  homeCarouselManaged: false,
   eventFilter: "all",
   selectedEvent: null,
   gallery: { images: [], index: 0, alt: "" },
@@ -535,6 +536,7 @@ window.motfApplyLaunchContent = function applyLaunchContent(events = [], cards =
     state.selectedEvent = state.platformEvents.find((event) => String(event.id) === String(state.selectedEvent.id)) || state.selectedEvent;
   }
   state.homepageCards = Array.isArray(cards) ? cards : [];
+  state.homeCarouselManaged = social.homeCarouselManaged === true;
   const instagram = qs("[data-social-instagram]");
   if (instagram) instagram.dataset.url = social.instagram_url || "";
   if (currentRoute() === "home") renderHome();
@@ -685,6 +687,7 @@ window.motfApplyCommunityData = function applyCommunityData(posts, likes, commen
   if (currentRoute() === "community") renderCommunity();
   if (currentRoute() === "home") renderHome();
   if (currentRoute() === "boardDetail") renderBoardDetail();
+  if (currentRoute() === "postDetail") renderPostDetail();
 };
 
 window.motfApplyRecreationActivities = function applyRecreationActivities(rows = []) {
@@ -2522,10 +2525,57 @@ function renderBooking() {
   });
 }
 
+const marketBestCategory = "추천·베스트";
+const marketBestIds = [
+  "90f6f82c-fc03-5254-91ee-57511f2d6d26", // 삼겹살
+  "2cf0d559-ddea-5846-bd68-f82f40d5c043", // 목살
+  "63ff920d-2bb4-57e0-9ab1-0f3f33de0076", // 참이슬 후레쉬
+  "73e68e76-3614-57c6-bd7a-b775f83c4aa1", // 처음처럼
+  "5180f7d3-0d11-58d0-8591-fd490eb870fc", // 새로
+  "07effb06-776c-52e2-b2fe-55f74a37d674", // 별빛청하
+  "b40ca43f-1cd7-513f-9aec-ee7c90670ab9", // 새로 살구
+  "45afdffb-7a6a-51f0-b7a3-6f7f50d9a3c2", // 좋은데이 블루베리
+  "5bac21b4-81de-5410-930e-be4719186c93", // 톡소다 레몬
+  "196df9fe-770c-5fe2-9729-f11889876441", // 톡소다 사과
+  "236c7926-49b9-59df-b21f-2a2cb8252ea4", // 톡소다 석류
+  "24c74269-e5af-5822-b29a-035e0dc4095a", // 켈리
+  "268a8ada-a258-5e71-b007-daf805cd4d19", // 테라
+  "12a6f053-01c2-57b1-8806-cd8807c3b739", // 카스
+  "249eda1d-e75b-55de-8ebc-f5653c7a57ad", // 코카콜라
+  "c763e365-856e-509b-8aa0-76cf30d39ccb", // 코카콜라 제로
+  "5a4306a9-e707-5254-a1c3-4a211a507517", // 칠성사이다
+  "182ec153-2ebf-5284-860b-54b943961949", // 스프라이트
+  "ac6fca6f-3fe6-57db-986f-cd96009bfcf0", // 새우깡
+  "f0edac2a-d996-52c8-954d-ae0499c47f73", // 매운 새우깡
+  "1350cfbc-6bd1-5408-9eee-46c91a578e3d", // 꿀꽈배기
+  "bbc50b04-c20a-578f-a99e-1ffb4a62c7bd", // 뻥이요
+  "02818f30-a2df-5cea-b647-dd0d64ab7f36", // 왕짱구
+  "ac08093e-f431-5d97-ac82-c17e7c4c3844", // 햇반 200g x 4입
+  "a189d119-8597-5aa5-8677-c172e20c1432", // 햇반 200g x 12입
+  "15f0a23a-d50c-57c4-a0ba-6db69496ca5a", // 육개장 사발면 6개
+  "60a72dfa-df81-56ce-932f-ec06ad33797c", // 김치사발면
+  "37db6541-2368-52a1-b438-e26aea211968", // 신라면 봉지 묶음
+  "149ef892-8abb-5db8-9fc4-1001d09aaf9d", // 불닭볶음면 소컵
+  "78313420-e47a-5e56-898a-75a4e6d147dc", // 까르보 불닭 소컵
+  "4d5bd328-e560-573e-8364-ced630175945", // 너구리 봉지 묶음
+  "14682cee-5f22-52f5-8a91-be3920a6069e", // 팔도비빔면 봉지 묶음
+  "10e8aee4-508c-55e7-925f-68895edf515a", // 나무젓가락 30입
+  "f409568a-8d99-55c8-826a-e619835377d9", // 나무젓가락 50입
+  "12b8f6fc-e070-5e66-960d-47bbd3bd5eef", // 종이용기
+  "c07fdec6-08e8-56d8-9f77-12e3437c9ee8", // DY-230
+  "1f3e11f7-ff10-5226-a744-d5975510a7f2", // 물티슈
+  "359a662f-3304-5661-b72c-0fda60e0127d", // 허브맛솔트 순한맛
+  "6bd65759-d5ef-5623-b4ad-52683119b889", // 스모크 소시지
+  "0dedb538-b157-523a-8f5d-e74b33c23226", // 깐마늘
+  "d51049c3-1340-51a7-af54-1309b3a2f142", // 맛김치
+];
+const marketBestRank = new Map(marketBestIds.map((id, index) => [id, index]));
+const bestGroupRank = group => Math.min(...group.variants.map(product => marketBestRank.get(product.id) ?? Infinity));
+
 function marketProductCategories(products) {
   const preferred = ["MT 세트", "정육", "채소·농산물", "즉석밥", "라면", "과자·안주", "음료", "주류", "김치·반찬", "통조림·가공식품", "조미료·소스", "숙취해소", "일회용품", "생활용품", "식재료", "주류/음료", "냉동식품", "기타"];
   const available = [...new Set(products.map(product => product.category || "기타"))];
-  return ["전체", ...preferred.filter(category => available.includes(category)), ...available.filter(category => !preferred.includes(category))];
+  return ["전체", ...(products.some(product => marketBestRank.has(product.id)) ? [marketBestCategory] : []), ...preferred.filter(category => available.includes(category)), ...available.filter(category => !preferred.includes(category))];
 }
 
 function marketSearchField() {
@@ -2536,12 +2586,14 @@ function marketProductResults(store) {
   const normalize = value => String(value || "").normalize("NFKC").toLocaleLowerCase("ko-KR").replace(/\s+/g, "");
   const terms = state.marketQuery.trim().split(/\s+/).map(normalize).filter(Boolean);
   const selected = state.activeCategory;
-  const products = selected === "전체" ? store.products : store.products.filter(product => product.category === selected);
+  const best = selected === marketBestCategory;
+  const products = selected === "전체" || best ? store.products : store.products.filter(product => product.category === selected);
   const groups = groupProductVariants(products).filter(group => !terms.length || group.variants.some(product => {
     const text = normalize([product.name, product.variantLabel, product.manufacturer, product.category].filter(Boolean).join(" "));
     return terms.every(term => text.includes(term));
   }));
-  if (groups.length) return groups.map(productCard).join("");
+  const results = best ? groups.filter(group => Number.isFinite(bestGroupRank(group))).sort((a, b) => bestGroupRank(a) - bestGroupRank(b)) : groups;
+  if (results.length) return results.map(productCard).join("");
   const message = terms.length ? "검색 결과가 없습니다." : selected === "전체" ? "등록된 상품이 아직 없습니다." : "이 분류에 등록된 상품이 없습니다.";
   return `<div class="empty-state catalog-error" role="status"><strong>${message}</strong></div>`;
 }
@@ -3404,38 +3456,63 @@ function renderMyMt() {
   workspace.hidden = !isDetail;
   workspace.classList.toggle("readonly", isDetail && state.mtProject.is_owner === false);
   if (!isDetail) {
+    mtPages.project = null;
     qsa("[data-mt-directory-filter]").forEach((button) => button.classList.toggle("active", button.dataset.mtDirectoryFilter === state.mtDirectoryFilter));
     renderMtDirectory();
     refreshIcons();
     return;
   }
   renderMtProjectSummary();
+  if (mtPages.project !== state.mtProject.id) Object.assign(mtPages, { project: state.mtProject.id, stay: 1, shopping: 1 });
   const candidates = mtCandidateStays();
-  const people = mtProjectPeople();
+  const stayPage = mtPageSlice(candidates, mtPages.stay, 6);
+  mtPages.stay = stayPage.page;
+  const stayItems = (state.mtProject.items || []).filter(item => item.item_kind === "stay" && item.status !== "cancelled");
+  const quotes = stayItems.filter(item => item.status === "planned").map(item => item.cost_breakdown).filter(quote => quote?.site_amount != null);
+  const budgetNumbers = quotes.reduce((sum, quote) => ({
+    site: sum.site + Number(quote.site_amount || 0), onsite: sum.onsite + Number(quote.on_site || 0),
+    bbq: sum.bbq + Number(quote.barbecue || 0), missing: sum.missing || quote.barbecue_unknown,
+    capacity: Math.max(sum.capacity, Number(quote.capacity_shortfall || 0)), unavailable: sum.unavailable || quote.room_price_unknown,
+  }), { site:0, onsite:0, bbq:0, missing:false, capacity:0, unavailable:false });
   const comparison = qs("#mtCandidateComparison");
   if (comparison) {
     comparison.innerHTML = candidates.length ? `
-      <div class="mt-compare-grid" style="--candidate-count:${candidates.length}">
-        ${candidates.map((stay, index) => {
-          const cost = estimateMtStayCost(stay, people);
-          const planned = (state.mtProject.items || []).some((item) => item.item_kind === "stay" && String(item.reference_id) === String(stay.id) && item.status !== "cancelled");
-          const facilityFees = Number(cost.fixedFees || 0) + Number(cost.optional || 0);
-          const extraFeeLabel = cost.extraPeople
-            ? `${cost.extraPeople}명 · ${money(cost.extraPersonTotal)}`
-            : (stay.rooms || []).some((room) => Number(room.extraPersonFee || 0))
-              ? `인당 ${money(Math.min(...stay.rooms.filter((room) => Number(room.extraPersonFee || 0)).map((room) => Number(room.extraPersonFee))))}부터`
-              : "없음";
-          const baseTotal = Number(stay._estimatedCost?.room_total ?? cost.roomTotal ?? cost.confirmed);
-          return `<article class="mt-candidate-card ${planned ? "selected" : ""}"><div class="mt-candidate-rank">객실 후보 ${index + 1}</div><img src="${stay.image}" alt="${escapeHtml(stay.name)}"><h3>${escapeHtml(stay.name)}</h3><dl><div><dt>선택 일정 객실 금액</dt><dd>${money(baseTotal)}</dd></div><div><dt>기준 / 최대 인원</dt><dd>${stay.selectedRoom?.basePeople || '-'} / ${stay.selectedRoom?.maxPeople || '-'}명</dd></div><div><dt>추가 인원 요금</dt><dd>${stay.selectedRoom?.extraPersonFee ? `1인 ${money(stay.selectedRoom.extraPersonFee)}` : '별도 문의'}</dd></div><div><dt>위치</dt><dd>${escapeHtml(stay.distance)}</dd></div></dl><div class="button-row"><button class="ghost-btn" data-stay-id="${stay.businessId}">숙소 상세</button><button class="secondary-btn ${planned ? "active" : ""}" data-use-mt-stay="${stay.id}"><i data-lucide="${planned ? "check" : "wallet-cards"}"></i>${planned ? "예산 반영 취소" : "예산에 반영"}</button><button class="icon-action" data-remove-mt-candidate="${stay.id}" aria-label="후보 삭제"><i data-lucide="x"></i></button></div></article>`;
+      <label class="mt-bbq-option"><input type="checkbox" data-mt-barbecue ${state.mtProject.include_barbecue ? "checked" : ""} ${state.mtProject.is_owner === false ? "disabled" : ""}> 바비큐 이용료를 숙소 예산에 포함</label>
+      ${quotes.length ? `<div class="mt-stay-quote"><strong>숙소 예상 합계 ${money(budgetNumbers.site + budgetNumbers.onsite)}</strong><span>사이트 결제금 ${money(budgetNumbers.site)} · 현장 예상 비용 ${money(budgetNumbers.onsite)}${state.mtProject.include_barbecue ? ` (바비큐 ${money(budgetNumbers.bbq)} 포함)` : ""}</span>${budgetNumbers.missing ? "<small>요금이 등록되지 않은 바비큐는 숙소에 확인해주세요.</small>" : ""}${budgetNumbers.capacity ? `<small>반영한 객실의 최대 수용 인원이 MT 인원보다 ${budgetNumbers.capacity}명 부족합니다.</small>` : ""}${budgetNumbers.unavailable ? "<small>일정이 바뀐 객실은 현재 요금을 확인해주세요. 마지막 확인 금액을 표시합니다.</small>" : ""}</div>` : ""}
+      <div class="mt-compare-grid" style="--candidate-count:${stayPage.rows.length}">
+        ${stayPage.rows.map((stay, index) => {
+          const planned = stayItems.find(item => String(item.reference_id) === String(stay.id));
+          const reserved = planned && planned.status !== "planned";
+          const quote = planned?.cost_breakdown?.site_amount != null ? planned.cost_breakdown : null;
+          const baseTotal = Number(quote?.site_amount ?? stay._estimatedCost?.room_total ?? mtRoomRangeTotal(stay, stay.selectedRoom, state.mtProject));
+          return `<article class="mt-candidate-card ${planned ? "selected" : ""}"><div class="mt-candidate-rank">객실 후보 ${stayPage.start + index + 1}</div><img src="${stay.image}" alt="${escapeHtml(stay.name)}"><h3>${escapeHtml(stay.name)}</h3><dl><div><dt>사이트 결제 예상금</dt><dd>${money(baseTotal)}</dd></div><div><dt>기준 / 최대 인원</dt><dd>${stay.selectedRoom?.basePeople || '-'} / ${stay.selectedRoom?.maxPeople || '-'}명</dd></div><div><dt>추가 인원 요금</dt><dd>${stay.selectedRoom?.extraPersonFee ? `1인 ${money(stay.selectedRoom.extraPersonFee)}` : '별도 문의'}</dd></div>${quote ? `<div><dt>현장 예상 비용</dt><dd>${money(quote.on_site || 0)}</dd></div><div><dt>예상 합계</dt><dd><strong>${money(planned.amount)}</strong></dd></div>` : ''}<div><dt>위치</dt><dd>${escapeHtml(stay.distance)}</dd></div></dl><div class="button-row"><button class="ghost-btn" data-stay-id="${stay.businessId}">숙소 상세</button><button class="secondary-btn ${planned ? "active" : ""}" data-use-mt-stay="${stay.id}" ${state.mtProject.is_owner === false || reserved ? "disabled" : ""}><i data-lucide="${planned ? "check" : "wallet-cards"}"></i>${reserved ? "예약 반영됨" : planned ? "예산 반영 취소" : "예산에 반영"}</button><button class="icon-action" data-remove-mt-candidate="${stay.id}" aria-label="후보 삭제"><i data-lucide="x"></i></button></div></article>`;
         }).join("")}
       </div>
-      <p class="mt-comparison-note"><i data-lucide="info"></i>최대 30개 객실을 비교하고 필요한 객실 여러 개를 예산에 반영하세요. 객실 기본금액을 합산하며, 추가 인원·부대시설 비용은 실제 배정과 이용 조건을 확인해 기타 비용에 더해주세요.</p>` : `<div class="empty-state">아직 담은 객실 후보가 없습니다. 숙소 목록에서 일정에 맞는 객실을 담아보세요.</div>`;
+      ${mtPageButtons("stay", stayPage)}
+      <p class="mt-comparison-note"><i data-lucide="info"></i>추가 인원과 바비큐는 현장 결제 예상금입니다. 실제 이용 조건과 미등록 요금은 숙소에 확인해주세요.</p>` : `<div class="empty-state">아직 담은 객실 후보가 없습니다. 숙소 목록에서 일정에 맞는 객실을 담아보세요.</div>`;
   }
   const shopping = (state.mtProject.items || []).filter((item) => item.item_kind === "shopping" && item.status !== "cancelled");
   const shoppingList = qs("#mtShoppingItems");
-  if (shoppingList) shoppingList.innerHTML = shopping.length ? shopping.map((item) => `<article class="mt-shopping-row"><span class="mt-shopping-icon"><i data-lucide="shopping-basket"></i></span><div class="mt-shopping-copy"><strong>${escapeHtml(item.title)}</strong><span>${money(Number(item.amount || 0))} / 개</span></div><div class="mt-quantity-control" role="group" aria-label="${escapeHtml(item.title)} 수량"><button class="icon-button" type="button" data-mt-quantity-delta="-1" data-mt-item="${item.id}" aria-label="수량 줄이기" ${state.mtProject.is_owner === false ? 'disabled' : ''}><i data-lucide="minus"></i></button><output aria-live="polite">${Number(item.quantity || 1)}</output><button class="icon-button" type="button" data-mt-quantity-delta="1" data-mt-item="${item.id}" aria-label="수량 늘리기" ${state.mtProject.is_owner === false ? 'disabled' : ''}><i data-lucide="plus"></i></button></div><strong class="mt-shopping-total">${money(Number(item.amount || 0) * Number(item.quantity || 1))}</strong>${state.mtProject.is_owner === false ? '' : `<button class="icon-action" type="button" data-remove-mt-item="${item.id}" aria-label="장보기 후보 삭제"><i data-lucide="x"></i></button>`}</article>`).join("") : `<div class="empty-state compact">상품의 ‘MT 담기’를 눌러 장보기 후보를 모아보세요.</div>`;
+  const shoppingPage = mtPageSlice(shopping, mtPages.shopping, 10);
+  mtPages.shopping = shoppingPage.page;
+  if (shoppingList) shoppingList.innerHTML = shopping.length ? shoppingPage.rows.map((item) => `<article class="mt-shopping-row"><span class="mt-shopping-icon"><i data-lucide="shopping-basket"></i></span><div class="mt-shopping-copy"><strong>${escapeHtml(item.title)}</strong><span>${money(Number(item.amount || 0))} / 개</span></div><div class="mt-quantity-control" role="group" aria-label="${escapeHtml(item.title)} 수량"><button class="icon-button" type="button" data-mt-quantity-delta="-1" data-mt-item="${item.id}" aria-label="수량 줄이기" ${state.mtProject.is_owner === false ? 'disabled' : ''}><i data-lucide="minus"></i></button><output aria-live="polite">${Number(item.quantity || 1)}</output><button class="icon-button" type="button" data-mt-quantity-delta="1" data-mt-item="${item.id}" aria-label="수량 늘리기" ${state.mtProject.is_owner === false ? 'disabled' : ''}><i data-lucide="plus"></i></button></div><strong class="mt-shopping-total">${money(Number(item.amount || 0) * Number(item.quantity || 1))}</strong>${state.mtProject.is_owner === false ? '' : `<button class="icon-action" type="button" data-remove-mt-item="${item.id}" aria-label="장보기 후보 삭제"><i data-lucide="x"></i></button>`}</article>`).join("") + mtPageButtons("shopping", shoppingPage) : `<div class="empty-state compact">상품의 ‘MT 담기’를 눌러 장보기 후보를 모아보세요.</div>`;
   window.motfHomeDesign?.renderMtExtras(state.mtProject);
   refreshIcons();
+}
+
+const mtPages = { project: null, stay: 1, shopping: 1 };
+function mtPageSlice(rows, requestedPage, size) {
+  const pages = Math.max(1, Math.ceil(rows.length / size));
+  const page = Math.min(pages, Math.max(1, Number(requestedPage) || 1));
+  const start = (page - 1) * size;
+  return { rows: rows.slice(start, start + size), page, pages, start };
+}
+function mtPageButtons(section, result, attr = "data-mt-page") {
+  if (result.pages < 2) return "";
+  const label = section === "shopping" ? "장보기 후보" : "객실 후보";
+  const pages = new Set([1, result.pages, result.page - 1, result.page, result.page + 1]);
+  const visible = [...pages].filter(page => page >= 1 && page <= result.pages).sort((a, b) => a - b);
+  return `<nav class="stay-pagination" aria-label="${label} 페이지">${visible.map((page, index) => `${index && page > visible[index - 1] + 1 ? '<span aria-hidden="true">…</span>' : ''}<button type="button" ${attr}="${page}" data-page-section="${section}" class="${page === result.page ? "active" : ""}" ${page === result.page ? 'aria-current="page"' : ''}>${page}</button>`).join("")}</nav>`;
 }
 
 window.motfApplyMtProject = function applyMtProject(project, candidates = []) {
@@ -4709,6 +4786,16 @@ function ensureChat(title) {
 }
 
 document.addEventListener("click", async (event) => {
+  const pageButton = event.target.closest("[data-mt-page]");
+  if (pageButton) {
+    const section = pageButton.dataset.pageSection;
+    mtPages[section] = Number(pageButton.dataset.mtPage);
+    renderMyMt();
+    const list = qs(section === "stay" ? "#mtCandidateComparison" : "#mtShoppingItems");
+    list.querySelector('[aria-current="page"]')?.focus({ preventScroll: true });
+    list.scrollIntoView({ block: "start" });
+    return;
+  }
   const historyBackButton = event.target.closest("[data-history-back]");
   if (historyBackButton) {
     goBack(historyBackButton.dataset.fallbackRoute || "home");
@@ -4865,7 +4952,7 @@ document.addEventListener("click", async (event) => {
 
   const useMtStayButton = event.target.closest("[data-use-mt-stay]");
   if (useMtStayButton) {
-    const stay = stays.find((item) => String(item.id) === String(useMtStayButton.dataset.useMtStay)) || state.mtCandidateRecords.find((item) => String(item.id) === String(useMtStayButton.dataset.useMtStay));
+    const stay = state.mtCandidateRecords.find((item) => String(item.id) === String(useMtStayButton.dataset.useMtStay));
     if (!stay) return;
     const plannedItem = (state.mtProject.items || []).find((item) => item.item_kind === "stay" && String(item.reference_id) === String(stay.id) && item.status !== "cancelled");
     useMtStayButton.disabled = true;
@@ -5410,7 +5497,19 @@ qs("#stayPrice")?.addEventListener("keydown", event => {
   range.dispatchEvent(new Event("input", { bubbles: true }));
 });
 
-document.addEventListener("change", (event) => {
+document.addEventListener("change", async (event) => {
+  if (event.target.matches("[data-mt-barbecue]")) {
+    const input = event.target;
+    const projectId = state.mtProject.id;
+    input.disabled = true;
+    try {
+      await window.motfSetMtBarbecue(projectId, input.checked);
+    } catch (error) {
+      input.checked = Boolean(state.mtProject.include_barbecue);
+      toast(error.message || "바비큐 이용 설정을 저장하지 못했습니다.");
+    } finally { input.disabled = false; }
+    return;
+  }
   if (event.target.matches("#productQty, [data-cart-input]")) {
     const productId = event.target.dataset.cartInput;
     const product = productId ? findProduct(productId)?.product : state.selectedProduct;
@@ -5587,36 +5686,23 @@ qs("#chatForm").addEventListener("submit", (event) => {
   messages.scrollTop = messages.scrollHeight;
 });
 
-qs("#activitySubmitForm").addEventListener("submit", (event) => {
+qs("#activitySubmitForm").addEventListener("submit", async (event) => {
   event.preventDefault();
   const title = qs("#activitySubmitTitle").value.trim();
   if (!title) {
     toast("레크레이션 제목을 입력해주세요.");
     return;
   }
-  if (typeof window.motfSubmitRecreation === "function") {
-    window.motfSubmitRecreation(event.target);
+  if (typeof window.motfSubmitRecreation !== "function") {
+    toast("추천 접수 기능을 불러오지 못했습니다. 새로고침 후 다시 시도해주세요.");
     return;
   }
-  const spaceText = qs("#activitySubmitSpace").value;
-  activities.unshift({
-    id: `activity-${Date.now()}`,
-    title,
-    people: qs("#activitySubmitPeople").value.trim() || "인원 자유",
-    peopleGroup: "medium",
-    space: spaceText === "야외" ? "outdoor" : spaceText === "공간 무관" ? "any" : "indoor",
-    mood: "icebreak",
-    time: "추천 등록",
-    note: qs("#activitySubmitNote").value.trim() || "이용자 추천 레크레이션",
-    media: "이용자 첨부 가능",
-    image: photo("photo-1529156069898-49953e39b3ac"),
-    likes: 0,
-    comments: [],
-    detail: qs("#activitySubmitNote").value.trim() || "이용자가 새로 추천한 레크레이션입니다.",
-  });
-  event.target.reset();
-  renderRecreation();
-  toast("레크레이션 추천이 관리자 검토 대상으로 접수되었습니다.");
+  const form = event.currentTarget, button = form.querySelector('[type="submit"]');
+  if (button.disabled) return;
+  button.disabled = true;
+  try { await window.motfSubmitRecreation(form); }
+  catch (error) { console.warn(error); toast("추천이 접수되지 않았습니다. 잠시 후 다시 시도해주세요."); }
+  finally { button.disabled = false; }
 });
 
 qs("#boardWriteForm").addEventListener("submit", (event) => {

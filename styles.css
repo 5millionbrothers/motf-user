@@ -4147,8 +4147,12 @@ h2 {
 .money-input b { color: var(--muted); font-size: 13px; }
 .motf-dialog { z-index: 10000; }
 .flatpickr-calendar { z-index: 11000 !important; }
-#mtProjectDialog { overflow: visible; }
+#mtProjectDialog { max-height: calc(100dvh - 36px); }
 #mtProjectDialog form { position: relative; }
+.mt-stay-quote { display: grid; gap: 5px; margin: 12px 0; }
+.mt-stay-quote span { color: var(--muted); font-size: 13px; }
+.mt-stay-quote small { color: var(--muted); }
+.mt-bbq-option { display: flex; align-items: center; gap: 8px; margin-block: 10px; font-size: 13px; }
 #mtProjectDialog .flatpickr-calendar { z-index: 12000 !important; }
 
 .stay-pagination { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 20px; }
@@ -4168,7 +4172,6 @@ h2 {
   .stay-card-actions { grid-template-columns: 1fr auto; padding: 10px 0 0; border-top: 1px solid var(--line); border-left: 0; }
   .stay-card-action-buttons { grid-column: 1 / -1; }
   .stay-card-intro { -webkit-line-clamp: 2; }
-  #mtProjectDialog { overflow: auto; }
 }
 .mt-project-picker-dialog { width: min(520px, calc(100vw - 28px)); }
 .mt-project-choice-list { display: grid; gap: 8px; }
@@ -5008,6 +5011,15 @@ h2 {
 .launch-popup-dialog .popup-actions > * { flex: 1 1 140px; justify-content: center; }
 .launch-popup-dialog .popup-dismiss { display: inline-flex; align-items: center; gap: 8px; width: fit-content; color: var(--muted); font-size: 13px; cursor: pointer; }
 .launch-popup-dialog .popup-dismiss input { width: 17px; height: 17px; min-width: 17px; margin: 0; padding: 0; accent-color: #405a34; }
+.launch-popup-dialog[data-popup-position="top"] { position: fixed; inset: 24px 0 auto; margin: 0 auto; }
+.launch-popup-dialog[data-popup-position="bottom-right"] { position: fixed; inset: auto 24px 24px auto; margin: 0; }
+.launch-popup-dialog[data-popup-style="notice"] { border-top: 4px solid var(--olive); }
+.launch-popup-dialog[data-popup-style="image"] .popup-image { object-fit: contain; background: #f4f6f1; }
+.launch-popup-dialog .popup-content p { white-space: pre-line; overflow-wrap: anywhere; }
+.launch-popup-dialog[data-popup-position][open] { max-height: calc(100dvh - 48px); overflow: auto; }
+@media (max-width: 699px) {
+  .launch-popup-dialog[data-popup-position="bottom-right"] { inset: auto 0 max(16px, env(safe-area-inset-bottom)); margin-inline: auto; }
+}
 .launch-popup-dialog .popup-close-icon { position: absolute; z-index: 2; top: 10px; right: 10px; display: grid; place-items: center; width: 36px; height: 36px; padding: 0; color: #fff; background: rgba(20, 24, 19, .72); border: 0; border-radius: 50%; font-size: 24px; line-height: 1; cursor: pointer; }
 
 @media (max-width: 720px) {

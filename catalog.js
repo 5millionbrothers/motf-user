@@ -13,6 +13,7 @@
   const unlistedDaesungIds = new Set([
     "3574f59d-ff14-545e-9faf-cd1c813a501b",
     "a9ab6a62-10fe-5d05-b420-6daee67ee4a4",
+    "11ed9377-1542-5784-8f39-f1db37e46328",
   ]);
   const facilityLabels = {
     barbecue: "야외바베큐",

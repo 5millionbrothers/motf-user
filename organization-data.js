@@ -62,7 +62,9 @@
       if (!row) {
         row = document.createElement('label'); row.dataset.projectContext = '';
         row.innerHTML = '누구의 MT인가요?<select name="preparation_organization" data-project-organization></select>';
-        form.prepend(row);
+        const fields = form.querySelector('.mt-project-fields');
+        if (fields) fields.prepend(row);
+        else form.querySelector('.section-toolbar').after(row);
       }
       const select = $('select',row), editing = form.dataset.mode === 'edit';
       const value = editing ? window.motfActiveMtOrganization?.() || '' : select.dataset.initialized ? select.value : selected;
