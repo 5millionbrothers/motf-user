@@ -2525,57 +2525,10 @@ function renderBooking() {
   });
 }
 
-const marketBestCategory = "추천·베스트";
-const marketBestIds = [
-  "90f6f82c-fc03-5254-91ee-57511f2d6d26", // 삼겹살
-  "2cf0d559-ddea-5846-bd68-f82f40d5c043", // 목살
-  "63ff920d-2bb4-57e0-9ab1-0f3f33de0076", // 참이슬 후레쉬
-  "73e68e76-3614-57c6-bd7a-b775f83c4aa1", // 처음처럼
-  "5180f7d3-0d11-58d0-8591-fd490eb870fc", // 새로
-  "07effb06-776c-52e2-b2fe-55f74a37d674", // 별빛청하
-  "b40ca43f-1cd7-513f-9aec-ee7c90670ab9", // 새로 살구
-  "45afdffb-7a6a-51f0-b7a3-6f7f50d9a3c2", // 좋은데이 블루베리
-  "5bac21b4-81de-5410-930e-be4719186c93", // 톡소다 레몬
-  "196df9fe-770c-5fe2-9729-f11889876441", // 톡소다 사과
-  "236c7926-49b9-59df-b21f-2a2cb8252ea4", // 톡소다 석류
-  "24c74269-e5af-5822-b29a-035e0dc4095a", // 켈리
-  "268a8ada-a258-5e71-b007-daf805cd4d19", // 테라
-  "12a6f053-01c2-57b1-8806-cd8807c3b739", // 카스
-  "249eda1d-e75b-55de-8ebc-f5653c7a57ad", // 코카콜라
-  "c763e365-856e-509b-8aa0-76cf30d39ccb", // 코카콜라 제로
-  "5a4306a9-e707-5254-a1c3-4a211a507517", // 칠성사이다
-  "182ec153-2ebf-5284-860b-54b943961949", // 스프라이트
-  "ac6fca6f-3fe6-57db-986f-cd96009bfcf0", // 새우깡
-  "f0edac2a-d996-52c8-954d-ae0499c47f73", // 매운 새우깡
-  "1350cfbc-6bd1-5408-9eee-46c91a578e3d", // 꿀꽈배기
-  "bbc50b04-c20a-578f-a99e-1ffb4a62c7bd", // 뻥이요
-  "02818f30-a2df-5cea-b647-dd0d64ab7f36", // 왕짱구
-  "ac08093e-f431-5d97-ac82-c17e7c4c3844", // 햇반 200g x 4입
-  "a189d119-8597-5aa5-8677-c172e20c1432", // 햇반 200g x 12입
-  "15f0a23a-d50c-57c4-a0ba-6db69496ca5a", // 육개장 사발면 6개
-  "60a72dfa-df81-56ce-932f-ec06ad33797c", // 김치사발면
-  "37db6541-2368-52a1-b438-e26aea211968", // 신라면 봉지 묶음
-  "149ef892-8abb-5db8-9fc4-1001d09aaf9d", // 불닭볶음면 소컵
-  "78313420-e47a-5e56-898a-75a4e6d147dc", // 까르보 불닭 소컵
-  "4d5bd328-e560-573e-8364-ced630175945", // 너구리 봉지 묶음
-  "14682cee-5f22-52f5-8a91-be3920a6069e", // 팔도비빔면 봉지 묶음
-  "10e8aee4-508c-55e7-925f-68895edf515a", // 나무젓가락 30입
-  "f409568a-8d99-55c8-826a-e619835377d9", // 나무젓가락 50입
-  "12b8f6fc-e070-5e66-960d-47bbd3bd5eef", // 종이용기
-  "c07fdec6-08e8-56d8-9f77-12e3437c9ee8", // DY-230
-  "1f3e11f7-ff10-5226-a744-d5975510a7f2", // 물티슈
-  "359a662f-3304-5661-b72c-0fda60e0127d", // 허브맛솔트 순한맛
-  "6bd65759-d5ef-5623-b4ad-52683119b889", // 스모크 소시지
-  "0dedb538-b157-523a-8f5d-e74b33c23226", // 깐마늘
-  "d51049c3-1340-51a7-af54-1309b3a2f142", // 맛김치
-];
-const marketBestRank = new Map(marketBestIds.map((id, index) => [id, index]));
-const bestGroupRank = group => Math.min(...group.variants.map(product => marketBestRank.get(product.id) ?? Infinity));
-
 function marketProductCategories(products) {
   const preferred = ["MT 세트", "정육", "채소·농산물", "즉석밥", "라면", "과자·안주", "음료", "주류", "김치·반찬", "통조림·가공식품", "조미료·소스", "숙취해소", "일회용품", "생활용품", "식재료", "주류/음료", "냉동식품", "기타"];
   const available = [...new Set(products.map(product => product.category || "기타"))];
-  return ["전체", ...(products.some(product => marketBestRank.has(product.id)) ? [marketBestCategory] : []), ...preferred.filter(category => available.includes(category)), ...available.filter(category => !preferred.includes(category))];
+  return ["전체", ...preferred.filter(category => available.includes(category)), ...available.filter(category => !preferred.includes(category))];
 }
 
 function marketSearchField() {
@@ -2586,14 +2539,12 @@ function marketProductResults(store) {
   const normalize = value => String(value || "").normalize("NFKC").toLocaleLowerCase("ko-KR").replace(/\s+/g, "");
   const terms = state.marketQuery.trim().split(/\s+/).map(normalize).filter(Boolean);
   const selected = state.activeCategory;
-  const best = selected === marketBestCategory;
-  const products = selected === "전체" || best ? store.products : store.products.filter(product => product.category === selected);
+  const products = selected === "전체" ? store.products : store.products.filter(product => product.category === selected);
   const groups = groupProductVariants(products).filter(group => !terms.length || group.variants.some(product => {
     const text = normalize([product.name, product.variantLabel, product.manufacturer, product.category].filter(Boolean).join(" "));
     return terms.every(term => text.includes(term));
   }));
-  const results = best ? groups.filter(group => Number.isFinite(bestGroupRank(group))).sort((a, b) => bestGroupRank(a) - bestGroupRank(b)) : groups;
-  if (results.length) return results.map(productCard).join("");
+  if (groups.length) return groups.map(productCard).join("");
   const message = terms.length ? "검색 결과가 없습니다." : selected === "전체" ? "등록된 상품이 아직 없습니다." : "이 분류에 등록된 상품이 없습니다.";
   return `<div class="empty-state catalog-error" role="status"><strong>${message}</strong></div>`;
 }
