@@ -270,3 +270,8 @@
   #mtProjectForm .mt-project-fields { padding-inline:18px; }
   #mtProjectForm > button[type="submit"] { margin:8px 18px 16px; }
 }
+.activity-attachment-cover { display:block; background:#f4f6f1; }
+.activity-attachment-cover .post-detail-media { display:block; object-fit:contain; }
+.activity-attachment-gallery { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr)); gap:10px; }
+.activity-attachment-gallery a { display:grid; place-items:center; min-width:0; aspect-ratio:4/3; background:#f4f6f1; border:1px solid var(--line); border-radius:6px; overflow:hidden; }
+.activity-attachment-gallery img { width:100%; height:100%; min-height:0; object-fit:contain; }

@@ -695,7 +695,9 @@ window.motfApplyRecreationActivities = function applyRecreationActivities(rows =
     const min = Number(item.people_min || 0);
     const max = Number(item.people_max || 0);
     const spaces = Array.isArray(item.spaces) ? item.spaces : [];
-    const media = Array.isArray(item.media_urls) ? item.media_urls : [];
+    const media = [...new Set((Array.isArray(item.media_urls) ? item.media_urls : []).map(safeExternalUrl).filter(Boolean))];
+    const images = media.filter(url => recreationMediaKind(url) === "image");
+    const video = safeExternalUrl(item.example_video_url) || media.find(url => recreationMediaKind(url) === "video") || "";
     const peopleGroup = max && max <= 20 ? "small" : max && max <= 50 ? "medium" : "large";
     return {
       id: item.id,
@@ -707,11 +709,12 @@ window.motfApplyRecreationActivities = function applyRecreationActivities(rows =
       time: item.duration_minutes ? `${item.duration_minutes}분` : "시간 협의",
       note: item.summary || "운영팀 추천 레크레이션",
       media: media.length ? `자료 ${media.length}개` : "진행 안내",
-      image: media.find((url) => /\.(png|jpe?g|webp|gif)(\?|$)/i.test(url)) || photo("photo-1517048676732-d65bc937f952"),
+      image: images[0] || photo("photo-1517048676732-d65bc937f952"),
+      attachmentImages: images,
       mediaUrls: media,
       scriptExample: item.script_example || "",
-      exampleVideoUrl: item.example_video_url || media.find((url) => /\.(mp4|webm|mov)(\?|$)/i.test(url)) || "",
-      scriptFileUrl: item.script_file_url || "",
+      exampleVideoUrl: video,
+      scriptFileUrl: safeExternalUrl(item.script_file_url),
       likes: 0,
       comments: [],
       detail: item.instructions || item.summary || "상세 진행 방법은 운영팀 안내를 확인해주세요.",
@@ -1294,6 +1297,13 @@ function safeExternalUrl(value) {
   } catch {
     return "";
   }
+}
+
+function recreationMediaKind(url) {
+  const pathname = new URL(url).pathname;
+  if (/\.(png|jpe?g|jfif|webp|gif)$/i.test(pathname)) return "image";
+  if (/\.(mp4|webm|mov)$/i.test(pathname)) return "video";
+  return "file";
 }
 
 function eventCard(event, featured = false) {
@@ -4081,8 +4091,12 @@ function renderActivityDetail() {
     qs("#activityCommentList").innerHTML = "";
     return;
   }
+  const [cover, ...attachmentImages] = activity.attachmentImages || [];
+  const otherFiles = (activity.mediaUrls || []).filter(url => recreationMediaKind(url) !== "image" && url !== activity.exampleVideoUrl);
   qs("#activityDetailContent").innerHTML = `
-    <img class="post-detail-media" src="${activity.image}" alt="${escapeHtml(activity.title)}" />
+    ${cover
+      ? `<a class="activity-attachment-cover" href="${escapeHtml(cover)}" target="_blank" rel="noopener noreferrer"><img class="post-detail-media" src="${escapeHtml(cover)}" alt="${escapeHtml(activity.title)} 첨부 사진 1" /></a>`
+      : `<img class="post-detail-media" src="${escapeHtml(activity.image)}" alt="${escapeHtml(activity.title)}" />`}
     <div class="post-detail-body">
       <h1>${escapeHtml(activity.title)}</h1>
       <p class="activity-detail-description">${escapeHtml(activity.detail)}</p>
@@ -4091,9 +4105,12 @@ function renderActivityDetail() {
         <span class="pill">${activity.time}</span>
         <span class="pill">${activity.space === "indoor" ? "실내" : activity.space === "outdoor" ? "야외" : "공간 무관"}</span>
       </div>
+      ${attachmentImages.length ? `<div class="activity-attachment-gallery" aria-label="추가 첨부 사진">${attachmentImages.map((url, index) => `
+        <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer"><img src="${escapeHtml(url)}" alt="첨부 사진 ${index + 2}" loading="lazy"></a>`).join("")}</div>` : ""}
       <div class="activity-resource-links">
         ${activity.exampleVideoUrl ? `<a class="media-chip activity-media-chip" href="${escapeHtml(activity.exampleVideoUrl)}" target="_blank" rel="noopener noreferrer"><i data-lucide="play-circle"></i>예시 영상 보기</a>` : '<button class="media-chip activity-media-chip" type="button" data-unavailable-resource="등록된 예시 영상이 없습니다."><i data-lucide="play-circle"></i>예시 영상 없음</button>'}
         ${activity.scriptFileUrl ? `<a class="media-chip activity-media-chip" href="${escapeHtml(activity.scriptFileUrl)}" target="_blank" rel="noopener noreferrer"><i data-lucide="file-down"></i>진행 대본 받기</a>` : activity.scriptExample ? '<button class="media-chip activity-media-chip" type="button" data-download-activity-script><i data-lucide="file-down"></i>진행 대본 받기</button>' : '<button class="media-chip activity-media-chip" type="button" data-unavailable-resource="등록된 진행 대본이 없습니다."><i data-lucide="file-down"></i>진행 대본 없음</button>'}
+        ${otherFiles.map((url, index) => `<a class="media-chip activity-media-chip" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer"><i data-lucide="paperclip"></i>첨부 자료 ${index + 1}</a>`).join("")}
       </div>
       <div class="post-actions">
         <button class="secondary-btn" type="button" data-like-activity><i data-lucide="heart"></i>공감 ${activity.likes}</button>
